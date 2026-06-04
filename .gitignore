@@ -1,4 +1,16 @@
+# Python
 __pycache__/
 *.pyc
+
+# Base de datos local
 db.sqlite3
 
+# Entorno virtual
+venv/
+.venv/
+
+# VS Code
+.vscode/
+
+# Archivos temporales
+*.log
