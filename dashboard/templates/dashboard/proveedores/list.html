@@ -1,0 +1,34 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Proveedores | Haze Studios{% endblock %}
+
+{% block content %}
+<h1>Administración de Proveedores</h1>
+<div class="page-actions">
+    <span>{{ proveedores|length }} proveedor(es)</span>
+    <a class="btn btn-primary" href="{% url 'proveedores_crear' %}">+ Registrar proveedor</a>
+</div>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr><th>ID</th><th>Nombre</th><th>Teléfono</th><th>Correo</th><th>Dirección</th><th>Acciones</th></tr>
+        </thead>
+        <tbody>
+        {% for p in proveedores %}
+        <tr>
+            <td>{{ p.pk }}</td>
+            <td>{{ p.nombre }}</td>
+            <td>{{ p.telefono }}</td>
+            <td>{{ p.correo }}</td>
+            <td>{{ p.direccion }}</td>
+            <td class="botones">
+                <a class="btn-editar" href="{% url 'proveedores_editar' p.pk %}">✏️ Editar</a>
+                <a class="btn-eliminar" href="{% url 'proveedores_eliminar' p.pk %}">🗑️ Eliminar</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--gris-500)">No hay proveedores.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ titulo }} | Haze Studios{% endblock %}
+{% block content %}
+<h1>{{ titulo }}</h1>
+
+{% if tipo == "entrada" %}
+<div class="alert alert-warning" style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);color:#065f46;">
+    ✅ <strong>Entrada:</strong> Suma unidades al stock del producto.
+</div>
+{% elif tipo == "salida" %}
+<div class="alert alert-warning">
+    ⚠️ <strong>Salida:</strong> Resta unidades del stock. Asegúrate de que haya suficiente disponible.
+</div>
+{% elif tipo == "ajuste" %}
+<div class="alert" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.3);color:#1e40af;">
+    ⚙️ <strong>Ajuste:</strong> {{ help_text|default:"El stock se establecerá exactamente al valor ingresado." }}
+</div>
+{% endif %}
+
+<div class="form-wrap">
+    <form method="post">{% csrf_token %}
+        {% for field in form %}
+        {% if field.name != "tipo" %}
+        <div class="form-group">
+            <label>{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<div class="help-text">{{ field.help_text }}</div>{% endif %}
+            {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        {% endif %}
+        {% endfor %}
+        {% if form.non_field_errors %}
+        <ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+        {% endif %}
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Registrar</button>
+            <a class="btn btn-secondary" href="{% url 'stock_list' %}">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

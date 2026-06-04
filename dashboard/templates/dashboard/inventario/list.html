@@ -1,0 +1,33 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Inventario | Haze Studios{% endblock %}
+
+{% block content %}
+<h1>Administración de Inventario</h1>
+<div class="page-actions">
+    <span>{{ inventario|length }} registro(s)</span>
+    <a class="btn btn-primary" href="{% url 'inventario_crear' %}">+ Registrar inventario</a>
+</div>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr><th>ID</th><th>Producto</th><th>Stock</th><th>Fecha actualización</th><th>Acciones</th></tr>
+        </thead>
+        <tbody>
+        {% for i in inventario %}
+        <tr>
+            <td>{{ i.pk }}</td>
+            <td>{{ i.producto.nombre }} <small style="color:var(--gris-400)">(ID {{ i.producto.pk }})</small></td>
+            <td>{{ i.stock }}</td>
+            <td>{{ i.fecha_actualizacion|date:"d/m/Y" }}</td>
+            <td class="botones">
+                <a class="btn-editar" href="{% url 'inventario_editar' i.pk %}">✏️ Editar</a>
+                <a class="btn-eliminar" href="{% url 'inventario_eliminar' i.pk %}">🗑️ Eliminar</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--gris-500)">No hay registros de inventario.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

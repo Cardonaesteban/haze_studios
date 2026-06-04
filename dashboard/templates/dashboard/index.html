@@ -1,0 +1,68 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Dashboard | Haze Studios{% endblock %}
+
+{% block content %}
+<h1>Panel de Administración</h1>
+
+{% if productos_bajo_stock %}
+<div class="alert alert-warning">
+    ⚠️ <strong>Stock bajo:</strong>
+    {% for p in productos_bajo_stock %}
+        <strong>{{ p.nombre }}</strong> ({{ p.stock }} uds.){% if not forloop.last %}, {% endif %}
+    {% endfor %}
+</div>
+{% endif %}
+
+<p class="section-title">Resumen</p>
+<div class="stats-grid">
+    <div class="stat-box"><div class="num">{{ total_clientes }}</div><div class="label">Clientes</div></div>
+    <div class="stat-box"><div class="num">{{ total_productos }}</div><div class="label">Productos</div></div>
+    <div class="stat-box"><div class="num">{{ total_categorias }}</div><div class="label">Categorías</div></div>
+    <div class="stat-box"><div class="num">{{ total_pedidos }}</div><div class="label">Pedidos</div></div>
+    <div class="stat-box {% if pedidos_pendientes > 0 %}stat-alert{% endif %}"><div class="num">{{ pedidos_pendientes }}</div><div class="label">Pendientes</div></div>
+    <div class="stat-box"><div class="num">{{ total_proveedores }}</div><div class="label">Proveedores</div></div>
+    <div class="stat-box"><div class="num">{{ total_disenadores }}</div><div class="label">Diseñadores</div></div>
+    {% if user_es_admin %}
+    <div class="stat-box"><div class="num">{{ total_roles }}</div><div class="label">Roles</div></div>
+    <div class="stat-box"><div class="num">{{ total_permisos }}</div><div class="label">Permisos</div></div>
+    {% endif %}
+</div>
+
+{% if ultimos_movimientos %}
+<p class="section-title">Últimos movimientos de stock</p>
+<div class="table-wrap" style="margin-bottom:1.5rem;">
+    <table>
+        <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Antes→Después</th><th>Motivo</th></tr></thead>
+        <tbody>
+        {% for m in ultimos_movimientos %}
+        <tr>
+            <td>{{ m.fecha|date:"d/m/Y H:i" }}</td>
+            <td>{{ m.producto.nombre }}</td>
+            <td><span class="badge badge-{{ m.tipo }}">{{ m.get_tipo_display }}</span></td>
+            <td>{{ m.cantidad }}</td>
+            <td>{{ m.stock_anterior }} → {{ m.stock_posterior }}</td>
+            <td>{{ m.motivo|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+<a href="{% url 'stock_list' %}" class="btn btn-secondary" style="margin-bottom:1.5rem;">Ver todos los movimientos →</a>
+{% endif %}
+
+<p class="section-title">Módulos</p>
+<div class="modules-grid">
+    <a class="module-card" href="{% url 'usuarios_list' %}"><h2>👤 Usuarios</h2><p>Clientes registrados, alta, edición y estado.</p></a>
+    <a class="module-card" href="{% url 'productos_list' %}"><h2>👕 Productos</h2><p>Catálogo, precios, stock y relaciones.</p></a>
+    <a class="module-card" href="{% url 'stock_list' %}"><h2>📦 Stock</h2><p>Entradas, salidas, ajustes e historial.</p></a>
+    <a class="module-card" href="{% url 'categorias_list' %}"><h2>🏷️ Categorías</h2><p>Organización del catálogo.</p></a>
+    <a class="module-card" href="{% url 'pedidos_list' %}"><h2>🛒 Pedidos</h2><p>Gestión de pedidos con productos y totales.</p></a>
+    <a class="module-card" href="{% url 'proveedores_list' %}"><h2>🏭 Proveedores</h2><p>Contacto y datos de proveedores.</p></a>
+    <a class="module-card" href="{% url 'disenadores_list' %}"><h2>✏️ Diseñadores</h2><p>Diseñadores vinculados a productos.</p></a>
+    {% if user_es_admin %}
+    <a class="module-card" href="{% url 'roles_list' %}"><h2>🔐 Roles</h2><p>Roles: Administrador y Usuario.</p></a>
+    <a class="module-card" href="{% url 'permisos_list' %}"><h2>🛡️ Permisos</h2><p>Permisos del sistema.</p></a>
+    <a class="module-card" href="{% url 'dashboard_users_list' %}"><h2>👥 Equipo</h2><p>Usuarios con acceso al dashboard.</p></a>
+    {% endif %}
+</div>
+{% endblock %}

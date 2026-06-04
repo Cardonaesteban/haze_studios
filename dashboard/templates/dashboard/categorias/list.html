@@ -1,0 +1,30 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Categorías | Haze Studios{% endblock %}
+
+{% block content %}
+<h1>Administración de Categorías</h1>
+<div class="page-actions">
+    <span>{{ categorias|length }} categoría(s)</span>
+    <a class="btn btn-primary" href="{% url 'categorias_crear' %}">+ Nueva categoría</a>
+</div>
+<div class="table-wrap">
+    <table>
+        <thead><tr><th>ID</th><th>Nombre</th><th>Descripción</th><th>Acciones</th></tr></thead>
+        <tbody>
+        {% for c in categorias %}
+        <tr>
+            <td>{{ c.pk }}</td>
+            <td>{{ c.nombre }}</td>
+            <td>{{ c.descripcion|truncatechars:60 }}</td>
+            <td class="botones">
+                <a class="btn-editar" href="{% url 'categorias_editar' c.pk %}">✏️ Editar</a>
+                <a class="btn-eliminar" href="{% url 'categorias_eliminar' c.pk %}">🗑️ Eliminar</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--gris-500)">No hay categorías.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

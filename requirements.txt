@@ -1,0 +1,5 @@
+Django>=4.2,<5.2
+# Para MySQL (mismo motor que el proyecto PHP):
+# mysqlclient>=2.1.0
+# O alternativamente:
+# PyMySQL>=1.1.0

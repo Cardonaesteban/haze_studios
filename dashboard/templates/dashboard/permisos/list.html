@@ -1,0 +1,37 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Permisos | Haze Studios{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h1>🛡️ Permisos</h1>
+    <a class="btn btn-primary" href="{% url 'permisos_crear' %}">+ Nuevo permiso</a>
+</div>
+
+<div class="table-wrap">
+    <table>
+        <thead><tr><th>Código</th><th>Nombre</th><th>Descripción</th><th>Roles que lo tienen</th><th>Acciones</th></tr></thead>
+        <tbody>
+        {% for p in permisos %}
+        <tr>
+            <td><code style="background:var(--gris-100);padding:2px 6px;border-radius:4px;font-size:0.8rem;">{{ p.codigo }}</code></td>
+            <td><strong>{{ p.nombre }}</strong></td>
+            <td>{{ p.descripcion|default:"—"|truncatechars:60 }}</td>
+            <td>
+                {% for r in p.roles.all %}
+                    <span class="badge badge-activo">{{ r.get_nombre_display }}</span>
+                {% empty %}
+                    <span style="color:var(--gris-400)">Ninguno</span>
+                {% endfor %}
+            </td>
+            <td class="botones">
+                <a class="btn-editar" href="{% url 'permisos_editar' p.pk %}">✏️ Editar</a>
+                <a class="btn-eliminar" href="{% url 'permisos_eliminar' p.pk %}">🗑️ Eliminar</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--gris-500)">No hay permisos definidos.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

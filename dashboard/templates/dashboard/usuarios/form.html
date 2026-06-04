@@ -1,0 +1,28 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ titulo }} | Haze Studios{% endblock %}
+
+{% block content %}
+<h1>{{ titulo }}</h1>
+<div class="form-wrap">
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group">
+            <label>{{ field.label }}{% if field.field.required %} <span style="color:var(--rojo)">*</span>{% endif %}</label>
+            {{ field }}
+            {% if field.help_text %}<div class="help-text">{{ field.help_text }}</div>{% endif %}
+            {% if field.errors %}
+                <ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% if form.non_field_errors %}
+        <ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+        {% endif %}
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Guardar</button>
+            <a class="btn btn-secondary" href="{% url 'usuarios_list' %}">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

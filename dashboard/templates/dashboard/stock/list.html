@@ -1,0 +1,69 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Movimientos de Stock | Haze Studios{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h1>📦 Movimientos de Stock</h1>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <a class="btn btn-primary" href="{% url 'stock_entrada' %}">+ Entrada</a>
+        <a class="btn btn-secondary" href="{% url 'stock_salida' %}">− Salida</a>
+        <a class="btn btn-secondary" href="{% url 'stock_ajuste' %}">⚙ Ajuste</a>
+    </div>
+</div>
+
+<!-- Resumen de stock actual por producto -->
+<p class="section-title">Stock actual por producto</p>
+<div class="table-wrap" style="margin-bottom:2rem;">
+    <table>
+        <thead><tr><th>Producto</th><th>Stock actual</th><th>Mínimo</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody>
+        {% for p in productos %}
+        <tr class="{% if p.stock_bajo %}row-alert{% endif %}">
+            <td><strong>{{ p.nombre }}</strong></td>
+            <td>{{ p.stock }}</td>
+            <td>{{ p.stock_minimo }}</td>
+            <td>
+                {% if p.stock_bajo %}
+                    <span class="badge badge-salida">⚠ Stock bajo</span>
+                {% else %}
+                    <span class="badge badge-activo">OK</span>
+                {% endif %}
+            </td>
+            <td class="botones">
+                <a class="btn-editar" href="{% url 'stock_entrada' %}">+ Entrada</a>
+                <a class="btn-eliminar" href="{% url 'stock_salida' %}">− Salida</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--gris-500)">No hay productos activos.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Historial de movimientos -->
+<p class="section-title">Historial de movimientos</p>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Antes</th><th>Después</th><th>Motivo</th><th>Usuario</th></tr>
+        </thead>
+        <tbody>
+        {% for m in movimientos %}
+        <tr>
+            <td>{{ m.fecha|date:"d/m/Y H:i" }}</td>
+            <td>{{ m.producto.nombre }}</td>
+            <td><span class="badge badge-{{ m.tipo }}">{{ m.get_tipo_display }}</span></td>
+            <td>{{ m.cantidad }}</td>
+            <td>{{ m.stock_anterior }}</td>
+            <td>{{ m.stock_posterior }}</td>
+            <td>{{ m.motivo|default:"—" }}</td>
+            <td>{{ m.usuario.username|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--gris-500)">No hay movimientos registrados.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

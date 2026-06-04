@@ -1,0 +1,23 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ titulo }} | Haze Studios{% endblock %}
+{% block content %}
+<h1>{{ titulo }}</h1>
+<div class="form-wrap">
+    <p style="color:var(--gris-600);margin-bottom:1.25rem;font-size:0.9rem;">
+        Asigna un rol a <strong>{{ objeto.username }}</strong>. El rol determina los permisos de acceso al dashboard.
+    </p>
+    <form method="post">{% csrf_token %}
+        {% for field in form %}
+        <div class="form-group">
+            <label>{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        {% endfor %}
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Asignar rol</button>
+            <a class="btn btn-secondary" href="{% url 'dashboard_users_list' %}">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

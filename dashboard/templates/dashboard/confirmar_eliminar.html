@@ -1,0 +1,17 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Eliminar {{ tipo }} | Haze Studios{% endblock %}
+
+{% block content %}
+<div class="confirm-wrap">
+    <div class="icon">🗑️</div>
+    <h2>¿Eliminar {{ tipo }}?</h2>
+    <p>Vas a eliminar <strong>{{ objeto }}</strong>. Esta acción no se puede deshacer.</p>
+    <div class="confirm-actions">
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+        </form>
+        <a href="javascript:history.back()" class="btn btn-secondary">Cancelar</a>
+    </div>
+</div>
+{% endblock %}

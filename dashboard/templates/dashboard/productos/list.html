@@ -1,0 +1,31 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Productos | Haze Studios{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>👕 Productos</h1>
+    <a class="btn btn-primary" href="{% url 'productos_crear' %}">+ Nuevo producto</a>
+</div>
+<table class="table">
+    <thead><tr><th>Nombre</th><th>Categoría</th><th>Proveedor</th><th>Precio</th><th>Stock</th><th>Mín.</th><th>Estado</th><th>Acciones</th></tr></thead>
+    <tbody>
+    {% for p in productos %}
+    <tr class="{% if p.stock_bajo %}row-alert{% endif %}">
+        <td>{{ p.nombre }}</td>
+        <td>{{ p.categoria|default:"—" }}</td>
+        <td>{{ p.proveedor|default:"—" }}</td>
+        <td>${{ p.precio }}</td>
+        <td><strong>{{ p.stock }}</strong> {% if p.stock_bajo %}<span class="badge badge-salida">bajo</span>{% endif %}</td>
+        <td>{{ p.stock_minimo }}</td>
+        <td><span class="badge badge-{{ p.estado }}">{{ p.get_estado_display }}</span></td>
+        <td>
+            <a class="btn btn-sm btn-secondary" href="{% url 'productos_editar' p.pk %}">Editar</a>
+            <a class="btn btn-sm btn-secondary" href="{% url 'productos_estado' p.pk %}">Estado</a>
+            <a class="btn btn-sm btn-success" href="{% url 'stock_entrada' %}">+ Stock</a>
+            <a class="btn btn-sm btn-danger" href="{% url 'productos_eliminar' p.pk %}">Eliminar</a>
+        </td>
+    </tr>
+    {% empty %}<tr><td colspan="8">No hay productos.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

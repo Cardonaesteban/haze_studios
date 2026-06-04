@@ -1,0 +1,45 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Usuarios | Haze Studios{% endblock %}
+
+{% block content %}
+<h1>Administración de Usuarios</h1>
+<div class="page-actions">
+    <span>{{ clientes|length }} usuario(s) registrado(s)</span>
+    <a class="btn btn-primary" href="{% url 'usuarios_crear' %}">+ Registrar usuario</a>
+</div>
+
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th><th>Nombre</th><th>Apellido</th><th>Email</th>
+                <th>Teléfono</th><th>Registro</th><th>Pedidos</th>
+                <th>Estado</th><th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for c in clientes %}
+        <tr>
+            <td>{{ c.pk }}</td>
+            <td>{{ c.nombre }}</td>
+            <td>{{ c.apellido }}</td>
+            <td>{{ c.correo }}</td>
+            <td>{{ c.telefono|default:"—" }}</td>
+            <td>{{ c.fecha_registro|date:"d/m/Y" }}</td>
+            <td>
+                <span class="badge badge-pendiente">{{ c.pedidos.count }} pedido(s)</span>
+            </td>
+            <td><span class="badge badge-{{ c.estado }}">{{ c.get_estado_display }}</span></td>
+            <td class="botones">
+                <a class="btn-editar" href="{% url 'usuarios_editar' c.pk %}">✏️ Editar</a>
+                <a class="btn-eliminar" href="{% url 'usuarios_eliminar' c.pk %}">🗑️ Eliminar</a>
+                <a class="btn-estado" href="{% url 'usuarios_estado' c.pk %}">🔄 Estado</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--gris-500)">No hay usuarios registrados.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

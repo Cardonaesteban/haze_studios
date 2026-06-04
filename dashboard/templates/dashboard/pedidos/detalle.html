@@ -1,0 +1,61 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Pedido #{{ pedido.pk }} | Haze Studios{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h1>🛒 Pedido #{{ pedido.pk }}</h1>
+    <div style="display:flex;gap:0.5rem;">
+        <a class="btn btn-secondary" href="{% url 'pedidos_editar' pedido.pk %}">✏️ Editar</a>
+        <a class="btn btn-secondary" href="{% url 'pedidos_list' %}">← Volver</a>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
+    <div class="form-wrap" style="margin:0;padding:1.25rem 1.5rem;">
+        <p style="font-size:0.78rem;color:var(--gris-500);margin-bottom:0.25rem;">CLIENTE</p>
+        <p style="font-weight:600;">{{ pedido.cliente }}</p>
+    </div>
+    <div class="form-wrap" style="margin:0;padding:1.25rem 1.5rem;">
+        <p style="font-size:0.78rem;color:var(--gris-500);margin-bottom:0.25rem;">FECHA</p>
+        <p style="font-weight:600;">{{ pedido.fecha_pedido|date:"d/m/Y" }}</p>
+    </div>
+    <div class="form-wrap" style="margin:0;padding:1.25rem 1.5rem;">
+        <p style="font-size:0.78rem;color:var(--gris-500);margin-bottom:0.25rem;">ESTADO</p>
+        <span class="badge badge-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span>
+        <a class="btn btn-sm btn-secondary" style="margin-left:0.5rem;" href="{% url 'pedidos_estado' pedido.pk %}">Cambiar</a>
+    </div>
+    <div class="form-wrap" style="margin:0;padding:1.25rem 1.5rem;">
+        <p style="font-size:0.78rem;color:var(--gris-500);margin-bottom:0.25rem;">TOTAL</p>
+        <p style="font-weight:700;font-size:1.25rem;">${{ pedido.total }}</p>
+    </div>
+</div>
+
+{% if pedido.notas %}
+<div class="alert" style="background:var(--gris-50);border:1px solid var(--gris-200);margin-bottom:1.5rem;">
+    📝 <strong>Notas:</strong> {{ pedido.notas }}
+</div>
+{% endif %}
+
+<p class="section-title">Productos del pedido</p>
+<div class="table-wrap">
+    <table>
+        <thead><tr><th>Producto</th><th>Cantidad</th><th>Precio unitario</th><th>Subtotal</th></tr></thead>
+        <tbody>
+        {% for d in detalles %}
+        <tr>
+            <td>{{ d.producto.nombre }}</td>
+            <td>{{ d.cantidad }}</td>
+            <td>${{ d.precio_unitario }}</td>
+            <td><strong>${{ d.subtotal }}</strong></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" style="text-align:center;padding:1.5rem;color:var(--gris-500)">Sin productos.</td></tr>
+        {% endfor %}
+        <tr style="background:var(--gris-100);">
+            <td colspan="3" style="text-align:right;font-weight:600;">Total</td>
+            <td><strong>${{ pedido.total }}</strong></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}
