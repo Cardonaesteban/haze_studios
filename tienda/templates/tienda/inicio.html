@@ -1,4 +1,9 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Inicio | Haze Studios{% endblock %}
+
+{% block content %}
 {% load static %}
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -7,12 +12,19 @@
     <title>Inicio | Haze Studios</title>
     <link rel="stylesheet" href="{% static 'css/haze.css' %}">
 </head>
+
 <body>
 <div class="page-wrap">
     <h1>Bienvenido, {{ nombre }}</h1>
     <p style="color:var(--gris-600);margin-top:0.5rem">
         Estás en la tienda de Haze Studios.
     </p>
+    
+    <nav class="tienda-nav">
+        <a href="{% url 'tienda_inicio' %}">Inicio</a>
+        <a href="{% url 'tienda_productos' %}">Productos</a>
+        <a href="{% url 'tienda_carrito' %}">Carrito</a>
+    </nav>
     <a href="{% url 'tienda_logout' %}" class="btn btn-secondary" style="margin-top:1.5rem;display:inline-flex">
         Cerrar sesión
     </a>

@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Haze Studios{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'css/haze.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /* Dropdown admin */
         .nav-dropdown { position: relative; }
@@ -50,10 +51,10 @@
         <a class="nav-link" href="{% url 'disenadores_list' %}">Diseñadores</a>
         {% if user_es_admin %}
         <div class="nav-dropdown">
-            <button class="nav-dropdown-btn">🔐 Admin ▾</button>
+            <button class="nav-dropdown-btn"> Admin ▾</button>
             <div class="nav-dropdown-menu">
-                <a href="{% url 'roles_list' %}">🔐 Roles</a>
-                <a href="{% url 'permisos_list' %}">🛡️ Permisos</a>
+                <a href="{% url 'roles_list' %}"> Roles</a>
+                <a href="{% url 'permisos_list' %}"> Permisos</a>
                 <hr>
                 <a href="{% url 'dashboard_users_list' %}">👥 Equipo</a>
             </div>
