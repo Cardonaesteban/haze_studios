@@ -1,9 +1,19 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.hashers import check_password
 from dashboard.models import Cliente
 from .forms import LoginClienteForm
-
-
+# from django.contrib.auth import authenticate, login, logout
+# from django.contrib.auth.decorators import login_required
+# from django.contrib import messages
+# from django.db import transaction
+# from django.utils import timezone
+# from .models import( 
+#     Productos, Categorias, Pedidos, DetallePedido, Disenadores,
+#     Comunidad, ReporteProducto, Favoritos, ListaDeseados,
+#     Cupon, PerfilUsuario, Comentarios,
+#     ComparacionProducto, Carrito, ItemCarrito, Venta,
+#     DetalleVenta    
+# )
 def login_cliente(request):
     form = LoginClienteForm(request.POST or None)
     error = None

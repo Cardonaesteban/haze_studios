@@ -53,26 +53,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'haze_studios.wsgi.application'
 
-# Use SQLite for development when DEBUG=True to avoid local MySQL version issues.
-if DEBUG:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'haze_studios',
+        'USER': 'root',
+        'PASSWORD': '',
+        'HOST': 'localhost',
+        'PORT': '3306',
     }
-else:
-    DATABASES = {
-        'default': {
-            # Para usar MySQL en producción, configurar las credenciales aquí
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'haze_studios',
-            'USER': 'root',
-            'PASSWORD': '',
-            'HOST': 'localhost',
-            'PORT': '3306',
-        }
-    }
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

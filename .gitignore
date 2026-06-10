@@ -14,3 +14,10 @@ venv/
 
 # Archivos temporales
 *.log
+
+#imports django
+imports-django.md
+
+# Variables de entorno
+.env
+*.env

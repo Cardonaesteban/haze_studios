@@ -55,7 +55,7 @@ urlpatterns = [
     path('roles/', views.roles_list, name='roles_list'),
     path('roles/crear/', views.roles_crear, name='roles_crear'),
     path('roles/<int:pk>/editar/', views.roles_editar, name='roles_editar'),
-    path('roles/<int:pk>/estado/', views.roles_toggle_estado, name='roles_estado'),
+    # path('roles/<int:pk>/estado/', views.roles_toggle_estado, name='roles_estado'),  # En desarrollo
     path('roles/<int:pk>/eliminar/', views.roles_eliminar, name='roles_eliminar'),
 
     # Permisos (solo admin)
