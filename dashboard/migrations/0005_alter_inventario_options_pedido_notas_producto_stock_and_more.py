@@ -2,7 +2,6 @@
 
 from django.db import migrations, models
 import django.db.models.deletion
-from decimal import Decimal
 
 
 class Migration(migrations.Migration):
@@ -34,7 +33,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='pedido',
             name='total',
-            field=models.DecimalField(decimal_places=2, default=Decimal('0.00'), max_digits=14),
+            field=models.DecimalField(decimal_places=2, default=0, max_digits=14),
         ),
         migrations.CreateModel(
             name='DetallePedido',

@@ -491,6 +491,11 @@ def roles_eliminar(request, pk):
         return redirect('roles_list')
     return render(request, 'dashboard/confirmar_eliminar.html', {'objeto': rol, 'tipo': 'rol'})
 
+def roles_toggle_estado(request, pk):
+    rol = get_object_or_404(Rol, pk=pk)
+    rol.activo = not rol.activo
+    rol.save()
+    return redirect('roles_list')
 
 # ──────────────────────────────────────────────
 # PERMISOS

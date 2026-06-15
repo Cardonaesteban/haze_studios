@@ -1,0 +1,43 @@
+# Define los servicios (contenedores) que se van a levantar
+services:
+
+  # Contenedor de la base de datos MySQL
+  db:
+    # Usa la imagen oficial de MySQL 8.0
+    image: mysql:8.0
+    # Variables de entorno para configurar la base de datos
+    environment:
+      MYSQL_DATABASE: haze_db
+      MYSQL_USER: haze_user
+      MYSQL_PASSWORD: haze1234
+      MYSQL_ROOT_PASSWORD: root1234
+    # Mapea el puerto 3307 del computador al 3306 del contenedor
+    ports:
+      - "3307:3306"
+    # Verifica que MySQL esté listo antes de que web se conecte
+    healthcheck:
+      # Comando que prueba si MySQL acepta conexiones
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot1234"]
+      # Intenta cada 5 segundos
+      interval: 5s
+      # Falla si no responde en 5 segundos
+      timeout: 5s
+      # Reintenta hasta 10 veces antes de marcar el servicio como unhealthy
+      retries: 10
+
+  # Contenedor de la aplicación Django
+  web:
+    # Construye la imagen usando el Dockerfile del proyecto
+    build: .
+    # Corre las migraciones y luego levanta el servidor de desarrollo
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    # Sincroniza la carpeta del proyecto con /app dentro del contenedor
+    volumes:
+      - .:/app
+    # Mapea el puerto 8000 del computador al 8000 del contenedor
+    ports:
+      - "8000:8000"
+    # Espera a que db pase el healthcheck antes de iniciar
+    depends_on:
+      db:
+        condition: service_healthy

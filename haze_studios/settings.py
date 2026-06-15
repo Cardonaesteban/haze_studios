@@ -56,14 +56,14 @@ WSGI_APPLICATION = 'haze_studios.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'haze_studios',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',
+        'NAME': 'haze_db',
+        'USER': 'haze_user',
+        'PASSWORD': 'haze1234',
+        'HOST': 'db',
         'PORT': '3306',
     }
 }
-
+    
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
