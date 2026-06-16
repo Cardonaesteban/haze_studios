@@ -1,78 +1,75 @@
+## 🚀 Instalación y uso
 
-## Instalación y uso
+### 🐳 Con Docker (recomendado)
 
-### 1. Instalar dependencias
+**Requisito:** tener [Docker Desktop](https://www.docker.com/products/docker-desktop) instalado.
+
+1. Clona el repositorio
 ```bash
-pip install -r requirements.txt
+   git clone https://github.com/Cardonaesteban/haze_studios
+   cd haze-studios
 ```
 
-### 2. Configurar base de datos
- MySQL 
-En `haze_studios/settings.py`, descomenta el bloque MySQL y comenta el de SQLite:
-```python
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'haze_studios',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '3306',
-    }
-}
-```
-Luego instala el driver: `pip install mysqlclient`
-
-### 3. Aplicar migraciones
+2. Levanta los contenedores
 ```bash
-python manage.py migrate
+   docker-compose up --build
 ```
 
-### 4. Crear superusuario (login del admin)
+3. Abre el navegador en `http://localhost:8000`
+
+> La primera vez puede tardar unos minutos mientras Docker descarga las imágenes y aplica las migraciones automáticamente.
+
+#### Detener el proyecto
 ```bash
-python manage.py createsuperuser
+docker-compose down
 ```
-
-### 5. Correr el servidor
-```bash
-python manage.py runserver
-```
-
-Accede en: **http://127.0.0.1:8000/**
 
 ---
 
+### 🐍 Sin Docker (manual)
 
-## Iniciar en otro pc con rol admin
+**Requisitos:** Python 3.12 y MySQL instalados.
 
-Despues de clonar el proyecto ejecutar en la terminal:
+1. Clona el repositorio
+```bash
+   git clone https://github.com/Cardonaesteban/haze_studios
+   cd haze-studios
+```
 
-py manage.py migrate
-py manage.py setup_inicial
-py manage.py runserver
+2. Crea y activa el entorno virtual
+```bash
+   python -m venv venv
+   venv\Scripts\activate
+```
 
-# Crear venv nuevo (Siempre nuevo)
+3. Instala las dependencias
+```bash
+   pip install -r requirements.txt
+```
 
-python -m venv venv
+4. Configura la base de datos en `haze_studios/settings.py`
+```python
+   DATABASES = {
+       'default': {
+           'ENGINE': 'django.db.backends.mysql',
+           'NAME': 'haze_db',
+           'USER': 'haze_user',
+           'PASSWORD': 'haze1234',
+           'HOST': 'localhost',
+           'PORT': '3306',
+       }
+   }
+```
 
-Activarlo
+5. Aplica las migraciones y carga los datos iniciales
+```bash
+   python manage.py migrate
+   python manage.py setup_inicial
+```
 
-venv\Scripts\activate
+6. Corre el servidor
+```bash
+   python manage.py runserver
+```
 
-Instalar todo el proyecto
-
-pip install -r requirements.txt
-
-Migrar base de datos
-
-python manage.py migrate
-
-# Iniciar en otro pc
-Instalar MariaDB 11.4 
-Copiar el proyecto — con git o copiando la carpeta
-Recrear el venv e instalar dependencias:
-
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-python manage.py migrate
+7. Abre el navegador en `http://127.0.0.1:8000`
