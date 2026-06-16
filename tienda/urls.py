@@ -10,7 +10,7 @@ urlpatterns = [
     path('inicio/', views.inicio, name='tienda_inicio'),
     path('', views.inicio, name='tienda_inicio'),  # Redirige la raíz de la tienda al inicio
 
-#     #Productos tienda
+#     #Productos tienda (vistas hechas) 
 #     path('productos/', views.productos, name='tienda_productos'),
 #     path('productos/<int:pk>/', views.producto_detalle, name='tienda_producto_detalle'),
 

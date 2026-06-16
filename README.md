@@ -14,6 +14,10 @@
 ```bash
    docker-compose up --build
 ```
+## Si da error usar:
+'''bash
+    docker compose up
+'''
 
 3. Abre el navegador en `http://localhost:8000`
 
