@@ -98,7 +98,7 @@ def usuarios_eliminar(request, pk):
         return redirect('usuarios_list')
     return render(request, 'dashboard/confirmar_eliminar.html', {'objeto': cliente, 'tipo': 'usuario'})
 
-@admin_required
+@login_required
 def usuarios_toggle_estado(request, pk):
     cliente = get_object_or_404(Cliente, pk=pk)
     cliente.toggle_estado()
@@ -110,12 +110,12 @@ def usuarios_toggle_estado(request, pk):
 # PRODUCTOS
 # ──────────────────────────────────────────────
 
-@admin_required
+@login_required
 def productos_list(request):
     productos = Producto.objects.select_related('categoria', 'proveedor', 'disenador').all()
     return render(request, 'dashboard/productos/list.html', {'productos': productos})
 
-@admin_required
+@login_required
 def productos_crear(request):
     form = ProductoForm(request.POST or None)
     if form.is_valid():
@@ -131,7 +131,7 @@ def productos_crear(request):
         return redirect('productos_list')
     return render(request, 'dashboard/productos/form.html', {'form': form, 'titulo': 'Registrar producto'})
 
-@admin_required
+@login_required
 def productos_editar(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
     stock_anterior = producto.stock
@@ -153,7 +153,7 @@ def productos_editar(request, pk):
         return redirect('productos_list')
     return render(request, 'dashboard/productos/form.html', {'form': form, 'titulo': 'Editar producto', 'objeto': producto})
 
-@admin_required
+@login_required
 def productos_eliminar(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
     if request.method == 'POST':
@@ -162,7 +162,7 @@ def productos_eliminar(request, pk):
         return redirect('productos_list')
     return render(request, 'dashboard/confirmar_eliminar.html', {'objeto': producto, 'tipo': 'producto'})
 
-@admin_required
+@login_required
 def productos_toggle_estado(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
     producto.toggle_estado()
@@ -174,7 +174,7 @@ def productos_toggle_estado(request, pk):
 # MOVIMIENTOS DE STOCK  (Stock reemplaza a Inventario)
 # ──────────────────────────────────────────────
 
-@admin_required
+@login_required
 def stock_list(request):
     movimientos = MovimientoStock.objects.select_related('producto', 'usuario', 'pedido').all()
     productos = Producto.objects.filter(estado='activo').order_by('nombre')
@@ -183,7 +183,7 @@ def stock_list(request):
         'productos': productos,
     })
 
-@admin_required
+@login_required
 def stock_entrada(request):
     form = MovimientoStockForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
@@ -204,7 +204,7 @@ def stock_entrada(request):
         'form': form, 'titulo': 'Registrar Entrada de Stock', 'tipo': 'entrada'
     })
 
-@admin_required
+@login_required
 def stock_salida(request):
     form = MovimientoStockForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
@@ -230,7 +230,7 @@ def stock_salida(request):
         'form': form, 'titulo': 'Registrar Salida de Stock', 'tipo': 'salida'
     })
 
-@admin_required
+@login_required
 def stock_ajuste(request):
     form = MovimientoStockForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
@@ -257,12 +257,12 @@ def stock_ajuste(request):
 # CATEGORÍAS
 # ──────────────────────────────────────────────
 
-@admin_required
+@login_required
 def categorias_list(request):
     categorias = Categoria.objects.all()
     return render(request, 'dashboard/categorias/list.html', {'categorias': categorias})
 
-@admin_required
+@login_required
 def categorias_crear(request):
     form = CategoriaForm(request.POST or None)
     if form.is_valid():
@@ -271,7 +271,7 @@ def categorias_crear(request):
         return redirect('categorias_list')
     return render(request, 'dashboard/categorias/form.html', {'form': form, 'titulo': 'Registrar categoría'})
 
-@admin_required
+@login_required
 def categorias_editar(request, pk):
     categoria = get_object_or_404(Categoria, pk=pk)
     form = CategoriaForm(request.POST or None, instance=categoria)
@@ -281,7 +281,7 @@ def categorias_editar(request, pk):
         return redirect('categorias_list')
     return render(request, 'dashboard/categorias/form.html', {'form': form, 'titulo': 'Editar categoría', 'objeto': categoria})
 
-@admin_required
+@login_required
 def categorias_eliminar(request, pk):
     categoria = get_object_or_404(Categoria, pk=pk)
     if request.method == 'POST':
@@ -295,12 +295,12 @@ def categorias_eliminar(request, pk):
 # PEDIDOS
 # ──────────────────────────────────────────────
 
-@admin_required
+@login_required
 def pedidos_list(request):
     pedidos = Pedido.objects.select_related('cliente').prefetch_related('detalles__producto').all()
     return render(request, 'dashboard/pedidos/list.html', {'pedidos': pedidos})
 
-@admin_required
+@login_required
 def pedidos_crear(request):
     form = PedidoForm(request.POST or None)
     formset = DetallePedidoFormSet(request.POST or None)
@@ -337,7 +337,7 @@ def pedidos_crear(request):
         'form': form, 'formset': formset, 'titulo': 'Registrar pedido'
     })
 
-@admin_required
+@login_required
 def pedidos_editar(request, pk):
     pedido = get_object_or_404(Pedido, pk=pk)
     form = PedidoForm(request.POST or None, instance=pedido)
@@ -353,7 +353,7 @@ def pedidos_editar(request, pk):
         'form': form, 'formset': formset, 'titulo': 'Editar pedido', 'objeto': pedido
     })
 
-@admin_required
+@login_required
 def pedidos_eliminar(request, pk):
     pedido = get_object_or_404(Pedido, pk=pk)
     if request.method == 'POST':
@@ -362,14 +362,14 @@ def pedidos_eliminar(request, pk):
         return redirect('pedidos_list')
     return render(request, 'dashboard/confirmar_eliminar.html', {'objeto': pedido, 'tipo': 'pedido'})
 
-@admin_required
+@login_required
 def pedidos_toggle_estado(request, pk):
     pedido = get_object_or_404(Pedido, pk=pk)
     pedido.toggle_estado()
     messages.success(request, f'Estado del pedido #{pedido.pk} cambiado a {pedido.estado}.')
     return redirect('pedidos_list')
 
-@admin_required
+@login_required
 def pedidos_detalle(request, pk):
     pedido = get_object_or_404(Pedido, pk=pk)
     detalles = pedido.detalles.select_related('producto').all()
@@ -382,12 +382,12 @@ def pedidos_detalle(request, pk):
 # PROVEEDORES
 # ──────────────────────────────────────────────
 
-@admin_required
+@login_required
 def proveedores_list(request):
     proveedores = Proveedor.objects.all()
     return render(request, 'dashboard/proveedores/list.html', {'proveedores': proveedores})
 
-@admin_required
+@login_required
 def proveedores_crear(request):
     form = ProveedorForm(request.POST or None)
     if form.is_valid():
@@ -396,7 +396,7 @@ def proveedores_crear(request):
         return redirect('proveedores_list')
     return render(request, 'dashboard/proveedores/form.html', {'form': form, 'titulo': 'Registrar proveedor'})
 
-@admin_required
+@login_required
 def proveedores_editar(request, pk):
     proveedor = get_object_or_404(Proveedor, pk=pk)
     form = ProveedorForm(request.POST or None, instance=proveedor)
@@ -406,7 +406,7 @@ def proveedores_editar(request, pk):
         return redirect('proveedores_list')
     return render(request, 'dashboard/proveedores/form.html', {'form': form, 'titulo': 'Editar proveedor', 'objeto': proveedor})
 
-@admin_required
+@login_required
 def proveedores_eliminar(request, pk):
     proveedor = get_object_or_404(Proveedor, pk=pk)
     if request.method == 'POST':
@@ -420,12 +420,12 @@ def proveedores_eliminar(request, pk):
 # DISEÑADORES
 # ──────────────────────────────────────────────
 
-@admin_required
+@login_required
 def disenadores_list(request):
     disenadores = Disenador.objects.all()
     return render(request, 'dashboard/disenadores/list.html', {'disenadores': disenadores})
 
-@admin_required
+@login_required
 def disenadores_crear(request):
     form = DisenadorForm(request.POST or None)
     if form.is_valid():
@@ -434,7 +434,7 @@ def disenadores_crear(request):
         return redirect('disenadores_list')
     return render(request, 'dashboard/disenadores/form.html', {'form': form, 'titulo': 'Registrar diseñador'})
 
-@admin_required
+@login_required
 def disenadores_editar(request, pk):
     disenador = get_object_or_404(Disenador, pk=pk)
     form = DisenadorForm(request.POST or None, instance=disenador)
@@ -444,7 +444,7 @@ def disenadores_editar(request, pk):
         return redirect('disenadores_list')
     return render(request, 'dashboard/disenadores/form.html', {'form': form, 'titulo': 'Editar diseñador', 'objeto': disenador})
 
-@admin_required
+@login_required
 def disenadores_eliminar(request, pk):
     disenador = get_object_or_404(Disenador, pk=pk)
     if request.method == 'POST':
@@ -458,12 +458,12 @@ def disenadores_eliminar(request, pk):
 # ROLES
 # ──────────────────────────────────────────────
 
-@admin_required
+@login_required
 def roles_list(request):
     roles = Rol.objects.prefetch_related('permisos', 'usuarios').all()
     return render(request, 'dashboard/roles/list.html', {'roles': roles})
 
-@admin_required
+@login_required
 def roles_crear(request):
     form = RolForm(request.POST or None)
     if form.is_valid():
@@ -472,7 +472,7 @@ def roles_crear(request):
         return redirect('roles_list')
     return render(request, 'dashboard/roles/form.html', {'form': form, 'titulo': 'Crear rol'})
 
-@admin_required
+@login_required
 def roles_editar(request, pk):
     rol = get_object_or_404(Rol, pk=pk)
     form = RolForm(request.POST or None, instance=rol)
@@ -482,7 +482,7 @@ def roles_editar(request, pk):
         return redirect('roles_list')
     return render(request, 'dashboard/roles/form.html', {'form': form, 'titulo': 'Editar rol', 'objeto': rol})
 
-@admin_required
+@login_required
 def roles_eliminar(request, pk):
     rol = get_object_or_404(Rol, pk=pk)
     if request.method == 'POST':
@@ -501,12 +501,12 @@ def roles_toggle_estado(request, pk):
 # PERMISOS
 # ──────────────────────────────────────────────
 
-@admin_required
+@login_required
 def permisos_list(request):
     permisos = Permiso.objects.prefetch_related('roles').all()
     return render(request, 'dashboard/permisos/list.html', {'permisos': permisos})
 
-@admin_required
+@login_required
 def permisos_crear(request):
     form = PermisoForm(request.POST or None)
     if form.is_valid():
@@ -515,7 +515,7 @@ def permisos_crear(request):
         return redirect('permisos_list')
     return render(request, 'dashboard/permisos/form.html', {'form': form, 'titulo': 'Crear permiso'})
 
-@admin_required
+@login_required
 def permisos_editar(request, pk):
     permiso = get_object_or_404(Permiso, pk=pk)
     form = PermisoForm(request.POST or None, instance=permiso)
@@ -525,7 +525,7 @@ def permisos_editar(request, pk):
         return redirect('permisos_list')
     return render(request, 'dashboard/permisos/form.html', {'form': form, 'titulo': 'Editar permiso', 'objeto': permiso})
 
-@admin_required
+@login_required
 def permisos_eliminar(request, pk):
     permiso = get_object_or_404(Permiso, pk=pk)
     if request.method == 'POST':
@@ -539,12 +539,12 @@ def permisos_eliminar(request, pk):
 # USUARIOS DASHBOARD (Django User)
 # ──────────────────────────────────────────────
 
-@admin_required
+@login_required
 def dashboard_users_list(request):
     users = User.objects.prefetch_related('perfil__rol').all()
     return render(request, 'dashboard/dashboard_users/list.html', {'users': users})
 
-@admin_required
+@login_required
 def dashboard_users_crear(request):
     form = UsuarioDashboardForm(request.POST or None)
     if form.is_valid():
@@ -553,7 +553,7 @@ def dashboard_users_crear(request):
         return redirect('dashboard_users_list')
     return render(request, 'dashboard/dashboard_users/form.html', {'form': form, 'titulo': 'Crear usuario dashboard'})
 
-@admin_required
+@login_required
 def dashboard_users_editar(request, pk):
     user = get_object_or_404(User, pk=pk)
     perfil, _ = PerfilUsuario.objects.get_or_create(user=user)
@@ -566,7 +566,7 @@ def dashboard_users_editar(request, pk):
         'form': form, 'titulo': 'Editar usuario dashboard', 'objeto': user
     })
 
-@admin_required
+@login_required
 def dashboard_users_eliminar(request, pk):
     user = get_object_or_404(User, pk=pk)
     if user == request.user:
@@ -578,7 +578,7 @@ def dashboard_users_eliminar(request, pk):
         return redirect('dashboard_users_list')
     return render(request, 'dashboard/confirmar_eliminar.html', {'objeto': user, 'tipo': 'usuario dashboard'})
 
-@admin_required
+@login_required
 def dashboard_users_asignar_rol(request, pk):
     user = get_object_or_404(User, pk=pk)
     perfil, _ = PerfilUsuario.objects.get_or_create(user=user)

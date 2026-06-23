@@ -34,7 +34,7 @@ Proyecto en desarrollo como parte del proceso de formación en Análisis y Desar
 
 ###  Con Docker (recomendado)
 
-**Requisito:** tener [Docker Desktop](https://www.docker.com/products/docker-desktop) instalado.
+**Requisito:** tener [Docker Desktop] instalado.
 
 1. Clona el repositorio
 ```bash
@@ -42,7 +42,7 @@ Proyecto en desarrollo como parte del proceso de formación en Análisis y Desar
    cd haze-studios
 ```
 
-2. Levanta los contenedores
+1. Levanta los contenedores
 ```bash
    docker-compose up --build
 ```
@@ -51,7 +51,7 @@ Proyecto en desarrollo como parte del proceso de formación en Análisis y Desar
     docker compose up
 '''
 
-3. Abre el navegador en `http://localhost:8000`
+1. Abre el navegador en `http://localhost:8000`
 
 > La primera vez puede tardar unos minutos mientras Docker descarga las imágenes y aplica las migraciones automáticamente.
 

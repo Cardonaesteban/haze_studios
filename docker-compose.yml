@@ -14,6 +14,9 @@ services:
     # Mapea el puerto 3307 del computador al 3306 del contenedor
     ports:
       - "3307:3306"
+    # Persiste los datos de MySQL entre reinicios
+    volumes:
+      - mysql_data:/var/lib/mysql
     # Verifica que MySQL esté listo antes de que web se conecte
     healthcheck:
       # Comando que prueba si MySQL acepta conexiones
@@ -41,3 +44,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
+# Define los volúmenes para persistir datos
+volumes:
+  mysql_data:
