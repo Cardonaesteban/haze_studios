@@ -7,7 +7,7 @@ Descripción
 Haze Studios es una plataforma orientada a la administración de procesos internos de una empresa de moda. El sistema busca centralizar la gestión de productos, inventarios, clientes, proveedores, compras y ventas en una única aplicación web.
 
 
-Funcionalidades actuales
+# Funcionalidades actuales:
 Gestión de productos
 Gestión de categorías
 Gestión de clientes
@@ -17,7 +17,7 @@ Administración de ventas
 Panel administrativo
 
 
-Tecnologías utilizadas
+#: Tecnologías utilizadas
 Python
 Django
 MariaDB
