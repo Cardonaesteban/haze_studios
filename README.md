@@ -1,6 +1,39 @@
-## 🚀 Instalación y uso
+Haze Studios
 
-### 🐳 Con Docker (recomendado)
+Sistema web desarrollado con Django para la gestión integral de una marca de ropa.
+
+Descripción
+
+Haze Studios es una plataforma orientada a la administración de procesos internos de una empresa de moda. El sistema busca centralizar la gestión de productos, inventarios, clientes, proveedores, compras y ventas en una única aplicación web.
+
+
+Funcionalidades actuales
+Gestión de productos
+Gestión de categorías
+Gestión de clientes
+Gestión de proveedores
+Gestión de inventario
+Administración de ventas
+Panel administrativo
+
+
+Tecnologías utilizadas
+Python
+Django
+MariaDB
+HTML
+CSS
+Git
+GitHub
+Docker
+Estado del proyecto
+
+Proyecto en desarrollo como parte del proceso de formación en Análisis y Desarrollo de Software.
+
+
+##  Instalación y uso
+
+###  Con Docker (recomendado)
 
 **Requisito:** tener [Docker Desktop](https://www.docker.com/products/docker-desktop) instalado.
 
@@ -30,7 +63,7 @@ docker-compose down
 
 ---
 
-### 🐍 Sin Docker (manual)
+### Sin Docker (manual)
 
 **Requisitos:** Python 3.12 y MySQL instalados.
 
