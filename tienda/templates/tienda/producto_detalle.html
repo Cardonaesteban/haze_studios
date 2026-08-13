@@ -1,0 +1,165 @@
+{% extends "tienda/base_tienda.html" %}
+{% load static %}
+
+{% block title %}{{ producto.nombre }} | Haze Studios Oversize{% endblock %}
+
+{% block content %}
+<!-- BREADCRUMB EN ESPAÑOL -->
+<div style="margin-bottom:1.5rem;font-size:0.85rem;color:var(--gris-500);">
+    <a href="{% url 'tienda_inicio' %}" style="color:var(--gris-600);text-decoration:none;font-weight:600;">Inicio</a> /
+    <a href="{% url 'tienda_productos' %}" style="color:var(--gris-600);text-decoration:none;font-weight:600;">Colección</a> /
+    {% if producto.categoria %}
+    <a href="{% url 'tienda_productos' %}?categoria={{ producto.categoria.pk }}" style="color:var(--gris-600);text-decoration:none;font-weight:600;">{{ producto.categoria.nombre }}</a> /
+    {% endif %}
+    <span style="color:var(--gris-900);font-weight:800;">{{ producto.nombre }}</span>
+</div>
+
+<!-- DETALLE PRINCIPAL -->
+<div class="detail-grid">
+    <!-- IMAGEN REAL EN ALTA RESOLUCIÓN -->
+    <div class="detail-preview">
+        <span class="badge-oversize" style="top:18px;left:18px;">CORTE OVERSIZE</span>
+        <img src="{% static producto.get_imagen_url %}" alt="{{ producto.nombre }}" class="detail-real-img">
+    </div>
+
+    <!-- INFORMACIÓN DE COMPRA -->
+    <div>
+        <span class="badge badge-entrada" style="background:#E0F2FE;color:#0369A1;font-size:0.75rem;padding:0.35rem 0.85rem;border-radius:999px;font-weight:700;">
+            HAZE ESENCIALES OVERSIZE
+        </span>
+
+        <h1 style="font-size:2rem;font-weight:900;margin:0.75rem 0 0.5rem;color:var(--gris-900);">
+            {{ producto.nombre }}
+        </h1>
+
+        <div style="display:flex;gap:1.25rem;align-items:center;margin-bottom:1.5rem;">
+            <div style="font-size:2rem;font-weight:900;color:var(--gris-900);">
+                ${{ producto.precio }}
+            </div>
+            {% if producto.stock > 0 %}
+                {% if producto.stock <= producto.stock_minimo %}
+                    <span class="badge badge-pendiente">¡Últimas {{ producto.stock }} unidades disponibles!</span>
+                {% else %}
+                    <span class="badge badge-entrada">Disponible en bodega ({{ producto.stock }} unidades)</span>
+                {% endif %}
+            {% else %}
+                <span class="badge badge-salida">Agotado temporalmente</span>
+            {% endif %}
+        </div>
+
+        <p style="color:var(--gris-600);font-size:0.95rem;line-height:1.6;margin-bottom:1.5rem;">
+            {{ producto.descripcion|default:"Confeccionada con silueta oversize amplia, hombros caídos y tela pesada de algodón para ofrecer una caída estructurada y máxima comodidad urbana." }}
+        </p>
+
+        {% if producto.stock > 0 %}
+        <!-- FORMULARIO DE COMPRA -->
+        <form method="post" action="{% url 'tienda_agregar_carrito' producto.pk %}">
+            {% csrf_token %}
+            
+            <div style="margin-bottom:1.5rem;">
+                <label style="font-weight:800;font-size:0.88rem;color:var(--gris-800);display:block;margin-bottom:0.5rem;">
+                    Selecciona tu Talla Oversize:
+                </label>
+                <div class="size-selector">
+                    <input type="radio" name="talla" id="size_s" value="S (Oversize)" class="size-radio">
+                    <label for="size_s" class="size-label">S</label>
+
+                    <input type="radio" name="talla" id="size_m" value="M (Oversize)" class="size-radio">
+                    <label for="size_m" class="size-label">M</label>
+
+                    <input type="radio" name="talla" id="size_l" value="L (Oversize)" class="size-radio" checked>
+                    <label for="size_l" class="size-label">L</label>
+
+                    <input type="radio" name="talla" id="size_xl" value="XL (Oversize)" class="size-radio">
+                    <label for="size_xl" class="size-label">XL</label>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:1rem;align-items:flex-end;margin-bottom:1.75rem;">
+                <div>
+                    <label style="font-weight:800;font-size:0.88rem;color:var(--gris-800);display:block;margin-bottom:0.5rem;">
+                        Cantidad:
+                    </label>
+                    <div class="qty-controller">
+                        <button type="button" class="qty-btn" onclick="let input = document.getElementById('prod_qty'); if(parseInt(input.value) > 1) input.value = parseInt(input.value) - 1;">−</button>
+                        <input type="number" name="cantidad" id="prod_qty" value="1" min="1" max="{{ producto.stock }}" required class="qty-input">
+                        <button type="button" class="qty-btn" onclick="let input = document.getElementById('prod_qty'); if(parseInt(input.value) < {{ producto.stock }}) input.value = parseInt(input.value) + 1;">+</button>
+                    </div>
+                </div>
+                <div style="flex:1;">
+                    <button type="submit" class="btn btn-primary" style="width:100%;padding:0.85rem;font-size:1rem;">
+                        Añadir al Carrito
+                    </button>
+                </div>
+            </div>
+        </form>
+        {% else %}
+        <div class="alert alert-warning" style="margin-top:1.5rem;">
+            <strong>Prenda agotada:</strong> Esta prenda no tiene unidades en este momento. Revisa más tarde cuando se reponga el inventario.
+        </div>
+        {% endif %}
+
+        <!-- PESTAÑAS INFORMATIVAS INTERACTIVAS -->
+        <div class="tab-container">
+            <div class="tab-header">
+                <button type="button" class="tab-trigger active" onclick="switchTab(event, 'tab-guia')">Guía de Calce y Medidas</button>
+                <button type="button" class="tab-trigger" onclick="switchTab(event, 'tab-detalles')">Detalles y Confección</button>
+                <button type="button" class="tab-trigger" onclick="switchTab(event, 'tab-envios')">Envíos y Despachos</button>
+            </div>
+
+            <div id="tab-guia" class="tab-panel active">
+                <p>Nuestras prendas cuentan con un <strong>corte oversize intencional</strong> con hombros caídos y torso amplio. Si buscas un calce holgado tradicional de moda urbana, te recomendamos pedir tu talla habitual. Si prefieres un ajuste más entallado, elige una talla menos.</p>
+            </div>
+
+            <div id="tab-detalles" class="tab-panel">
+                <p>• 100% Algodón de alto gramaje preencogido.</p>
+                <p>• Cuello reforzado y costuras dobles de alta resistencia.</p>
+                {% if producto.categoria %}<p>• Categoría: {{ producto.categoria.nombre }}</p>{% endif %}
+                {% if producto.disenador %}<p>• Diseñado por: {{ producto.disenador.nombre }}</p>{% endif %}
+            </div>
+
+            <div id="tab-envios" class="tab-panel">
+                <p>• Despachos a nivel nacional con número de seguimiento.</p>
+                <p>• El tiempo estimado de entrega es de 2 a 4 días hábiles según la ciudad de destino.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PRENDAS RELACIONADAS -->
+{% if productos_relacionados %}
+<div style="margin-top:4rem;">
+    <h3 style="font-size:1.35rem;font-weight:900;color:var(--gris-900);margin-bottom:1.5rem;">
+        Prendas similares que te pueden gustar
+    </h3>
+    <div class="product-grid">
+        {% for rel in productos_relacionados %}
+        <div class="product-card">
+            <div class="product-card-img" style="height:220px;">
+                <span class="badge-oversize">CORTE OVERSIZE</span>
+                <img src="{% static rel.get_imagen_url %}" alt="{{ rel.nombre }}" class="product-card-real-img" loading="lazy">
+            </div>
+            <div class="product-card-body">
+                <a href="{% url 'tienda_producto_detalle' rel.pk %}" class="product-title">{{ rel.nombre }}</a>
+                <div class="product-price">${{ rel.precio }}</div>
+                <div class="product-card-actions">
+                    <a href="{% url 'tienda_producto_detalle' rel.pk %}" class="btn btn-primary btn-sm" style="width:100%;padding:0.65rem;">
+                        Ver Prenda
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<script>
+function switchTab(evt, tabId) {
+    document.querySelectorAll('.tab-trigger').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    evt.currentTarget.classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+}
+</script>
+{% endblock %}

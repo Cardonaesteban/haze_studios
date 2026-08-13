@@ -1,0 +1,257 @@
+{% extends "tienda/base_tienda.html" %}
+{% load static %}
+
+{% block title %}Catálogo de Ropa Oversize | Haze Studios{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom:1rem;">
+    <div>
+        <h1 class="tienda-page-title">Catálogo de Prendas Oversize</h1>
+        <p class="tienda-page-subtitle">Explora nuestra selección completa de hoodies, camisetas pesadas boxy fit y prendas exclusivas.</p>
+    </div>
+</div>
+
+<!-- BARRA COMPACTA DE HERRAMIENTAS Y BÚSQUEDA -->
+<div class="catalog-toolbar-compact">
+    <div class="toolbar-left-group">
+        <!-- BUSCADOR COMPACTO INTEGRADO -->
+        <form method="get" action="{% url 'tienda_productos' %}" style="display:flex;flex:1;max-width:380px;align-items:center;gap:0.4rem;">
+            {% if categoria_seleccionada %}<input type="hidden" name="categoria" value="{{ categoria_seleccionada }}">{% endif %}
+            {% if rango_precio %}<input type="hidden" name="rango_precio" value="{{ rango_precio }}">{% endif %}
+            {% if solo_disponibles %}<input type="hidden" name="disponibles" value="1">{% endif %}
+            {% if orden %}<input type="hidden" name="orden" value="{{ orden }}">{% endif %}
+
+            <div class="search-input-compact-wrap">
+                <svg class="search-icon-compact" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input type="text" name="q" value="{{ query }}" placeholder="Buscar prenda (ej. Hoodie, Boxy)..." class="search-input-compact">
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm" style="padding:0.45rem 0.9rem;font-size:0.8rem;">Buscar</button>
+        </form>
+
+        <!-- BOTÓN DESPLEGABLE DE FILTROS -->
+        <button type="button" class="btn-filter-toggle {% if categoria_seleccionada or rango_precio or solo_disponibles %}active{% endif %}" id="btnFilterToggle" onclick="toggleFilterDrawer();">
+            <svg style="width:14px;height:14px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            <span>Filtros</span>
+            {% if categoria_seleccionada or rango_precio or solo_disponibles %}
+            <span class="filter-active-count">
+                {% if categoria_seleccionada and rango_precio and solo_disponibles %}3
+                {% elif categoria_seleccionada and rango_precio or categoria_seleccionada and solo_disponibles or rango_precio and solo_disponibles %}2
+                {% else %}1{% endif %}
+            </span>
+            {% endif %}
+            <span id="filterChevron" style="font-size:0.75rem;margin-left:0.15rem;">▾</span>
+        </button>
+    </div>
+
+    <!-- ORDENAMIENTO Y CONTEO -->
+    <div style="display:flex;align-items:center;gap:0.75rem;">
+        <span style="font-size:0.8rem;font-weight:700;color:var(--gris-500);display:none;sm:inline;">
+            {{ productos.count }} prenda(s)
+        </span>
+        <form method="get" id="orderForm">
+            {% if categoria_seleccionada %}<input type="hidden" name="categoria" value="{{ categoria_seleccionada }}">{% endif %}
+            {% if rango_precio %}<input type="hidden" name="rango_precio" value="{{ rango_precio }}">{% endif %}
+            {% if solo_disponibles %}<input type="hidden" name="disponibles" value="1">{% endif %}
+            {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+
+            <select name="orden" onchange="document.getElementById('orderForm').submit();" style="padding:0.35rem 0.75rem;border-radius:var(--border-radius-md);font-size:0.82rem;font-weight:700;border:1.5px solid var(--gris-200);background:#F8FAFC;">
+                <option value="recientes" {% if orden == 'recientes' %}selected{% endif %}>Recientes</option>
+                <option value="precio_asc" {% if orden == 'precio_asc' %}selected{% endif %}>Precio: Menor a Mayor</option>
+                <option value="precio_desc" {% if orden == 'precio_desc' %}selected{% endif %}>Precio: Mayor a Menor</option>
+                <option value="nombre" {% if orden == 'nombre' %}selected{% endif %}>Nombre A-Z</option>
+            </select>
+        </form>
+    </div>
+</div>
+
+<!-- PANEL COLAPSABLE DE FILTROS COMPACTOS -->
+<div class="filter-drawer-panel {% if categoria_seleccionada or rango_precio or solo_disponibles %}open{% endif %}" id="filterDrawer">
+    <form method="get" action="{% url 'tienda_productos' %}" id="mainFilterForm">
+        {% if orden %}<input type="hidden" name="orden" value="{{ orden }}">{% endif %}
+        {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+        <input type="hidden" name="categoria" id="input_categoria" value="{{ categoria_seleccionada|default:'' }}">
+        <input type="hidden" name="rango_precio" id="input_rango_precio" value="{{ rango_precio|default:'' }}">
+        <input type="hidden" name="disponibles" id="input_disponibles" value="{% if solo_disponibles %}1{% endif %}">
+
+        <div class="filter-compact-grid">
+            <!-- CATEGORÍAS COMPACTAS -->
+            <div>
+                <div class="filter-compact-title">Categorías de Prenda</div>
+                <div class="pills-group-compact">
+                    <button type="button" class="pill-compact-btn {% if not categoria_seleccionada %}active{% endif %}" onclick="setCompactFilter('input_categoria', '', this);">
+                        Todas <span class="pill-count-badge">{{ total_prendas_global }}</span>
+                    </button>
+                    {% for cat in categorias %}
+                    <button type="button" class="pill-compact-btn {% if categoria_seleccionada == cat.pk %}active{% endif %}" onclick="setCompactFilter('input_categoria', '{{ cat.pk }}', this);">
+                        {{ cat.nombre }} <span class="pill-count-badge">{{ cat.total_prods }}</span>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- PRECIO Y STOCK -->
+            <div>
+                <div class="filter-compact-title">Rango de Precio</div>
+                <div class="pills-group-compact">
+                    <button type="button" class="pill-compact-btn {% if not rango_precio %}active{% endif %}" onclick="setCompactFilter('input_rango_precio', '', this);">
+                        Todos
+                    </button>
+                    <button type="button" class="pill-compact-btn {% if rango_precio == 'menos_100' %}active{% endif %}" onclick="setCompactFilter('input_rango_precio', 'menos_100', this);">
+                        < $100.000
+                    </button>
+                    <button type="button" class="pill-compact-btn {% if rango_precio == '100_180' %}active{% endif %}" onclick="setCompactFilter('input_rango_precio', '100_180', this);">
+                        $100k - $180k
+                    </button>
+                    <button type="button" class="pill-compact-btn {% if rango_precio == 'mas_180' %}active{% endif %}" onclick="setCompactFilter('input_rango_precio', 'mas_180', this);">
+                        > $180.000
+                    </button>
+                </div>
+
+                <div style="margin-top:0.75rem;">
+                    <button type="button" class="availability-pill-compact {% if solo_disponibles %}active{% endif %}" onclick="toggleCompactAvailability(this);">
+                        <span style="font-size:0.85rem;">{% if solo_disponibles %}✓{% else %}○{% endif %}</span>
+                        <span>Solo en inventario</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top:1rem;display:flex;justify-content:flex-end;gap:0.5rem;padding-top:0.75rem;border-top:1px solid var(--gris-200);">
+            {% if categoria_seleccionada or rango_precio or solo_disponibles %}
+            <a href="{% url 'tienda_productos' %}{% if query %}?q={{ query }}{% endif %}" class="btn btn-secondary btn-sm" style="padding:0.4rem 0.9rem;font-size:0.78rem;">
+                Restablecer
+            </a>
+            {% endif %}
+            <button type="submit" class="btn btn-primary btn-sm" style="padding:0.4rem 1.25rem;font-size:0.78rem;">
+                Aplicar Filtros
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- ETIQUETAS DE FILTROS ACTIVOS (TAGS) -->
+{% if query or categoria_seleccionada or rango_precio or solo_disponibles %}
+<div class="active-filters-row">
+    <span style="font-size:0.75rem;font-weight:800;color:var(--gris-500);">Filtros activos:</span>
+
+    {% if query %}
+    <span class="active-tag">
+        "{{ query }}"
+        <a href="{% url 'tienda_productos' %}?{% if categoria_seleccionada %}categoria={{ categoria_seleccionada }}&{% endif %}{% if rango_precio %}rango_precio={{ rango_precio }}&{% endif %}{% if solo_disponibles %}disponibles=1&{% endif %}{% if orden %}orden={{ orden }}{% endif %}">✕</a>
+    </span>
+    {% endif %}
+
+    {% if categoria_seleccionada %}
+    <span class="active-tag">
+        Categoría activa
+        <a href="{% url 'tienda_productos' %}?{% if query %}q={{ query }}&{% endif %}{% if rango_precio %}rango_precio={{ rango_precio }}&{% endif %}{% if solo_disponibles %}disponibles=1&{% endif %}{% if orden %}orden={{ orden }}{% endif %}">✕</a>
+    </span>
+    {% endif %}
+
+    {% if rango_precio %}
+    <span class="active-tag">
+        {% if rango_precio == 'menos_100' %}< $100k
+        {% elif rango_precio == '100_180' %}$100k - $180k
+        {% elif rango_precio == 'mas_180' %}> $180k{% endif %}
+        <a href="{% url 'tienda_productos' %}?{% if query %}q={{ query }}&{% endif %}{% if categoria_seleccionada %}categoria={{ categoria_seleccionada }}&{% endif %}{% if solo_disponibles %}disponibles=1&{% endif %}{% if orden %}orden={{ orden }}{% endif %}">✕</a>
+    </span>
+    {% endif %}
+
+    {% if solo_disponibles %}
+    <span class="active-tag">
+        En stock
+        <a href="{% url 'tienda_productos' %}?{% if query %}q={{ query }}&{% endif %}{% if categoria_seleccionada %}categoria={{ categoria_seleccionada }}&{% endif %}{% if rango_precio %}rango_precio={{ rango_precio }}&{% endif %}{% if orden %}orden={{ orden }}{% endif %}">✕</a>
+    </span>
+    {% endif %}
+
+    <a href="{% url 'tienda_productos' %}" style="font-size:0.75rem;color:var(--rojo);text-decoration:none;font-weight:700;margin-left:auto;">
+        Limpiar todos
+    </a>
+</div>
+{% endif %}
+
+<!-- GRID DE PRENDAS -->
+{% if productos %}
+<div class="product-grid">
+    {% for prod in productos %}
+    <div class="product-card">
+        <div class="product-card-img">
+            <span class="badge-oversize">CORTE OVERSIZE</span>
+            {% if prod.stock <= 0 %}
+                <span class="badge-stock-pill badge-salida">Agotado</span>
+            {% elif prod.stock <= prod.stock_minimo %}
+                <span class="badge-stock-pill badge-pendiente">Stock: {{ prod.stock }}</span>
+            {% else %}
+                <span class="badge-stock-pill badge-entrada">Disponible</span>
+            {% endif %}
+            <img src="{% static prod.get_imagen_url %}" alt="{{ prod.nombre }}" class="product-card-real-img" loading="lazy">
+        </div>
+        <div class="product-card-body">
+            <div class="product-category-tag">{{ prod.categoria.nombre|default:"Moda Urbana" }}</div>
+            <a href="{% url 'tienda_producto_detalle' prod.pk %}" class="product-title">{{ prod.nombre }}</a>
+            <p style="font-size:0.82rem;color:var(--gris-500);margin-bottom:0.75rem;line-height:1.45;">
+                {{ prod.descripcion|truncatewords:12|default:"Prenda corte oversize con confección pesada prémium." }}
+            </p>
+            <div class="product-price">${{ prod.precio }}</div>
+            <div class="product-card-actions">
+                <a href="{% url 'tienda_producto_detalle' prod.pk %}" class="btn btn-primary btn-sm" style="width:100%;padding:0.65rem;font-size:0.88rem;">
+                    {% if prod.stock > 0 %}Comprar / Ver Tallas{% else %}Ver Prenda{% endif %}
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="tienda-card" style="text-align:center;padding:4rem 2rem;">
+    <h2>No se encontraron prendas</h2>
+    <p style="color:var(--gris-500);margin:0.5rem 0 1.5rem;">
+        No hay prendas que coincidan con la combinación de filtros seleccionada.
+    </p>
+    <a href="{% url 'tienda_productos' %}" class="btn btn-primary" style="padding:0.8rem 2rem;">
+        Ver Todas las Prendas
+    </a>
+</div>
+{% endif %}
+
+<script>
+function toggleFilterDrawer() {
+    const drawer = document.getElementById('filterDrawer');
+    const btn = document.getElementById('btnFilterToggle');
+    const chevron = document.getElementById('filterChevron');
+    
+    if (drawer.classList.contains('open')) {
+        drawer.classList.remove('open');
+        btn.classList.remove('active');
+        chevron.textContent = '▾';
+    } else {
+        drawer.classList.add('open');
+        btn.classList.add('active');
+        chevron.textContent = '▴';
+    }
+}
+
+function setCompactFilter(inputId, value, btnElem) {
+    document.getElementById(inputId).value = value;
+    btnElem.parentElement.querySelectorAll('.pill-compact-btn').forEach(b => b.classList.remove('active'));
+    btnElem.classList.add('active');
+}
+
+function toggleCompactAvailability(btnElem) {
+    const input = document.getElementById('input_disponibles');
+    if (input.value === '1') {
+        input.value = '';
+        btnElem.classList.remove('active');
+        btnElem.querySelector('span').textContent = '○';
+    } else {
+        input.value = '1';
+        btnElem.classList.add('active');
+        btnElem.querySelector('span').textContent = '✓';
+    }
+}
+</script>
+{% endblock %}

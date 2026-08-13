@@ -46,6 +46,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'dashboard.context_processors.user_es_admin',
+                'tienda.context_processors.tienda_context',
             ],
         },
     },
@@ -63,7 +64,7 @@ DATABASES = {
         'PORT': '3306',
     }
 }
-    
+
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -84,3 +85,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
+
+DEFAULT_FROM_EMAIL = 'Haze Studios <noreply@hazestudios.com>'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

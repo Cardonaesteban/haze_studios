@@ -1,0 +1,102 @@
+{% extends "tienda/base_tienda.html" %}
+{% load static %}
+
+{% block title %}Pedido #{{ pedido.pk }} | Haze Studios{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <div style="font-size:0.85rem;color:var(--gris-500);margin-bottom:0.25rem;">
+            <a href="{% url 'tienda_mis_pedidos' %}" style="color:var(--gris-600);text-decoration:none;font-weight:600;">← Volver a mis pedidos</a>
+        </div>
+        <h1 class="tienda-page-title">Detalle de la Orden #{{ pedido.pk }}</h1>
+    </div>
+    <div>
+        <span class="badge badge-{{ pedido.estado }}" style="font-size:0.9rem;padding:0.45rem 1.25rem;font-weight:700;">
+            {{ pedido.get_estado_display }}
+        </span>
+    </div>
+</div>
+
+<div class="cart-wrap">
+    <!-- ARTÍCULOS COMPRADOS -->
+    <div class="tienda-card" style="padding:1.75rem;">
+        <h2 style="font-size:1.25rem;font-weight:900;color:var(--gris-900);margin-bottom:1.25rem;">
+            Prendas Adquiridas
+        </h2>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Prenda</th>
+                        <th>Cantidad</th>
+                        <th>Precio Unitario</th>
+                        <th>Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for det in detalles %}
+                    <tr>
+                        <td>
+                            <div class="table-product-cell">
+                                <img src="{% static det.producto.get_imagen_url %}" alt="{{ det.producto.nombre }}" class="table-product-thumb" style="width:44px;height:44px;">
+                                <strong style="color:var(--gris-900);">{{ det.producto.nombre }}</strong>
+                            </div>
+                        </td>
+                        <td style="font-weight:700;">{{ det.cantidad }}</td>
+                        <td style="font-weight:700;">${{ det.precio_unitario }}</td>
+                        <td style="font-weight:900;color:var(--gris-900);">${{ det.subtotal }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" style="text-align:right;font-weight:800;font-size:1rem;">Total:</td>
+                        <td style="font-weight:900;font-size:1.2rem;color:var(--gris-900);">${{ pedido.total }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- INFORMACIÓN DE ENVÍO -->
+    <div class="summary-card">
+        <h3 style="font-size:1.2rem;font-weight:900;color:var(--gris-900);margin-bottom:1.25rem;">
+            Datos del Pedido
+        </h3>
+
+        <div class="summary-row">
+            <span>Fecha de compra:</span>
+            <span style="font-weight:700;">{{ pedido.fecha_pedido|date:"d/m/Y" }}</span>
+        </div>
+
+        <div class="summary-row">
+            <span>Cliente:</span>
+            <span style="font-weight:700;">{{ pedido.cliente.nombre }} {{ pedido.cliente.apellido }}</span>
+        </div>
+
+        <div class="summary-row">
+            <span>Correo:</span>
+            <span style="font-weight:700;">{{ pedido.cliente.correo }}</span>
+        </div>
+
+        {% if pedido.notas %}
+        <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--gris-200);">
+            <div style="font-size:0.82rem;font-weight:800;color:var(--gris-800);margin-bottom:0.35rem;">
+                Dirección / Instrucciones:
+            </div>
+            <div style="font-size:0.84rem;color:var(--gris-600);white-space:pre-line;background:#F8FAFC;padding:0.85rem;border-radius:var(--border-radius-md);border:1px solid var(--gris-200);">
+                {{ pedido.notas }}
+            </div>
+        </div>
+        {% endif %}
+
+        <div style="margin-top:1.75rem;">
+            <a href="{% url 'tienda_mis_pedidos' %}" class="btn btn-outline btn-sm" style="width:100%;text-align:center;display:block;padding:0.65rem;">
+                Volver a la lista de pedidos
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

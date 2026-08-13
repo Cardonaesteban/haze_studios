@@ -1,34 +1,161 @@
+{% extends "tienda/base_tienda.html" %}
 {% load static %}
-=======
-{% extends "dashboard/base.html" %}
-{% block title %}Inicio | Haze Studios{% endblock %}
+
+{% block title %}Haze Studios | Moda Urbana & Siluetas Oversize{% endblock %}
 
 {% block content %}
-{% load static %}
+<!-- BANNER NUEVA COLECCIÓN / PRENDA -->
+{% if producto_nuevo %}
+<section class="collection-banner">
+    <div class="collection-banner-content">
+        <div class="collection-banner-badge">
+            <img src="{% static 'img/haze_logo.svg' %}" alt="Haze Studios" class="collection-banner-logo">
+            <span class="collection-banner-tag">Nuevo Lanzamiento</span>
+        </div>
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inicio | Haze Studios</title>
-    <link rel="stylesheet" href="{% static 'css/haze.css' %}">
-</head>
-<body>
-<div class="page-wrap">
-    <h1>Bienvenido, {{ nombre }}</h1>
-    <p style="color:var(--gris-600);margin-top:0.5rem">
-        Estás en la tienda de Haze Studios.
-    </p>
-    
-    <nav class="tienda-nav">
-        <a href="{% url 'tienda_inicio' %}">Inicio</a>
-        <a href="{% url 'tienda_productos' %}">Productos</a>
-        <a href="{% url 'tienda_carrito' %}">Carrito</a>
-    </nav>
-    <a href="{% url 'tienda_logout' %}" class="btn btn-secondary" style="margin-top:1.5rem;display:inline-flex">
-        Cerrar sesión
-    </a>
+        <p class="collection-banner-label">Presentamos</p>
+        <h1 class="collection-banner-title">{{ producto_nuevo.nombre }}</h1>
+        <p class="collection-banner-desc">
+            {{ producto_nuevo.descripcion|truncatewords:22|default:"La última pieza de nuestra colección oversize: algodón pesado, corte relajado y acabados premium para un estilo urbano auténtico." }}
+        </p>
+
+        {% if producto_nuevo.categoria %}
+        <div class="collection-banner-meta">
+            <span class="collection-meta-chip">{{ producto_nuevo.categoria.nombre }}</span>
+            <span class="collection-meta-price">${{ producto_nuevo.precio }}</span>
+        </div>
+        {% endif %}
+
+        <div class="collection-banner-actions">
+            <a href="{% url 'tienda_producto_detalle' producto_nuevo.pk %}" class="btn btn-primary">
+                Ver Prenda
+            </a>
+            <a href="{% url 'tienda_productos' %}{% if producto_nuevo.categoria %}?categoria={{ producto_nuevo.categoria.pk }}{% endif %}" class="btn btn-outline">
+                Ver Colección
+            </a>
+            <a href="{% url 'tienda_productos' %}" class="btn btn-ghost">
+                Explorar →
+            </a>
+        </div>
+    </div>
+
+    <div class="collection-banner-visual">
+        <div class="collection-banner-image-wrap">
+            <img src="{% static producto_nuevo.get_imagen_url %}" alt="{{ producto_nuevo.nombre }}" class="collection-banner-image">
+            <div class="collection-banner-float">
+                <span class="float-label">Drop 2026</span>
+                <span class="float-name">Corte Oversize</span>
+            </div>
+        </div>
+    </div>
+</section>
+{% else %}
+<section class="collection-banner collection-banner-fallback">
+    <div class="collection-banner-content">
+        <div class="collection-banner-badge">
+            <img src="{% static 'img/haze_logo.svg' %}" alt="Haze Studios" class="collection-banner-logo">
+            <span class="collection-banner-tag">Colección 2026</span>
+        </div>
+        <h1 class="collection-banner-title">Moda Urbana & Siluetas Oversize</h1>
+        <p class="collection-banner-desc">
+            Prendas confeccionadas con algodón pesado de alto gramaje, hombros caídos y caídas relajadas.
+        </p>
+        <div class="collection-banner-actions">
+            <a href="{% url 'tienda_productos' %}" class="btn btn-primary">Explorar Colección</a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- CATEGORÍAS RÁPIDAS -->
+{% if categorias %}
+<div style="margin-bottom:2.25rem;">
+    <div class="page-header">
+        <h2 class="tienda-section-title">Explora por Categoría</h2>
+        <a href="{% url 'tienda_productos' %}" class="tienda-section-link">Ver todo el catálogo →</a>
+    </div>
+
+    <div class="catalog-toolbar-compact" style="margin-top:0.75rem;">
+        <div class="filter-compact-title" style="margin-bottom:0.5rem;">Filtrar por prenda</div>
+        <div class="pills-group-compact">
+            <a href="{% url 'tienda_productos' %}" class="pill-compact-btn active">
+                Todas <span class="pill-count-badge">{{ total_prendas_global }}</span>
+            </a>
+            {% for cat in categorias %}
+            <a href="{% url 'tienda_productos' %}?categoria={{ cat.pk }}" class="pill-compact-btn">
+                {{ cat.nombre }} <span class="pill-count-badge">{{ cat.total_prods }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
 </div>
-</body>
-</html>
+{% endif %}
+
+<!-- PRENDAS DESTACADAS -->
+<div style="margin-bottom:2.5rem;">
+    <div class="page-header">
+        <div>
+            <h2 class="tienda-section-title">Prendas Destacadas</h2>
+            <span class="tienda-section-subtitle">Siluetas y lanzamientos oversize en tendencia</span>
+        </div>
+    </div>
+
+    {% if productos_destacados %}
+    <div class="product-grid">
+        {% for prod in productos_destacados %}
+        <div class="product-card">
+            <div class="product-card-img">
+                <span class="badge-oversize">CORTE OVERSIZE</span>
+                {% if prod.stock <= 0 %}
+                    <span class="badge-stock-pill badge-salida">Agotado</span>
+                {% elif prod.stock <= prod.stock_minimo %}
+                    <span class="badge-stock-pill badge-pendiente">Últimas unidades</span>
+                {% else %}
+                    <span class="badge-stock-pill badge-entrada">En inventario</span>
+                {% endif %}
+                <img src="{% static prod.get_imagen_url %}" alt="{{ prod.nombre }}" class="product-card-real-img" loading="lazy">
+            </div>
+            <div class="product-card-body">
+                <div class="product-category-tag">{{ prod.categoria.nombre|default:"Moda Urbana" }}</div>
+                <a href="{% url 'tienda_producto_detalle' prod.pk %}" class="product-title">{{ prod.nombre }}</a>
+                <p style="font-size:0.82rem;color:var(--gris-500);margin-bottom:0.75rem;line-height:1.45;">
+                    {{ prod.descripcion|truncatewords:10|default:"Prenda corte oversize con confección pesada prémium." }}
+                </p>
+                <div class="product-price">${{ prod.precio }}</div>
+                <div class="product-card-actions">
+                    <a href="{% url 'tienda_producto_detalle' prod.pk %}" class="btn btn-primary btn-sm" style="width:100%;padding:0.65rem;font-size:0.88rem;">
+                        {% if prod.stock > 0 %}Comprar / Ver Tallas{% else %}Ver Prenda{% endif %}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="tienda-card" style="text-align:center;padding:3.5rem;">
+        <h3 style="color:var(--gris-800);">No hay prendas disponibles por el momento</h3>
+        <p style="color:var(--gris-500);margin-top:0.5rem;">Vuelve pronto para conocer nuestros nuevos lanzamientos oversize.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- PROPUESTAS DE VALOR -->
+<div class="brand-features-bar">
+    <div class="feature-item">
+        <div class="feature-title" style="color:var(--azul);">Silueta Oversize Auténtica</div>
+        <div class="feature-desc">Hombros caídos y calce amplio de última tendencia para el mejor estilo streetwear.</div>
+    </div>
+    <div class="feature-item">
+        <div class="feature-title" style="color:var(--purpura);">Materiales de Alto Gramaje</div>
+        <div class="feature-desc">Algodón 100% pesado para una estructura limpia y máxima resistencia.</div>
+    </div>
+    <div class="feature-item">
+        <div class="feature-title" style="color:#06B6D4;">Envíos & Seguimiento</div>
+        <div class="feature-desc">Rastreo de tus pedidos en tiempo real directamente desde tu perfil de usuario.</div>
+    </div>
+    <div class="feature-item">
+        <div class="feature-title" style="color:var(--verde);">Compra Garantizada</div>
+        <div class="feature-desc">Control directo de inventario y despacho garantizado desde nuestro almacén.</div>
+    </div>
+</div>
+{% endblock %}

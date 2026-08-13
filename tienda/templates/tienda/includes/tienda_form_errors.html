@@ -1,0 +1,7 @@
+{% if form.non_field_errors %}
+<ul class="tienda-alert-list">
+    {% for error in form.non_field_errors %}
+    <li class="tienda-alert tienda-alert-error">{{ error }}</li>
+    {% endfor %}
+</ul>
+{% endif %}

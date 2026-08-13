@@ -172,6 +172,32 @@ class Producto(models.Model):
     def stock_bajo(self):
         return self.stock <= self.stock_minimo
 
+    def get_imagen_url(self):
+        nombre_lower = (self.nombre or '').lower()
+        if 'hoodie' in nombre_lower or 'buzo' in nombre_lower or 'capota' in nombre_lower:
+            if 'crema' in nombre_lower or 'blanco' in nombre_lower or 'beige' in nombre_lower:
+                return 'img/products/hoodie_cream.jpg'
+            return 'img/products/hoodie_black.jpg'
+        elif 'camiseta' in nombre_lower or 't-shirt' in nombre_lower or 'remera' in nombre_lower or 'camisa' in nombre_lower:
+            return 'img/products/tshirt_white.jpg'
+        elif 'pantalon' in nombre_lower or 'pantalón' in nombre_lower or 'cargo' in nombre_lower or 'jogger' in nombre_lower or 'jean' in nombre_lower:
+            return 'img/products/pants_cargo.jpg'
+        elif 'chaqueta' in nombre_lower or 'bomber' in nombre_lower or 'jacket' in nombre_lower:
+            return 'img/products/jacket_bomber.jpg'
+        elif 'sweatshirt' in nombre_lower or 'crewneck' in nombre_lower or 'saco' in nombre_lower:
+            return 'img/products/crewneck_charcoal.jpg'
+        else:
+            gallery = [
+                'img/products/hoodie_black.jpg',
+                'img/products/tshirt_white.jpg',
+                'img/products/crewneck_charcoal.jpg',
+                'img/products/pants_cargo.jpg',
+                'img/products/hoodie_cream.jpg',
+                'img/products/jacket_bomber.jpg',
+            ]
+            idx = (self.pk or 1) % len(gallery)
+            return gallery[idx]
+
     def clean(self):
         if self.precio is not None and self.precio < 0:
             raise ValidationError({'precio': 'El precio no puede ser negativo.'})

@@ -109,3 +109,23 @@ docker-compose down
 ```
 
 7. Abre el navegador en `http://127.0.0.1:8000`
+
+
+
+
+## 📸 Capturas del sistema
+
+###  Login
+![Login](docs/screenshots/login_haze.png)
+
+###  Dashboard
+![Dashboard](docs/screenshots/Dashboard_haze.png)
+
+###  Productos
+![Productos](docs/screenshots/productos.png)
+
+###  Stock
+![Stock](docs/screenshots/Stock.png)
+
+### Categorias
+![Categorias](docs/screenshots/Categorias.png)

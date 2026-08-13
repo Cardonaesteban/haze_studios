@@ -1,0 +1,140 @@
+{% extends "tienda/base_tienda.html" %}
+{% load static %}
+
+{% block title %}Carrito | Haze Studios{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="tienda-page-title">Carrito</h1>
+        <p class="tienda-page-subtitle">Revisa tus prendas seleccionadas antes de confirmar tu pedido.</p>
+    </div>
+    {% if items %}
+    <a href="{% url 'tienda_vaciar_carrito' %}" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de que deseas vaciar tu carrito?');">
+        Vaciar Carrito
+    </a>
+    {% endif %}
+</div>
+
+{% if items %}
+<div class="cart-wrap">
+    <div class="tienda-card" style="padding:1.75rem;">
+        <form method="post" action="{% url 'tienda_actualizar_carrito' %}">
+            {% csrf_token %}
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Prenda</th>
+                            <th>Talla</th>
+                            <th>Precio</th>
+                            <th style="width:130px;">Cantidad</th>
+                            <th>Subtotal</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr {% if item.sin_stock %}class="row-alert"{% endif %}>
+                            <td>
+                                <div class="table-product-cell">
+                                    <img src="{% static item.producto.get_imagen_url %}" alt="{{ item.producto.nombre }}" class="table-product-thumb">
+                                    <div>
+                                        <div style="font-weight:800;color:var(--gris-900);">
+                                            <a href="{% url 'tienda_producto_detalle' item.producto.pk %}" style="color:var(--gris-900);text-decoration:none;">
+                                                {{ item.producto.nombre }}
+                                            </a>
+                                        </div>
+                                        {% if item.sin_stock %}
+                                            <span class="badge badge-salida" style="margin-top:0.25rem;">Sin stock disponible</span>
+                                        {% elif item.producto.stock <= item.producto.stock_minimo %}
+                                            <span class="badge badge-pendiente" style="margin-top:0.25rem;">Stock: {{ item.producto.stock }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-entrada" style="background:#F1F5F9;color:#334155;border:1px solid #CBD5E1;font-weight:700;">
+                                    {{ item.talla }}
+                                </span>
+                            </td>
+                            <td style="font-weight:700;">${{ item.producto.precio }}</td>
+                            <td>
+                                <div class="qty-controller">
+                                    <button type="button" class="qty-btn" onclick="let input = document.getElementById('qty_{{ item.producto.pk }}'); if(parseInt(input.value) > 1) input.value = parseInt(input.value) - 1;">−</button>
+                                    <input type="number" name="cantidad_{{ item.producto.pk }}" id="qty_{{ item.producto.pk }}" value="{{ item.cantidad }}" min="1" max="{{ item.producto.stock }}" class="qty-input">
+                                    <button type="button" class="qty-btn" onclick="let input = document.getElementById('qty_{{ item.producto.pk }}'); if(parseInt(input.value) < {{ item.producto.stock }}) input.value = parseInt(input.value) + 1;">+</button>
+                                </div>
+                            </td>
+                            <td style="font-weight:900;color:var(--gris-900);">${{ item.subtotal }}</td>
+                            <td>
+                                <a href="{% url 'tienda_eliminar_carrito' item.producto.pk %}" style="color:var(--rojo);font-size:1.1rem;text-decoration:none;font-weight:800;" title="Quitar del carrito">
+                                    ✕
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1.5rem;flex-wrap:wrap;gap:1rem;">
+                <a href="{% url 'tienda_productos' %}" class="btn btn-outline btn-sm">
+                    ← Seguir Explorando
+                </a>
+                <button type="submit" class="btn btn-secondary btn-sm">
+                    Actualizar Cantidades
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="summary-card">
+        <h3 style="font-size:1.2rem;font-weight:900;color:var(--gris-900);margin-bottom:1.25rem;">
+            Resumen de Compra
+        </h3>
+
+        <div class="summary-row">
+            <span>Prendas en total:</span>
+            <span style="font-weight:800;">{{ total_cantidad }}</span>
+        </div>
+
+        <div class="summary-row">
+            <span>Subtotal:</span>
+            <span style="font-weight:800;">${{ total_general }}</span>
+        </div>
+
+        <div class="summary-row">
+            <span>Envío nacional:</span>
+            <span style="color:var(--verde);font-weight:800;">Gratis</span>
+        </div>
+
+        <div class="summary-total">
+            <span>Total a Pagar:</span>
+            <span>${{ total_general }}</span>
+        </div>
+
+        <div style="margin-top:1.75rem;">
+            <a href="{% url 'tienda_checkout' %}" class="btn btn-primary" style="width:100%;text-align:center;padding:0.9rem;font-size:1rem;display:block;">
+                Continuar con el Pedido →
+            </a>
+        </div>
+
+        <div style="margin-top:1rem;font-size:0.78rem;color:var(--gris-500);text-align:center;">
+            Compra segura con stock verificado en tiempo real
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="tienda-card" style="text-align:center;padding:4rem 2rem;">
+    <h2>Tu carrito está vacío</h2>
+    <p style="color:var(--gris-500);margin:0.5rem 0 1.75rem;">
+        Aún no has agregado ninguna prenda oversize a tu carrito.
+    </p>
+    <a href="{% url 'tienda_productos' %}" class="btn btn-primary" style="padding:0.85rem 2rem;">
+        Explorar Colección Oversize
+    </a>
+</div>
+{% endif %}
+{% endblock %}

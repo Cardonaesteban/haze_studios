@@ -1,0 +1,132 @@
+{% extends "tienda/base_tienda.html" %}
+{% load static %}
+
+{% block title %}Finalizar Pedido | Haze Studios{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="tienda-page-title">Finalizar Pedido</h1>
+        <p class="tienda-page-subtitle">Completa tus datos de despacho y elige tu método de pago.</p>
+    </div>
+</div>
+
+<div class="cart-wrap">
+    <div class="tienda-card" style="padding:2rem;">
+        <h2 style="font-size:1.25rem;font-weight:900;color:var(--gris-900);margin-bottom:1.25rem;">
+            Dirección de Entrega y Contacto
+        </h2>
+
+        <div style="background:#F8FAFC;border:1px solid var(--gris-200);border-radius:var(--border-radius-lg);padding:1rem;margin-bottom:1.5rem;">
+            <div style="font-size:0.88rem;color:var(--gris-600);">
+                Cliente: <strong style="color:var(--gris-900);">{{ cliente.nombre }} {{ cliente.apellido }}</strong>
+            </div>
+            <div style="font-size:0.88rem;color:var(--gris-600);margin-top:0.35rem;">
+                Correo: <strong style="color:var(--gris-900);">{{ cliente.correo }}</strong>
+            </div>
+        </div>
+
+        <form method="post" action="{% url 'tienda_checkout' %}" novalidate>
+            {% csrf_token %}
+
+            {% include "tienda/includes/tienda_form_errors.html" %}
+
+            <div class="form-group{% if form.direccion_envio.errors %} has-error{% endif %}">
+                <label for="{{ form.direccion_envio.id_for_label }}">{{ form.direccion_envio.label }} *</label>
+                {{ form.direccion_envio }}
+                {% for e in form.direccion_envio.errors %}
+                <div class="tienda-field-error">{{ e }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="form-group{% if form.telefono_contacto.errors %} has-error{% endif %}">
+                <label for="{{ form.telefono_contacto.id_for_label }}">{{ form.telefono_contacto.label }} *</label>
+                {{ form.telefono_contacto }}
+                {% for e in form.telefono_contacto.errors %}
+                <div class="tienda-field-error">{{ e }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="form-group{% if form.notas.errors %} has-error{% endif %}">
+                <label for="{{ form.notas.id_for_label }}">{{ form.notas.label }}</label>
+                {{ form.notas }}
+                <small class="help">Instrucciones especiales para el mensajero o detalles de entrega.</small>
+                {% for e in form.notas.errors %}
+                <div class="tienda-field-error">{{ e }}</div>
+                {% endfor %}
+            </div>
+
+            <!-- MÉTODOS DE PAGO -->
+            <div class="payment-methods-section">
+                <div class="payment-methods-title">Método de Pago</div>
+
+                <label class="payment-option selected" id="payContraentrega">
+                    <input type="radio" name="metodo_pago" value="contraentrega" checked>
+                    <div class="payment-option-info">
+                        <div class="payment-option-name">Pago contra entrega</div>
+                        <div class="payment-option-desc">Pagas al recibir tu pedido.</div>
+                    </div>
+                </label>
+            </div>
+
+            <div style="margin-top:2rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+                <button type="submit" class="btn btn-primary" style="padding:0.9rem 2.5rem;font-size:1rem;">
+                    Confirmar y Realizar Pedido
+                </button>
+                <a href="{% url 'tienda_carrito' %}" class="btn btn-outline btn-sm" style="padding:0.9rem 1.25rem;">
+                    Volver al Carrito
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <div class="summary-card">
+        <h3 style="font-size:1.2rem;font-weight:900;color:var(--gris-900);margin-bottom:1.25rem;">
+            Prendas en la Orden
+        </h3>
+
+        <div style="max-height:290px;overflow-y:auto;margin-bottom:1rem;">
+            {% for item in items %}
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.65rem 0;border-bottom:1px solid var(--gris-100);">
+                <div style="display:flex;align-items:center;gap:0.75rem;">
+                    <img src="{% static item.producto.get_imagen_url %}" alt="{{ item.producto.nombre }}" class="table-product-thumb" style="width:46px;height:46px;">
+                    <div>
+                        <div style="font-weight:800;font-size:0.875rem;color:var(--gris-900);">{{ item.producto.nombre }}</div>
+                        <div style="font-size:0.75rem;color:var(--gris-500);font-weight:600;">
+                            Talla: {{ item.talla }} × {{ item.cantidad }}
+                        </div>
+                    </div>
+                </div>
+                <div style="font-weight:900;font-size:0.95rem;color:var(--gris-900);">
+                    ${{ item.subtotal }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="summary-row" style="margin-top:0.75rem;">
+            <span>Total Prendas:</span>
+            <span style="font-weight:800;">{{ total_cantidad }}</span>
+        </div>
+
+        <div class="summary-total">
+            <span>Total a Pagar:</span>
+            <span>${{ total_general }}</span>
+        </div>
+
+        <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:var(--border-radius-md);padding:0.85rem;margin-top:1.25rem;font-size:0.8rem;color:#166534;font-weight:600;">
+            Tu pedido se registrará de inmediato y el inventario quedará reservado automáticamente.
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.payment-option:not(.disabled)').forEach(function(opt) {
+    opt.addEventListener('click', function() {
+        document.querySelectorAll('.payment-option').forEach(function(o) { o.classList.remove('selected'); });
+        this.classList.add('selected');
+        this.querySelector('input[type="radio"]').checked = true;
+    });
+});
+</script>
+{% endblock %}
