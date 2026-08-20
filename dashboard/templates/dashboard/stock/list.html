@@ -15,7 +15,7 @@
 <p class="section-title">Stock actual por producto</p>
 <div class="table-wrap" style="margin-bottom:2rem;">
     <table>
-        <thead><tr><th>Producto</th><th>Stock actual</th><th>Mínimo</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <thead><tr><th>Producto</th><th>Stock actual</th><th>Mínimo</th><th>Estado</th></tr></thead>
         <tbody>
         {% for p in productos %}
         <tr class="{% if p.stock_bajo %}row-alert{% endif %}">
@@ -29,13 +29,9 @@
                     <span class="badge badge-activo">OK</span>
                 {% endif %}
             </td>
-            <td class="botones">
-                <a class="btn-editar" href="{% url 'stock_entrada' %}">+ Entrada</a>
-                <a class="btn-eliminar" href="{% url 'stock_salida' %}">− Salida</a>
-            </td>
         </tr>
         {% empty %}
-        <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--gris-500)">No hay productos activos.</td></tr>
+        <tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--gris-500)">No hay productos activos.</td></tr>
         {% endfor %}
         </tbody>
     </table>

@@ -9,6 +9,7 @@ from .models import (
 )
 
 
+
 # ──────────────────────────────────────────────
 # CLIENTES
 # ──────────────────────────────────────────────
@@ -35,6 +36,8 @@ class ClienteForm(forms.ModelForm):
             raise ValidationError('El nombre es obligatorio.')
         if len(v) < 2:
             raise ValidationError('El nombre debe tener al menos 2 caracteres.')
+        if any(c.isdigit() for c in v):
+            raise ValidationError('El nombre no puede contener números.')
         return v
 
     def clean_apellido(self):
@@ -43,7 +46,25 @@ class ClienteForm(forms.ModelForm):
             raise ValidationError('El apellido es obligatorio.')
         if len(v) < 2:
             raise ValidationError('El apellido debe tener al menos 2 caracteres.')
+        if any(c.isdigit() for c in v):
+            raise ValidationError('El apellido no puede contener números.')
         return v
+
+    def clean_telefono(self):
+        telefono = self.cleaned_data.get('telefono', '').strip()
+        if not telefono:
+            return telefono
+        if ' ' in telefono:
+            raise ValidationError('El teléfono no puede contener espacios.')
+        if '.' in telefono:
+            raise ValidationError('El teléfono no puede contener puntos.')
+        if not telefono.isdigit():
+            raise ValidationError('El teléfono debe contener solo números.')
+        if len(telefono) < 7:
+            raise ValidationError('Ingresa un teléfono válido (mínimo 7 dígitos).')
+        if len(telefono) > 15:
+            raise ValidationError('El teléfono no puede tener más de 15 dígitos.')
+        return telefono
 
     def clean_correo(self):
         correo = self.cleaned_data.get('correo', '').strip().lower()
@@ -165,7 +186,7 @@ class ProveedorForm(forms.ModelForm):
 class DisenadorForm(forms.ModelForm):
     class Meta:
         model = Disenador
-        fields = ['nombre']
+        fields = ['nombre', 'telefono']
 
     def clean_nombre(self):
         nombre = self.cleaned_data.get('nombre', '').strip()
@@ -176,7 +197,25 @@ class DisenadorForm(forms.ModelForm):
             qs = qs.exclude(pk=self.instance.pk)
         if qs.exists():
             raise ValidationError('Ya existe un diseñador con ese nombre.')
+        if '.' in nombre:
+            raise ValidationError('El nombre no puede contener puntos.')
         return nombre
+
+    def clean_telefono(self):
+        telefono = self.cleaned_data.get('telefono', '').strip()
+        if not telefono:
+            return telefono
+        if ' ' in telefono:
+            raise ValidationError('El teléfono no puede contener espacios.')
+        if '.' in telefono:
+            raise ValidationError('El teléfono no puede contener puntos.')
+        if not telefono.isdigit():
+            raise ValidationError('El teléfono debe contener solo números.')
+        if len(telefono) < 7:
+            raise ValidationError('Ingresa un teléfono válido (mínimo 7 dígitos).')
+        if len(telefono) > 15:
+            raise ValidationError('El teléfono no puede tener más de 15 dígitos.')
+        return telefono
 
 
 # ──────────────────────────────────────────────
@@ -358,6 +397,18 @@ class UsuarioDashboardForm(forms.ModelForm):
         if qs.exists():
             raise ValidationError('Este nombre de usuario ya está en uso.')
         return username
+
+    def clean_first_name(self):
+        nombre = self.cleaned_data.get('first_name', '').strip()
+        if nombre and any(c.isdigit() for c in nombre):
+            raise ValidationError('El nombre no puede contener números.')
+        return nombre
+
+    def clean_last_name(self):
+        apellido = self.cleaned_data.get('last_name', '').strip()
+        if apellido and any(c.isdigit() for c in apellido):
+            raise ValidationError('El apellido no puede contener números.')
+        return apellido
 
     def clean(self):
         cleaned = super().clean()

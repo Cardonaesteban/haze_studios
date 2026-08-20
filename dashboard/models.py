@@ -1,5 +1,4 @@
 from decimal import Decimal
-
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -120,6 +119,7 @@ class Proveedor(models.Model):
 
 class Disenador(models.Model):
     nombre = models.CharField(max_length=150)
+    telefono = models.CharField(max_length=30, blank=True, default='')
 
     class Meta:
         db_table = 'disenadores'
@@ -410,5 +410,7 @@ class TokenRecuperacion(models.Model):
         limite = self.creado + _timedelta(hours=2)
         return not self.usado and timezone.now() < limite
 
-
+# ──────────────────────────────────────────────
+# DISEÑADORES}
+# ──────────────────────────────────────────────
 
