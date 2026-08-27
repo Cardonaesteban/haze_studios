@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 from .models import (
     Cliente, Producto, Categoria, Proveedor, Disenador,
     Pedido, DetallePedido, MovimientoStock,
@@ -120,6 +121,8 @@ class ProductoForm(forms.ModelForm):
         nombre = self.cleaned_data.get('nombre', '').strip()
         if not nombre:
             raise ValidationError('El nombre del producto es obligatorio.')
+        if len(nombre) < 3:
+            raise ValidationError('El nombre del producto debe tener al menos 3 caracteres.')
         return nombre
 
     def clean_precio(self):
@@ -128,6 +131,8 @@ class ProductoForm(forms.ModelForm):
             raise ValidationError('El precio es obligatorio.')
         if precio < 0:
             raise ValidationError('El precio no puede ser negativo.')
+        if precio == 0:
+            raise ValidationError('El precio debe ser mayor que cero.')
         return precio
 
     def clean_stock(self):
@@ -135,6 +140,22 @@ class ProductoForm(forms.ModelForm):
         if stock is not None and stock < 0:
             raise ValidationError('El stock no puede ser negativo.')
         return stock
+
+    def clean_stock_minimo(self):
+        stock_minimo = self.cleaned_data.get('stock_minimo')
+        if stock_minimo is not None and stock_minimo < 0:
+            raise ValidationError('El stock mínimo no puede ser negativo.')
+        return stock_minimo
+
+    def clean(self):
+        cleaned = super().clean()
+        stock = cleaned.get('stock')
+        stock_minimo = cleaned.get('stock_minimo')
+        if stock is not None and stock_minimo is not None and stock_minimo > stock:
+            raise ValidationError({
+                'stock_minimo': 'El stock mínimo no puede ser mayor al stock actual.'
+            })
+        return cleaned
 
 
 # ──────────────────────────────────────────────
@@ -171,7 +192,30 @@ class ProveedorForm(forms.ModelForm):
         nombre = self.cleaned_data.get('nombre', '').strip()
         if not nombre:
             raise ValidationError('El nombre del proveedor es obligatorio.')
+        if len(nombre) < 3:
+            raise ValidationError('El nombre del proveedor debe tener al menos 3 caracteres.')
+        qs = Proveedor.objects.filter(nombre__iexact=nombre)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError('Ya existe un proveedor con ese nombre.')
         return nombre
+
+    def clean_telefono(self):
+        telefono = self.cleaned_data.get('telefono', '').strip()
+        if not telefono:
+            return telefono
+        if ' ' in telefono:
+            raise ValidationError('El teléfono no puede contener espacios.')
+        if '.' in telefono:
+            raise ValidationError('El teléfono no puede contener puntos.')
+        if not telefono.isdigit():
+            raise ValidationError('El teléfono debe contener solo números.')
+        if len(telefono) < 7:
+            raise ValidationError('Ingresa un teléfono válido (mínimo 7 dígitos).')
+        if len(telefono) > 15:
+            raise ValidationError('El teléfono no puede tener más de 15 dígitos.')
+        return telefono
 
     def clean_correo(self):
         correo = self.cleaned_data.get('correo', '').strip()
@@ -241,6 +285,8 @@ class PedidoForm(forms.ModelForm):
         fecha = self.cleaned_data.get('fecha_pedido')
         if not fecha:
             raise ValidationError('La fecha del pedido es obligatoria.')
+        if fecha > timezone.localdate():
+            raise ValidationError('La fecha del pedido no puede ser futura.')
         return fecha
 
 

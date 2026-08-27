@@ -33,11 +33,7 @@ services:
     # Construye la imagen usando el Dockerfile del proyecto
     build: .
     # Corre las migraciones y luego levanta el servidor de desarrollo
-    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
-    # Sincroniza la carpeta del proyecto con /app dentro del contenedor
-    volumes:
-      - .:/app
-    # Mapea el puerto 8000 del computador al 8000 del contenedor
+    command: sh -c "until mysqladmin ping -h db -u haze_user -phaze1234 --skip-ssl --silent; do echo 'Esperando a que MySQL esté listo...'; sleep 2; done && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"    # Mapea el puerto 8000 del computador al 8000 del contenedor
     ports:
       - "8000:8000"
     # Espera a que db pase el healthcheck antes de iniciar
