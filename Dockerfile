@@ -5,6 +5,7 @@ FROM python:3.12-slim
 RUN apt-get update && apt-get install -y \
     pkg-config \
     default-libmysqlclient-dev \
+    default-mysql-client \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
@@ -23,5 +24,5 @@ COPY . .
 # Puerto donde corre Django
 EXPOSE 8000
 
-# Junta estáticos y arranca el servidor (en runtime, no en build)
-CMD python manage.py collectstatic --noinput && gunicorn haze_studios.wsgi:application --bind 0.0.0.0:8000
+# Comando para iniciar el servidor
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
