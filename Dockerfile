@@ -5,6 +5,7 @@ FROM python:3.12-slim
 RUN apt-get update && apt-get install -y \
     pkg-config \
     default-libmysqlclient-dev \
+    default-mysql-client \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 

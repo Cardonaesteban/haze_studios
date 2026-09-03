@@ -21,6 +21,22 @@ from .forms import (
 
 
 # ──────────────────────────────────────────────
+# TALLAS DISPONIBLES (catálogo oversize)
+# ──────────────────────────────────────────────
+
+TALLA_DEFAULT = 'L (Oversize)'
+TALLAS_VALIDAS = ['S (Oversize)', 'M (Oversize)', 'L (Oversize)', 'XL (Oversize)']
+
+
+def get_talla_slug(talla):
+    """Convierte una talla en slug corto para claves de carrito: 'L (Oversize)' -> 'l'."""
+    return talla.split(' ')[0].strip().lower()
+
+
+TALLA_POR_SLUG = {get_talla_slug(t): t for t in TALLAS_VALIDAS}
+
+
+# ──────────────────────────────────────────────
 # DECORADORES Y UTILIDADES DE SESIÓN
 # ──────────────────────────────────────────────
 
@@ -54,12 +70,23 @@ def get_carrito_items(request):
     if not carrito:
         return {'items': items, 'total_general': total_general, 'total_cantidad': total_cantidad}
 
-    productos_ids = [int(pk) for pk in carrito.keys() if pk.isdigit()]
+    # Las claves del carrito son compuestas: '<producto_id>_<talla_slug>' (p. ej. '5_l').
+    # Se mantiene compatibilidad con claves antiguas que solo tenían '<producto_id>'.
+    productos_ids = []
+    for clave in carrito.keys():
+        prod_id_str = clave if clave.isdigit() else clave.rpartition('_')[0]
+        if prod_id_str.isdigit():
+            productos_ids.append(int(prod_id_str))
+
     productos = Producto.objects.filter(pk__in=productos_ids, estado='activo')
     productos_dict = {p.pk: p for p in productos}
 
-    for prod_id_str, info in list(carrito.items()):
-        prod_id = int(prod_id_str)
+    for clave, info in list(carrito.items()):
+        prod_id_str = clave if clave.isdigit() else clave.rpartition('_')[0]
+        try:
+            prod_id = int(prod_id_str)
+        except (ValueError, TypeError):
+            continue
         producto = productos_dict.get(prod_id)
         if not producto:
             continue
@@ -69,12 +96,14 @@ def get_carrito_items(request):
         if cantidad > producto.stock:
             cantidad = max(0, producto.stock)
 
-        talla = info.get('talla', 'L (Oversize)')
+        talla_slug = '' if clave.isdigit() else clave.rpartition('_')[2]
+        talla = TALLA_POR_SLUG.get(talla_slug, info.get('talla', TALLA_DEFAULT))
         subtotal = producto.precio * cantidad
         total_general += subtotal
         total_cantidad += cantidad
 
         items.append({
+            'key': clave,
             'producto': producto,
             'cantidad': cantidad,
             'talla': talla,
@@ -230,23 +259,39 @@ def agregar_carrito(request, producto_id):
     if cantidad < 1:
         cantidad = 1
 
-    talla = request.POST.get('talla', 'L (Oversize)')
+    # Validar que la talla recibida pertenezca al catálogo de tallas
+    talla = request.POST.get('talla', TALLA_DEFAULT)
+    if talla not in TALLAS_VALIDAS:
+        talla = TALLA_DEFAULT
 
     carrito = request.session.get('carrito', {})
-    prod_id_str = str(producto.pk)
+    # Clave compuesta producto + talla: cada talla se guarda como una línea independiente
+    clave = f"{producto.pk}_{get_talla_slug(talla)}"
 
-    cantidad_actual = carrito.get(prod_id_str, {}).get('cantidad', 0)
+    # Cantidad total ya agregada del producto (sumando todas sus tallas)
+    cantidad_actual = sum(
+        (item.get('cantidad', 0) for k, item in carrito.items()
+         if isinstance(item, dict) and (k == str(producto.pk) or k.startswith(f"{producto.pk}_"))),
+        0
+    )
     nueva_cantidad = cantidad_actual + cantidad
 
     if nueva_cantidad > producto.stock:
+        cantidad = max(0, producto.stock - cantidad_actual)
+        if cantidad <= 0:
+            messages.warning(
+                request,
+                f'No puedes agregar más unidades de "{producto.nombre}". Stock disponible: {producto.stock}.'
+            )
+            return redirect('tienda_carrito')
         messages.warning(
             request,
-            f'No puedes agregar {nueva_cantidad} unidades. Stock disponible: {producto.stock}.'
+            f'Solo se agregaron {cantidad} unidades. Stock disponible: {producto.stock}.'
         )
-        nueva_cantidad = producto.stock
 
-    carrito[prod_id_str] = {
-        'cantidad': nueva_cantidad,
+    linea = carrito.get(clave, {})
+    carrito[clave] = {
+        'cantidad': linea.get('cantidad', 0) + cantidad,
         'talla': talla,
     }
     request.session['carrito'] = carrito
@@ -262,21 +307,23 @@ def actualizar_carrito(request):
         carrito = request.session.get('carrito', {})
         for key, value in request.POST.items():
             if key.startswith('cantidad_'):
-                prod_id_str = key.replace('cantidad_', '')
+                # La clave puede ser compuesta: 'cantidad_5_l' -> '5_l'
+                clave = key.replace('cantidad_', '', 1)
                 try:
                     nueva_cant = int(value)
-                    if prod_id_str in carrito:
+                    if clave in carrito:
+                        prod_id_str = clave if clave.isdigit() else clave.rpartition('_')[0]
                         producto = Producto.objects.filter(pk=prod_id_str, estado='activo').first()
                         if not producto or nueva_cant <= 0:
-                            del carrito[prod_id_str]
+                            del carrito[clave]
                         elif nueva_cant > producto.stock:
-                            carrito[prod_id_str]['cantidad'] = producto.stock
+                            carrito[clave]['cantidad'] = producto.stock
                             messages.warning(
                                 request,
                                 f'Cantidad ajustada al máximo disponible ({producto.stock}) para {producto.nombre}.'
                             )
                         else:
-                            carrito[prod_id_str]['cantidad'] = nueva_cant
+                            carrito[clave]['cantidad'] = nueva_cant
                 except ValueError:
                     pass
 
@@ -287,12 +334,20 @@ def actualizar_carrito(request):
     return redirect('tienda_carrito')
 
 
-def eliminar_carrito(request, producto_id):
-    """Eliminar un producto específico del carrito."""
+def eliminar_carrito(request, item_key):
+    """Eliminar una línea específica del carrito (producto + talla)."""
     carrito = request.session.get('carrito', {})
-    prod_id_str = str(producto_id)
-    if prod_id_str in carrito:
-        del carrito[prod_id_str]
+    eliminado = False
+    if item_key in carrito:
+        del carrito[item_key]
+        eliminado = True
+    elif item_key.isdigit():
+        # Compatibilidad: si llega solo el id del producto, elimina todas sus tallas
+        for clave in list(carrito.keys()):
+            if clave == item_key or clave.startswith(f"{item_key}_"):
+                del carrito[clave]
+                eliminado = True
+    if eliminado:
         request.session['carrito'] = carrito
         request.session.modified = True
         messages.success(request, 'Producto eliminado del carrito.')
@@ -489,7 +544,8 @@ def login_cliente(request):
                     request.session['cliente_nombre'] = cliente.nombre
                     request.session['cliente_correo'] = cliente.correo
                     messages.success(request, f'¡Bienvenido de nuevo, {cliente.nombre}!')
-                    if next_url and next_url != 'tienda_inicio' and next_url.startswith('/'):
+                    if (next_url and next_url != 'tienda_inicio'
+                            and next_url.startswith('/') and not next_url.startswith('//')):
                         return redirect(next_url)
                     return redirect('tienda_inicio')
                 else:
