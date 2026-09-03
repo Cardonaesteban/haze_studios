@@ -55,10 +55,6 @@ Proyecto en desarrollo como parte del proceso de formación en Análisis y Desar
 
 > La primera vez puede tardar unos minutos mientras Docker descarga las imágenes y aplica las migraciones automáticamente.
 
-#### Crear super usuario con docker
-
-docker compose exec web python manage.py createsuperuser
-
 #### Detener el proyecto
 ```bash
 docker-compose down

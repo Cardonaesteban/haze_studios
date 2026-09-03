@@ -62,14 +62,14 @@
                             <td style="font-weight:700;">${{ item.producto.precio }}</td>
                             <td>
                                 <div class="qty-controller">
-                                    <button type="button" class="qty-btn" onclick="let input = document.getElementById('qty_{{ item.key }}'); if(parseInt(input.value) > 1) input.value = parseInt(input.value) - 1;">−</button>
-                                    <input type="number" name="cantidad_{{ item.key }}" id="qty_{{ item.key }}" value="{{ item.cantidad }}" min="1" max="{{ item.producto.stock }}" class="qty-input">
-                                    <button type="button" class="qty-btn" onclick="let input = document.getElementById('qty_{{ item.key }}'); if(parseInt(input.value) < {{ item.producto.stock }}) input.value = parseInt(input.value) + 1;">+</button>
+                                    <button type="button" class="qty-btn" onclick="let input = document.getElementById('qty_{{ item.producto.pk }}'); if(parseInt(input.value) > 1) input.value = parseInt(input.value) - 1;">−</button>
+                                    <input type="number" name="cantidad_{{ item.producto.pk }}" id="qty_{{ item.producto.pk }}" value="{{ item.cantidad }}" min="1" max="{{ item.producto.stock }}" class="qty-input">
+                                    <button type="button" class="qty-btn" onclick="let input = document.getElementById('qty_{{ item.producto.pk }}'); if(parseInt(input.value) < {{ item.producto.stock }}) input.value = parseInt(input.value) + 1;">+</button>
                                 </div>
                             </td>
                             <td style="font-weight:900;color:var(--gris-900);">${{ item.subtotal }}</td>
                             <td>
-                                <a href="{% url 'tienda_eliminar_carrito' item.key %}" style="color:var(--rojo);font-size:1.1rem;text-decoration:none;font-weight:800;" title="Quitar del carrito">
+                                <a href="{% url 'tienda_eliminar_carrito' item.producto.pk %}" style="color:var(--rojo);font-size:1.1rem;text-decoration:none;font-weight:800;" title="Quitar del carrito">
                                     ✕
                                 </a>
                             </td>
