@@ -143,6 +143,7 @@ class Producto(models.Model):
     precio = models.DecimalField(max_digits=12, decimal_places=2)
     stock = models.PositiveIntegerField(default=0, help_text='Stock disponible actual')
     stock_minimo = models.PositiveIntegerField(default=0, help_text='Alerta cuando el stock baje de este nivel')
+    imagen = models.ImageField(upload_to='productos/', null=True) # blank=True
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='activo')
     categoria = models.ForeignKey(
         Categoria, on_delete=models.SET_NULL, null=True, blank=True,
@@ -174,6 +175,8 @@ class Producto(models.Model):
         return self.stock <= self.stock_minimo
 
     def get_imagen_url(self):
+        if self.imagen:
+            return self.imagen.url
         nombre_lower = (self.nombre or '').lower()
         if 'hoodie' in nombre_lower or 'buzo' in nombre_lower or 'capota' in nombre_lower:
             if 'crema' in nombre_lower or 'blanco' in nombre_lower or 'beige' in nombre_lower:
@@ -198,7 +201,6 @@ class Producto(models.Model):
             ]
             idx = (self.pk or 1) % len(gallery)
             return gallery[idx]
-
     def clean(self):
         if self.precio is not None and self.precio < 0:
             raise ValidationError({'precio': 'El precio no puede ser negativo.'})

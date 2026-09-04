@@ -18,6 +18,7 @@ from .forms import (
     MensajeForm
 )
 from .emails import enviar_notificacion_estado_pedido
+from django.db.models import ProtectedError
 
 
 # ──────────────────────────────────────────────
@@ -33,11 +34,11 @@ def es_admin(user):
         return False
 
 
-def admin_required(view_func):
+def admin_required(view_func: Callable[..., Any]) -> Callable[..., Any]:
     decorated = user_passes_test(
         es_admin,
-        login_url='login',  
-        redirect_field_name=None
+        login_url='login',
+        redirect_field_name=None  # type: ignore[arg-type]
     )(view_func)
     return login_required(decorated)
 
@@ -139,7 +140,7 @@ def productos_list(request):
 
 @admin_required
 def productos_crear(request):
-    form = ProductoForm(request.POST or None)
+    form = ProductoForm(request.POST or None, request.FILES or None)
     if form.is_valid():
         producto = form.save()
         if producto.stock > 0:
@@ -159,7 +160,7 @@ def productos_editar(request, pk):
     if producto.estado == 'inactivo':
         messages.error(request, f'No se puede editar el producto "{producto.nombre}" porque está inactivo. Actívelo primero.')
         return redirect('productos_list')
-    form = ProductoEditarForm(request.POST or None, instance=producto)
+    form = ProductoEditarForm(request.POST or None, request.FILES or None, instance=producto)
     if form.is_valid():
         form.save()
         messages.success(request, 'Producto actualizado.')
@@ -170,8 +171,11 @@ def productos_editar(request, pk):
 def productos_eliminar(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
     if request.method == 'POST':
-        producto.delete()
-        messages.success(request, 'Producto eliminado.')
+        try:
+            producto.delete()
+            messages.success(request, 'Producto eliminado.')
+        except ProtectedError:
+            messages.error(request, f'No se puede eliminar el producto "{producto.nombre}" porque tiene pedidos asociados')
         return redirect('productos_list')
     return render(request, 'dashboard/confirmar_eliminar.html', {'objeto': producto, 'tipo': 'producto'})
 

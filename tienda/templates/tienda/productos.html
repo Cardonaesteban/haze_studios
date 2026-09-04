@@ -188,7 +188,7 @@
             {% else %}
                 <span class="badge-stock-pill badge-entrada">Disponible</span>
             {% endif %}
-            <img src="{% static prod.get_imagen_url %}" alt="{{ prod.nombre }}" class="product-card-real-img" loading="lazy">
+            <img src="{{ prod.get_imagen_url }}" alt="{{ prod.nombre }}" class="product-card-real-img" loading="lazy">
         </div>
         <div class="product-card-body">
             <div class="product-category-tag">{{ prod.categoria.nombre|default:"Moda Urbana" }}</div>

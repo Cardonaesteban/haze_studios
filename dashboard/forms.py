@@ -111,7 +111,7 @@ class ProductoForm(forms.ModelForm):
         model = Producto
         fields = [
             'nombre', 'descripcion', 'precio', 'stock',
-            'stock_minimo', 'estado', 'categoria', 'proveedor', 'disenador'
+            'stock_minimo','imagen', 'estado', 'categoria', 'proveedor', 'disenador'
         ]
         widgets = {
             'descripcion': forms.Textarea(attrs={'rows': 3}),
@@ -121,23 +121,48 @@ class ProductoForm(forms.ModelForm):
         nombre = self.cleaned_data.get('nombre', '').strip()
         if not nombre:
             raise ValidationError('El nombre del producto es obligatorio.')
+        if any(c.isdigit() for c in nombre):
+            raise ValidationError('El nombre del producto no puede contener numeros')
+        if len(nombre) < 3:
+            raise ValidationError('El nombre del producto debe tener al menos 3 caracteres.')
         return nombre
+
+    def clean_descripcion(self):
+            descripcion = self.cleaned_data.get('descripcion', '').strip()
+            if not descripcion:
+                raise ValidationError('La descripción es obligatoria.')
+            if any(c.isdigit() for c in descripcion):
+                raise ValidationError('La descripción no puede contener números.')
+            return descripcion
 
     def clean_precio(self):
         precio = self.cleaned_data.get('precio')
         if precio is None:
             raise ValidationError('El precio es obligatorio.')
-        if precio < 0:
-            raise ValidationError('El precio no puede ser negativo.')
+        if precio <= 0:
+            raise ValidationError('El precio debe ser mayor a 0')
         return precio
 
     def clean_stock(self):
         stock = self.cleaned_data.get('stock')
-        if stock is not None and stock < 0:
-            raise ValidationError('El stock no puede ser negativo.')
+        if stock is None:
+            raise ValidationError('El stock es obligatorio.')
+        if stock <= 0:
+            raise ValidationError('El stock debe ser mayor a cero')
         return stock
 
-
+    def clean_stock_minimo(self):
+        stock_minimo = self.cleaned_data.get('stock_minimo')
+        if stock_minimo is None:
+            raise ValidationError('El stock mínimo es obligatorio.')
+        if stock_minimo < 0:
+            raise ValidationError('El stock mínimo debe ser mayor a cero')
+        stock = self.cleaned_data.get('stock')
+        if stock_minimo > stock:
+            raise ValidationError('El stock mínimo no puede ser mayor que el stock actual.')
+        return stock_minimo
+    
+    
 class ProductoEditarForm(ProductoForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -147,6 +172,32 @@ class ProductoEditarForm(ProductoForm):
         if 'stock_minimo' in self.fields:
             self.fields['stock_minimo'].disabled = True
             self.fields['stock_minimo'].help_text = 'El stock mínimo no se puede modificar desde aquí. Se gestiona desde la sección de Stock.'
+    
+    def clean_nombre(self):
+            nombre = self.cleaned_data.get('nombre', '').strip()
+            if not nombre:
+                raise ValidationError('El nombre del producto es obligatorio.')
+            if any(c.isdigit() for c in nombre):
+                raise ValidationError('El nombre del producto no puede contener numeros')
+            if len(nombre) < 3:
+                raise ValidationError('El nombre del producto debe tener al menos 3 caracteres.')
+            return nombre
+
+    def clean_descripcion(self):
+                descripcion = self.cleaned_data.get('descripcion', '').strip()
+                if not descripcion:
+                    raise ValidationError('La descripción es obligatoria.')
+                if any(c.isdigit() for c in descripcion):
+                    raise ValidationError('La descripción no puede contener números.')
+                return descripcion
+
+    def clean_precio(self):
+            precio = self.cleaned_data.get('precio')
+            if precio is None:
+                raise ValidationError('El precio es obligatorio.')
+            if precio <= 0:
+                raise ValidationError('El precio debe ser mayor a 0')
+            return precio
 
     def clean_stock(self):
         return self.instance.stock if self.instance and self.instance.pk else 0
@@ -173,7 +224,12 @@ class CategoriaForm(forms.ModelForm):
             qs = qs.exclude(pk=self.instance.pk)
         if qs.exists():
             raise ValidationError('Ya existe una categoría con ese nombre.')
+        if any(c.isdigit() for c in nombre):
+            raise ValidationError('El nombre de la categoría no puede contener números.')
         return nombre
+
+
+    
 
 
 # ──────────────────────────────────────────────
@@ -189,13 +245,44 @@ class ProveedorForm(forms.ModelForm):
         nombre = self.cleaned_data.get('nombre', '').strip()
         if not nombre:
             raise ValidationError('El nombre del proveedor es obligatorio.')
+        if any(c.isdigit() for c in nombre):
+            raise ValidationError('El nombre del proveedor no puede contener números.')
         return nombre
+    
+    def clean_telefono(self):
+        telefono = self.cleaned_data.get('telefono', '').strip()
+        if not telefono:
+            return telefono
+        if ' ' in telefono:
+            raise ValidationError('El teléfono no puede contener espacios.')
+        if '.' in telefono:
+            raise ValidationError('El teléfono no puede contener puntos.')
+        if not telefono.isdigit():
+            raise ValidationError('El teléfono debe contener solo números.')
+        if len(telefono) < 7:
+            raise ValidationError('Ingresa un teléfono válido (mínimo 7 dígitos).')
+        if len(telefono) > 15:
+            raise ValidationError('El teléfono no puede tener más de 15 dígitos.')
+        return telefono
 
     def clean_correo(self):
         correo = self.cleaned_data.get('correo', '').strip()
+        if correo and not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', correo):
+            raise ValidationError('Ingresa un correo electrónico válido.')
+        if correo:
+            qs = Proveedor.objects.filter(correo__iexact=correo)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise ValidationError('Ya existe un proveedor con ese correo.')
         # correo es opcional en proveedor, pero si viene debe ser válido (el campo EmailField ya lo valida)
         return correo
 
+    def clean_direccion(self):
+        direccion = self.cleaned_data.get('direccion', '').strip()
+        if not direccion:
+            raise ValidationError('La dirección es obligatoria.')
+        return direccion
 
 # ──────────────────────────────────────────────
 # DISEÑADORES
@@ -217,6 +304,8 @@ class DisenadorForm(forms.ModelForm):
             raise ValidationError('Ya existe un diseñador con ese nombre.')
         if '.' in nombre:
             raise ValidationError('El nombre no puede contener puntos.')
+        if any(c.isdigit() for c in nombre):
+            raise ValidationError('El nombre no puede contener números.')
         return nombre
 
     def clean_telefono(self):
@@ -373,6 +462,12 @@ class DetallePedidoForm(forms.ModelForm):
             'precio_unitario': forms.NumberInput(attrs={'min': 0, 'step': '0.01', 'placeholder': '0.00'}),
         }
 
+    def clean_producto(self):
+        producto = self.cleaned_data.get('producto')
+        if not producto:
+            raise ValidationError('Selecciona almenos un producto.')
+        return producto
+
     def clean_cantidad(self):
         cantidad = self.cleaned_data.get('cantidad')
         if cantidad is not None and cantidad <= 0:
@@ -421,8 +516,10 @@ class MovimientoStockForm(forms.ModelForm):
 
     def clean_cantidad(self):
         cantidad = self.cleaned_data.get('cantidad')
-        if cantidad is None or cantidad <= 0:
-            raise ValidationError('La cantidad debe ser mayor que cero.')
+        if cantidad is None:
+            raise ValidationError('La cantidad es obligatoria.')
+        if cantidad <= 0:
+            raise ValidationError('La cantidad debe ser mayor a cero.')
         return cantidad
 
     def clean_producto(self):
@@ -493,7 +590,7 @@ class AsignarRolForm(forms.ModelForm):
 class UsuarioDashboardForm(forms.ModelForm):
     password1 = forms.CharField(
         label='Contraseña', widget=forms.PasswordInput, required=False,
-        help_text='Mínimo 8 caracteres. Dejar en blanco para no cambiar.'
+        help_text='Mínimo 6 caracteres. Dejar en blanco para no cambiar.'
     )
     password2 = forms.CharField(
         label='Confirmar contraseña', widget=forms.PasswordInput, required=False
@@ -537,8 +634,8 @@ class UsuarioDashboardForm(forms.ModelForm):
         if p1 or p2:
             if not p1:
                 raise ValidationError({'password1': 'Ingresa la contraseña.'})
-            if len(p1) < 8:
-                raise ValidationError({'password1': 'La contraseña debe tener al menos 8 caracteres.'})
+            if len(p1) < 6:
+                raise ValidationError({'password1': 'La contraseña debe tener al menos 6 caracteres.'})
             if p1 != p2:
                 raise ValidationError({'password2': 'Las contraseñas no coinciden.'})
         return cleaned
@@ -583,8 +680,8 @@ class SolicitarRecuperacionForm(forms.Form):
 class CambiarContrasenaForm(forms.Form):
     password1 = forms.CharField(
         label='Nueva contraseña',
-        min_length=8,
-        widget=forms.PasswordInput(attrs={'placeholder': 'Mínimo 8 caracteres'})
+        min_length=6,
+        widget=forms.PasswordInput(attrs={'placeholder': 'Mínimo 6 caracteres'})
     )
     password2 = forms.CharField(
         label='Confirmar contraseña',

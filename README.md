@@ -59,6 +59,10 @@ Proyecto en desarrollo como parte del proceso de formación en Análisis y Desar
 ```bash
 docker-compose down
 ```
+## Crear superuser con docker
+
+docker compose exec web python manage.py createsuperuser
+
 
 ---
 

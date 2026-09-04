@@ -41,7 +41,7 @@
 
     <div class="collection-banner-visual">
         <div class="collection-banner-image-wrap">
-            <img src="{% static producto_nuevo.get_imagen_url %}" alt="{{ producto_nuevo.nombre }}" class="collection-banner-image">
+            <img src="{{ producto_nuevo.get_imagen_url }}" alt="{{ producto_nuevo.nombre }}" class="collection-banner-image">
             <div class="collection-banner-float">
                 <span class="float-label">Drop 2026</span>
                 <span class="float-name">Corte Oversize</span>
@@ -113,7 +113,7 @@
                 {% else %}
                     <span class="badge-stock-pill badge-entrada">En inventario</span>
                 {% endif %}
-                <img src="{% static prod.get_imagen_url %}" alt="{{ prod.nombre }}" class="product-card-real-img" loading="lazy">
+                <img src="{{ prod.get_imagen_url }}" alt="{{ prod.nombre }}" class="product-card-real-img" loading="lazy">
             </div>
             <div class="product-card-body">
                 <div class="product-category-tag">{{ prod.categoria.nombre|default:"Moda Urbana" }}</div>

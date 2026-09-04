@@ -417,6 +417,9 @@ def vaciar_carrito(request):
 def checkout(request):
     """Pasarela de confirmación de pedido y datos de entrega."""
     cliente = get_cliente_actual(request)
+    if cliente is None:
+        return redirect('tienda_login')
+    
     carrito_data = get_carrito_items(request)
 
     if not carrito_data['items']:
@@ -664,6 +667,8 @@ def logout_cliente(request):
 def perfil_cliente(request):
     """Ver y editar datos del perfil de usuario."""
     cliente = get_cliente_actual(request)
+    if cliente is None:
+        return redirect('tienda_login')
 
     if request.method == 'POST':
         form = PerfilClienteForm(request.POST, instance=cliente)
@@ -686,6 +691,8 @@ def perfil_cliente(request):
 def cambiar_password_cliente(request):
     """Cambiar contraseña desde el perfil de usuario."""
     cliente = get_cliente_actual(request)
+    if cliente is None:
+        return redirect('tienda/login')
 
     if request.method == 'POST':
         form = CambiarPasswordClienteForm(request.POST, cliente=cliente)
