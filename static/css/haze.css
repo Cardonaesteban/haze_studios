@@ -225,6 +225,15 @@ tbody tr:hover { background: var(--gris-100); transition: background 0.15s; }
     outline: none; border-color: var(--azul);
     box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
 }
+.form-group input:disabled,
+.form-group select:disabled,
+.form-group textarea:disabled {
+    background-color: var(--gris-100);
+    color: var(--gris-500);
+    cursor: not-allowed;
+    border-color: var(--gris-200);
+    box-shadow: none;
+}
 .form-group textarea { min-height: 90px; resize: vertical; }
 .form-group .help-text { font-size: 0.77rem; color: var(--gris-500); margin-top: 0.3rem; }
 .form-group .errorlist { list-style: none; color: var(--rojo); font-size: 0.8rem; margin-top: 0.3rem; }
@@ -372,6 +381,20 @@ small.help, p.help { color:#6c757d; font-size:.82rem; display:block; margin-top:
 .btn-success:hover { background:#218838; }
 .btn-danger { background:#dc3545; color:#fff; border-color:#dc3545; }
 .btn-danger:hover { background:#c82333; }
+.btn-disabled, .btn:disabled, .btn.disabled {
+    opacity: 0.45;
+    cursor: not-allowed !important;
+    user-select: none;
+    box-shadow: none;
+}
+.dropdown-estado-item:hover:not(:disabled) {
+    background-color: var(--gris-100) !important;
+    color: var(--azul) !important;
+}
+.dropdown-estado-item:disabled {
+    opacity: 0.6;
+    background-color: var(--gris-50);
+}
 
 /* ── TIENDA OVERSIZE HERO MODERNO ──────────────────── */
 .tienda-hero-modern {

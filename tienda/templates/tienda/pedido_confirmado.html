@@ -45,6 +45,11 @@
                             <div class="table-product-cell">
                                 <img src="{% static det.producto.get_imagen_url %}" alt="{{ det.producto.nombre }}" class="table-product-thumb" style="width:42px;height:42px;">
                                 <strong style="color:var(--gris-900);">{{ det.producto.nombre }}</strong>
+                                {% if det.talla %}
+                                    <span class="badge badge-entrada" style="background:#F1F5F9;color:#334155;border:1px solid #CBD5E1;font-weight:700;font-size:0.75rem;margin-left:0.35rem;">
+                                        {{ det.talla }}
+                                    </span>
+                                {% endif %}
                             </div>
                         </td>
                         <td style="font-weight:700;">{{ det.cantidad }}</td>

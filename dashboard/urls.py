@@ -70,4 +70,10 @@ urlpatterns = [
     path('dashboard-users/<int:pk>/editar/', views.dashboard_users_editar, name='dashboard_users_editar'),
     path('dashboard-users/<int:pk>/eliminar/', views.dashboard_users_eliminar, name='dashboard_users_eliminar'),
     path('dashboard-users/<int:pk>/rol/', views.dashboard_users_asignar_rol, name='dashboard_users_rol'),
+
+    # Mensajes enviados a usuarios
+    path('mensajes/', views.mensajes_list, name='mensajes_list'),
+    path('mensajes/crear/', views.mensajes_crear, name='mensajes_crear'),
+    path('mensajes/<int:pk>/', views.mensajes_detalle, name='mensajes_detalle'),
+    path('mensajes/<int:pk>/eliminar/', views.mensajes_eliminar, name='mensajes_eliminar'),
 ]

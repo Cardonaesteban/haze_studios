@@ -5,27 +5,63 @@
     <h1>👕 Productos</h1>
     <a class="btn btn-primary" href="{% url 'productos_crear' %}">+ Nuevo producto</a>
 </div>
-<table class="table">
-    <thead><tr><th>Nombre</th><th>Categoría</th><th>Proveedor</th><th>Precio</th><th>Stock</th><th>Mín.</th><th>Estado</th><th>Acciones</th></tr></thead>
-    <tbody>
-    {% for p in productos %}
-    <tr class="{% if p.stock_bajo %}row-alert{% endif %}">
-        <td>{{ p.nombre }}</td>
-        <td>{{ p.categoria|default:"—" }}</td>
-        <td>{{ p.proveedor|default:"—" }}</td>
-        <td>${{ p.precio }}</td>
-        <td><strong>{{ p.stock }}</strong> {% if p.stock_bajo %}<span class="badge badge-salida">bajo</span>{% endif %}</td>
-        <td>{{ p.stock_minimo }}</td>
-        <td><span class="badge badge-{{ p.estado }}">{{ p.get_estado_display }}</span></td>
-        <td>
-            <a class="btn btn-sm btn-secondary" href="{% url 'productos_editar' p.pk %}">Editar</a>
-            <a class="btn btn-sm btn-secondary" href="{% url 'productos_estado' p.pk %}">Estado</a>
-            <a class="btn btn-sm btn-success" href="{% url 'stock_entrada' %}">+ Stock</a>
-            <a class="btn btn-sm btn-danger" href="{% url 'productos_eliminar' p.pk %}">Eliminar</a>
-        </td>
-    </tr>
-    {% empty %}<tr><td colspan="8">No hay productos.</td></tr>
-    {% endfor %}
-    </tbody>
-</table>
+
+<div class="page-actions" style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <form method="get" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <label for="categoria-select" style="font-size: 0.85rem; font-weight: 500; color: var(--gris-700);">Filtrar por categoría:</label>
+        <select name="categoria" id="categoria-select" class="form-control" style="width: auto; min-width: 220px; padding: 0.4rem 0.6rem; border-radius: var(--border-radius-md); border: 1px solid var(--gris-300);" onchange="this.form.submit()">
+            <option value="">Todas las categorías</option>
+            {% for c in categorias %}
+            <option value="{{ c.pk }}" {% if categoria_seleccionada == c.pk %}selected{% endif %}>
+                {{ c.nombre }}
+            </option>
+            {% endfor %}
+        </select>
+        {% if categoria_seleccionada %}
+        <a href="{% url 'productos_list' %}" class="btn btn-sm btn-secondary" title="Quitar filtro">Limpiar</a>
+        {% endif %}
+    </form>
+    <span style="font-size: 0.88rem; font-weight: 600; color: var(--gris-700);">
+        {{ total_productos }} producto(s) registrado(s)
+    </span>
+</div>
+
+<div class="table-wrap">
+    <table class="table">
+        <thead><tr><th>Nombre</th><th>Categoría</th><th>Proveedor</th><th>Precio</th><th>Stock</th><th>Mín.</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody>
+        {% for p in productos %}
+        <tr class="{% if p.stock_bajo %}row-alert{% endif %}">
+            <td>{{ p.nombre }}</td>
+            <td>{{ p.categoria|default:"—" }}</td>
+            <td>{{ p.proveedor|default:"—" }}</td>
+            <td>${{ p.precio }}</td>
+            <td><strong>{{ p.stock }}</strong> {% if p.stock_bajo %}<span class="badge badge-salida">bajo</span>{% endif %}</td>
+            <td>{{ p.stock_minimo }}</td>
+            <td><span class="badge badge-{{ p.estado }}">{{ p.get_estado_display }}</span></td>
+            <td>
+                {% if p.estado == 'activo' %}
+                <a class="btn btn-sm btn-secondary" href="{% url 'productos_editar' p.pk %}">Editar</a>
+                {% else %}
+                <button type="button" class="btn btn-sm btn-disabled" onclick="alert('No se puede editar el producto \'{{ p.nombre|escapejs }}\' porque está inactivo.\n\nPara poder editarlo, actívelo primero cambiando su estado.');" title="Producto inactivo: no se puede editar" style="background-color: #f1f5f9 !important; color: #94a3b8 !important; border: 1px solid #cbd5e1 !important; cursor: not-allowed !important; opacity: 0.75; font-weight: 500;">Editar</button>
+                {% endif %}
+                <a class="btn btn-sm btn-secondary" href="{% url 'productos_estado' p.pk %}">Estado</a>
+                <a class="btn btn-sm btn-success" href="{% url 'stock_entrada' %}">+ Stock</a>
+                <a class="btn btn-sm btn-danger" href="{% url 'productos_eliminar' p.pk %}">Eliminar</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="8" style="text-align:center;padding:2rem;color:var(--gris-500)">
+                {% if categoria_seleccionada %}
+                No hay productos en la categoría seleccionada.
+                {% else %}
+                No hay productos registrados.
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock %}

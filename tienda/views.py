@@ -1,4 +1,6 @@
 from decimal import Decimal
+import re
+import unicodedata
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.core.mail import send_mail
@@ -44,8 +46,33 @@ def get_cliente_actual(request):
     return None
 
 
+def generar_item_key(producto_id, talla):
+    """Genera una clave única y segura para URL/HTML combinando producto y talla."""
+    n = unicodedata.normalize('NFKD', str(talla)).encode('ASCII', 'ignore').decode('utf-8')
+    slug_talla = re.sub(r'[^a-zA-Z0-9]+', '-', n).strip('-').lower() or 'std'
+    return f"{producto_id}_{slug_talla}"
+
+
+def obtener_detalles_con_talla(pedido):
+    """Obtiene los detalles del pedido asignando la talla registrada en los movimientos de stock si existe."""
+    detalles = list(pedido.detalles.select_related('producto').all())
+    movimientos = list(pedido.movimientos_stock.filter(tipo='salida').order_by('id'))
+    movs_libres = list(movimientos)
+
+    for det in detalles:
+        det.talla = None
+        for i, mov in enumerate(movs_libres):
+            if mov.producto_id == det.producto_id and mov.cantidad == det.cantidad:
+                match = re.search(r'\(Talla:\s*([^)]+)\)', mov.motivo)
+                if match:
+                    det.talla = match.group(1).strip()
+                movs_libres.pop(i)
+                break
+    return detalles
+
+
 def get_carrito_items(request):
-    """Devuelve los items del carrito con los objetos Producto y totales."""
+    """Devuelve los items del carrito con los objetos Producto y totales, diferenciando por talla."""
     carrito = request.session.get('carrito', {})
     items = []
     total_general = Decimal('0')
@@ -54,12 +81,41 @@ def get_carrito_items(request):
     if not carrito:
         return {'items': items, 'total_general': total_general, 'total_cantidad': total_cantidad}
 
-    productos_ids = [int(pk) for pk in carrito.keys() if pk.isdigit()]
+    # Extraer los IDs únicos de producto compatibles con claves '1' y '1_s-oversize'
+    productos_ids = set()
+    for key, info in carrito.items():
+        if isinstance(info, dict) and 'producto_id' in info:
+            try:
+                productos_ids.add(int(info['producto_id']))
+            except (ValueError, TypeError):
+                pass
+        elif '_' in str(key):
+            try:
+                productos_ids.add(int(str(key).split('_')[0]))
+            except ValueError:
+                pass
+        elif str(key).isdigit():
+            productos_ids.add(int(key))
+
     productos = Producto.objects.filter(pk__in=productos_ids, estado='activo')
     productos_dict = {p.pk: p for p in productos}
 
-    for prod_id_str, info in list(carrito.items()):
-        prod_id = int(prod_id_str)
+    for item_key, info in list(carrito.items()):
+        if not isinstance(info, dict):
+            continue
+
+        prod_id = info.get('producto_id')
+        if not prod_id:
+            if '_' in str(item_key):
+                try:
+                    prod_id = int(str(item_key).split('_')[0])
+                except ValueError:
+                    continue
+            elif str(item_key).isdigit():
+                prod_id = int(item_key)
+            else:
+                continue
+
         producto = productos_dict.get(prod_id)
         if not producto:
             continue
@@ -75,6 +131,7 @@ def get_carrito_items(request):
         total_cantidad += cantidad
 
         items.append({
+            'item_key': str(item_key),
             'producto': producto,
             'cantidad': cantidad,
             'talla': talla,
@@ -215,7 +272,7 @@ def carrito(request):
 
 
 def agregar_carrito(request, producto_id):
-    """Añadir producto al carrito con validación de stock."""
+    """Añadir producto al carrito diferenciando por talla con validación de stock."""
     producto = get_object_or_404(Producto, pk=producto_id, estado='activo')
 
     if producto.stock <= 0:
@@ -230,72 +287,117 @@ def agregar_carrito(request, producto_id):
     if cantidad < 1:
         cantidad = 1
 
-    talla = request.POST.get('talla', 'L (Oversize)')
+    talla = request.POST.get('talla', 'L (Oversize)').strip()
+    item_key = generar_item_key(producto.pk, talla)
 
     carrito = request.session.get('carrito', {})
-    prod_id_str = str(producto.pk)
 
-    cantidad_actual = carrito.get(prod_id_str, {}).get('cantidad', 0)
-    nueva_cantidad = cantidad_actual + cantidad
+    # Unidades ya presentes de este producto en el carrito (otras tallas)
+    cantidad_otras_tallas = sum(
+        it.get('cantidad', 0) for k, it in carrito.items()
+        if isinstance(it, dict) and k != item_key and (
+            it.get('producto_id') == producto.pk
+            or str(k).startswith(f"{producto.pk}_")
+            or str(k) == str(producto.pk)
+        )
+    )
 
-    if nueva_cantidad > producto.stock:
+    stock_disponible = max(0, producto.stock - cantidad_otras_tallas)
+
+    if stock_disponible <= 0:
         messages.warning(
             request,
-            f'No puedes agregar {nueva_cantidad} unidades. Stock disponible: {producto.stock}.'
+            f'No puedes agregar más unidades de "{producto.nombre}". Ya tienes {cantidad_otras_tallas} unidad(es) de otras tallas en el carrito y el stock total es {producto.stock}.'
         )
-        nueva_cantidad = producto.stock
+        return redirect('tienda_carrito')
 
-    carrito[prod_id_str] = {
+    cantidad_actual = carrito.get(item_key, {}).get('cantidad', 0) if isinstance(carrito.get(item_key), dict) else 0
+    nueva_cantidad = cantidad_actual + cantidad
+
+    if nueva_cantidad > stock_disponible:
+        nueva_cantidad = stock_disponible
+        messages.warning(
+            request,
+            f'Se ajustó a {nueva_cantidad} unidad(es) en talla {talla} para no superar el stock disponible ({producto.stock}).'
+        )
+
+    carrito[item_key] = {
+        'producto_id': producto.pk,
         'cantidad': nueva_cantidad,
         'talla': talla,
     }
     request.session['carrito'] = carrito
     request.session.modified = True
 
-    messages.success(request, f'¡"{producto.nombre}" ({talla}) se añadió al carrito!')
+    messages.success(request, f'¡"{producto.nombre}" (Talla: {talla}) se añadió al carrito!')
     return redirect('tienda_carrito')
 
 
 def actualizar_carrito(request):
-    """Actualizar cantidades de artículos en el carrito."""
+    """Actualizar cantidades de artículos en el carrito diferenciando por variante/talla."""
     if request.method == 'POST':
         carrito = request.session.get('carrito', {})
         for key, value in request.POST.items():
             if key.startswith('cantidad_'):
-                prod_id_str = key.replace('cantidad_', '')
+                item_key = key.replace('cantidad_', '', 1)
                 try:
                     nueva_cant = int(value)
-                    if prod_id_str in carrito:
-                        producto = Producto.objects.filter(pk=prod_id_str, estado='activo').first()
+                    if item_key in carrito:
+                        item_data = carrito[item_key]
+                        prod_id = item_data.get('producto_id')
+                        if not prod_id and '_' in item_key:
+                            prod_id = int(item_key.split('_')[0])
+                        elif not prod_id and item_key.isdigit():
+                            prod_id = int(item_key)
+
+                        producto = Producto.objects.filter(pk=prod_id, estado='activo').first()
                         if not producto or nueva_cant <= 0:
-                            del carrito[prod_id_str]
-                        elif nueva_cant > producto.stock:
-                            carrito[prod_id_str]['cantidad'] = producto.stock
-                            messages.warning(
-                                request,
-                                f'Cantidad ajustada al máximo disponible ({producto.stock}) para {producto.nombre}.'
-                            )
+                            del carrito[item_key]
                         else:
-                            carrito[prod_id_str]['cantidad'] = nueva_cant
-                except ValueError:
+                            # Calcular el stock disponible descontando otras tallas del mismo producto
+                            otras_cant = sum(
+                                it.get('cantidad', 0) for k, it in carrito.items()
+                                if k != item_key and isinstance(it, dict) and (
+                                    it.get('producto_id') == producto.pk
+                                    or str(k).startswith(f"{producto.pk}_")
+                                    or str(k) == str(producto.pk)
+                                )
+                            )
+                            max_permitido = max(0, producto.stock - otras_cant)
+                            if nueva_cant > max_permitido:
+                                carrito[item_key]['cantidad'] = max_permitido
+                                messages.warning(
+                                    request,
+                                    f'Cantidad para "{producto.nombre} ({item_data.get("talla", "")})" ajustada a {max_permitido} por stock disponible.'
+                                )
+                            else:
+                                carrito[item_key]['cantidad'] = nueva_cant
+                except (ValueError, TypeError):
                     pass
 
         request.session['carrito'] = carrito
         request.session.modified = True
-        messages.success(request, 'Carrito actualizado con éxito.')
 
     return redirect('tienda_carrito')
 
 
-def eliminar_carrito(request, producto_id):
-    """Eliminar un producto específico del carrito."""
+def eliminar_carrito(request, item_key):
+    """Eliminar un producto y talla específico del carrito."""
     carrito = request.session.get('carrito', {})
-    prod_id_str = str(producto_id)
-    if prod_id_str in carrito:
-        del carrito[prod_id_str]
+    item_key_str = str(item_key)
+    if item_key_str in carrito:
+        del carrito[item_key_str]
         request.session['carrito'] = carrito
         request.session.modified = True
-        messages.success(request, 'Producto eliminado del carrito.')
+        messages.success(request, 'Prenda eliminada del carrito.')
+    elif item_key_str.isdigit():
+        # Soporte para IDs numéricos anteriores
+        a_borrar = [k for k in carrito if k == item_key_str or str(k).startswith(f"{item_key_str}_")]
+        for k in a_borrar:
+            del carrito[k]
+        request.session['carrito'] = carrito
+        request.session.modified = True
+        messages.success(request, 'Prenda eliminada del carrito.')
     return redirect('tienda_carrito')
 
 
@@ -337,13 +439,29 @@ def checkout(request):
             # Transacción atómica para crear pedido y descontar stock
             try:
                 with transaction.atomic():
-                    # Re-verificar y bloquear stock
+                    # Sumar cantidad total requerida por producto para verificar stock conjunto
+                    totales_por_producto = {}
                     for item in carrito_data['items']:
-                        prod = Producto.objects.select_for_update().get(pk=item['producto'].pk)
-                        if prod.stock < item['cantidad']:
+                        pid = item['producto'].pk
+                        totales_por_producto[pid] = totales_por_producto.get(pid, 0) + item['cantidad']
+
+                    # Re-verificar y bloquear stock
+                    for pid, cant_requerida in totales_por_producto.items():
+                        prod = Producto.objects.select_for_update().get(pk=pid)
+                        if prod.stock < cant_requerida:
                             raise ValueError(
-                                f'Stock insuficiente para "{prod.nombre}". Disponible: {prod.stock}'
+                                f'Stock insuficiente para "{prod.nombre}". Solicitado en total: {cant_requerida}, Disponible: {prod.stock}'
                             )
+
+                    # Formato limpio y estructurado para notas de entrega y contacto
+                    partes_notas = [
+                        f"Contacto: {telefono}",
+                        f"Entrega: {direccion_envio}"
+                    ]
+                    if notas and notas.strip():
+                        partes_notas.append(f"Instrucciones del cliente: {notas.strip()}")
+
+                    notas_finales = "\n".join(partes_notas)
 
                     # Crear Pedido principal en Dashboard
                     pedido = Pedido.objects.create(
@@ -351,7 +469,7 @@ def checkout(request):
                         fecha_pedido=timezone.now().date(),
                         estado='pendiente',
                         total=carrito_data['total_general'],
-                        notas=f'Contacto: {telefono}\nEntrega: {direccion_envio}\nNotas: {notas}'.strip()
+                        notas=notas_finales.strip()
                     )
 
                     # Crear Detalles y descontar stock con movimiento
@@ -359,7 +477,7 @@ def checkout(request):
                         prod = Producto.objects.get(pk=item['producto'].pk)
                         cant = item['cantidad']
                         stock_ant = prod.stock
-                        stock_post = stock_ant - cant
+                        stock_post = max(0, stock_ant - cant)
 
                         # Crear detalle
                         DetallePedido.objects.create(
@@ -421,7 +539,7 @@ def pedido_confirmado(request, pedido_id):
     """Pantalla de confirmación de pedido."""
     cliente = get_cliente_actual(request)
     pedido = get_object_or_404(Pedido, pk=pedido_id, cliente=cliente)
-    detalles = pedido.detalles.select_related('producto').all()
+    detalles = obtener_detalles_con_talla(pedido)
 
     context = {
         'pedido': pedido,
@@ -449,7 +567,7 @@ def pedido_detalle(request, pedido_id):
     """Vista detallada de un pedido específico."""
     cliente = get_cliente_actual(request)
     pedido = get_object_or_404(Pedido, pk=pedido_id, cliente=cliente)
-    detalles = pedido.detalles.select_related('producto').all()
+    detalles = obtener_detalles_con_talla(pedido)
 
     context = {
         'pedido': pedido,

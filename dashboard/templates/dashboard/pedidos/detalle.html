@@ -31,8 +31,46 @@
 </div>
 
 {% if pedido.notas %}
-<div class="alert" style="background:var(--gris-50);border:1px solid var(--gris-200);margin-bottom:1.5rem;">
-    📝 <strong>Notas:</strong> {{ pedido.notas }}
+<div class="form-wrap" style="margin:0 0 1.75rem 0;padding:1.5rem;background:#F8FAFC;border:1px solid var(--gris-200);border-radius:var(--border-radius-lg);">
+    <div style="font-size:1rem;font-weight:800;color:var(--gris-900);margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+        <span>📝</span> Información de Entrega y Notas
+    </div>
+
+    {% if notas_info.es_estructurado %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:1rem;">
+        {% if notas_info.telefono %}
+        <div style="background:#fff;padding:0.85rem 1rem;border-radius:8px;border:1px solid var(--gris-200);">
+            <div style="font-size:0.75rem;color:var(--gris-500);font-weight:700;text-transform:uppercase;">📞 Teléfono de Contacto</div>
+            <div style="font-weight:700;color:var(--gris-900);margin-top:0.35rem;font-size:0.95rem;">{{ notas_info.telefono }}</div>
+        </div>
+        {% endif %}
+        {% if notas_info.direccion %}
+        <div style="background:#fff;padding:0.85rem 1rem;border-radius:8px;border:1px solid var(--gris-200);">
+            <div style="font-size:0.75rem;color:var(--gris-500);font-weight:700;text-transform:uppercase;">📍 Dirección de Entrega</div>
+            <div style="font-weight:700;color:var(--gris-900);margin-top:0.35rem;font-size:0.95rem;">{{ notas_info.direccion }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if notas_info.instrucciones %}
+    <div style="background:#fff;padding:0.85rem 1rem;border-radius:8px;border:1px solid var(--gris-200);margin-top:0.85rem;">
+        <div style="font-size:0.75rem;color:var(--gris-500);font-weight:700;text-transform:uppercase;">💬 Instrucciones del Cliente</div>
+        <div style="color:var(--gris-800);margin-top:0.35rem;font-size:0.92rem;line-height:1.5;">{{ notas_info.instrucciones }}</div>
+    </div>
+    {% endif %}
+
+    {% if notas_info.otros %}
+    <div style="background:#fff;padding:0.85rem 1rem;border-radius:8px;border:1px solid var(--gris-200);margin-top:0.85rem;">
+        <div style="font-size:0.75rem;color:var(--gris-500);font-weight:700;text-transform:uppercase;">Observaciones Adicionales</div>
+        <div style="color:var(--gris-800);margin-top:0.35rem;white-space:pre-line;font-size:0.92rem;">{{ notas_info.otros }}</div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div style="white-space:pre-line;color:var(--gris-800);font-size:0.92rem;line-height:1.6;background:#fff;padding:1rem;border-radius:8px;border:1px solid var(--gris-200);">
+        {{ pedido.notas }}
+    </div>
+    {% endif %}
 </div>
 {% endif %}
 
@@ -43,7 +81,14 @@
         <tbody>
         {% for d in detalles %}
         <tr>
-            <td>{{ d.producto.nombre }}</td>
+            <td>
+                {{ d.producto.nombre }}
+                {% if d.talla %}
+                    <span class="badge" style="background:#F1F5F9;color:#334155;border:1px solid #CBD5E1;font-size:0.75rem;margin-left:0.35rem;font-weight:700;">
+                        {{ d.talla }}
+                    </span>
+                {% endif %}
+            </td>
             <td>{{ d.cantidad }}</td>
             <td>${{ d.precio_unitario }}</td>
             <td><strong>${{ d.subtotal }}</strong></td>

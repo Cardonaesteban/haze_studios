@@ -1,0 +1,98 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Detalle del Mensaje #{{ mensaje.pk }} | Haze Studios{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div>
+        <h1>Mensaje #{{ mensaje.pk }}</h1>
+        <p style="color: var(--gris-500); font-size: 0.9rem; margin-top: 0.25rem;">
+            Enviado el {{ mensaje.fecha_envio|date:"d/m/Y \a \l\a\s H:i" }}
+        </p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="{% url 'mensajes_list' %}" class="btn btn-secondary">← Volver a mensajes</a>
+        <a href="{% url 'mensajes_eliminar' mensaje.pk %}" class="btn btn-danger">Eliminar</a>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1.6fr; gap: 1.5rem; align-items: start;">
+    <!-- Tarjeta de Metadatos -->
+    <div class="card" style="background: var(--blanco); border: 1px solid var(--gris-200); border-radius: var(--border-radius-lg); padding: 1.5rem; box-shadow: var(--sombra-sm);">
+        <h3 style="font-size: 1.05rem; font-weight: 600; margin-bottom: 1.25rem; color: var(--gris-900); border-bottom: 1px solid var(--gris-100); padding-bottom: 0.75rem;">
+            Información del Envío
+        </h3>
+
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div>
+                <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 600; color: var(--gris-500); letter-spacing: 0.5px;">Destinatario</span>
+                <div style="font-size: 0.95rem; font-weight: 600; color: var(--gris-900); margin-top: 0.2rem;">
+                    {{ mensaje.destinatario.nombre }} {{ mensaje.destinatario.apellido }}
+                </div>
+                <div style="font-size: 0.85rem; color: var(--gris-600);">
+                    {{ mensaje.destinatario.correo }}
+                </div>
+                {% if mensaje.destinatario.telefono %}
+                <div style="font-size: 0.8rem; color: var(--gris-500); margin-top: 0.15rem;">
+                    Tel: {{ mensaje.destinatario.telefono }}
+                </div>
+                {% endif %}
+            </div>
+
+            <div>
+                <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 600; color: var(--gris-500); letter-spacing: 0.5px;">Remitente</span>
+                <div style="font-size: 0.92rem; font-weight: 500; color: var(--gris-800); margin-top: 0.2rem;">
+                    {{ mensaje.remitente }}
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1.5rem;">
+                <div>
+                    <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 600; color: var(--gris-500); letter-spacing: 0.5px; display: block; margin-bottom: 0.3rem;">Tipo</span>
+                    <span class="badge" style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; font-size: 0.8rem;">
+                        {{ mensaje.get_tipo_display }}
+                    </span>
+                </div>
+                <div>
+                    <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 600; color: var(--gris-500); letter-spacing: 0.5px; display: block; margin-bottom: 0.3rem;">Estado</span>
+                    <span class="badge badge-{{ mensaje.estado }}" style="font-size: 0.8rem;">
+                        {{ mensaje.get_estado_display }}
+                    </span>
+                </div>
+            </div>
+
+            <div>
+                <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 600; color: var(--gris-500); letter-spacing: 0.5px;">Fecha y hora de envío</span>
+                <div style="font-size: 0.88rem; color: var(--gris-700); margin-top: 0.2rem;">
+                    {{ mensaje.fecha_envio|date:"d \d\e F \d\e Y, H:i:s" }}
+                </div>
+            </div>
+
+            {% if mensaje.pedido %}
+            <div style="padding-top: 0.75rem; border-top: 1px solid var(--gris-100);">
+                <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 600; color: var(--gris-500); letter-spacing: 0.5px;">Pedido Asociado</span>
+                <div style="margin-top: 0.35rem;">
+                    <a href="{% url 'pedidos_detalle' mensaje.pedido.pk %}" class="btn btn-sm btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                        <span>Ver Pedido #{{ mensaje.pedido.pk }}</span>
+                        <span class="badge badge-{{ mensaje.pedido.estado }}">{{ mensaje.pedido.get_estado_display }}</span>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Tarjeta de Contenido del Mensaje -->
+    <div class="card" style="background: var(--blanco); border: 1px solid var(--gris-200); border-radius: var(--border-radius-lg); padding: 1.5rem; box-shadow: var(--sombra-sm);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--gris-100); padding-bottom: 0.75rem;">
+            <h3 style="font-size: 1.05rem; font-weight: 600; color: var(--gris-900); margin: 0;">
+                Contenido del Mensaje
+            </h3>
+            <span style="font-size: 0.78rem; background: var(--gris-100); color: var(--gris-600); padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 500;">
+                {{ mensaje.contenido|length }} / 500 caracteres
+            </span>
+        </div>
+
+        <div style="background: var(--gris-50); border: 1px solid var(--gris-200); border-left: 4px solid var(--azul); border-radius: var(--border-radius-md); padding: 1.25rem; line-height: 1.6; color: var(--gris-800); font-size: 0.95rem; white-space: pre-wrap; word-break: break-word;">{{ mensaje.contenido }}</div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,186 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Mensajes Enviados | Haze Studios{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Mensajes Enviados</h1>
+    <a class="btn btn-primary" href="{% url 'mensajes_crear' %}">+ Registrar mensaje</a>
+</div>
+
+<div class="page-actions" style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <form method="get" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <label for="cliente-select" style="font-size: 0.85rem; font-weight: 500; color: var(--gris-700);">Filtrar por destinatario:</label>
+        <select name="cliente" id="cliente-select" class="form-control" style="width: auto; min-width: 240px; padding: 0.4rem 0.6rem; border-radius: var(--border-radius-md); border: 1px solid var(--gris-300);" onchange="this.form.submit()">
+            <option value="">Todos los usuarios</option>
+            {% for c in clientes %}
+            <option value="{{ c.pk }}" {% if cliente_seleccionado == c.pk %}selected{% endif %}>
+                {{ c.nombre }} {{ c.apellido }} ({{ c.correo }})
+            </option>
+            {% endfor %}
+        </select>
+        {% if cliente_seleccionado %}
+        <a href="{% url 'mensajes_list' %}" class="btn btn-sm btn-secondary" title="Quitar filtro">Limpiar</a>
+        {% endif %}
+    </form>
+    <span style="font-size: 0.88rem; font-weight: 600; color: var(--gris-700);">
+        {{ total_mensajes }} mensaje(s) registrado(s)
+    </span>
+</div>
+
+<div class="table-wrap">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Destinatario</th>
+                <th>Remitente</th>
+                <th>Tipo</th>
+                <th>Contenido</th>
+                <th>Fecha y hora</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for m in mensajes %}
+        <tr>
+            <td><strong>#{{ m.pk }}</strong></td>
+            <td>
+                <div><strong>{{ m.destinatario.nombre }} {{ m.destinatario.apellido }}</strong></div>
+                <div style="font-size:0.78rem; color:var(--gris-500);">{{ m.destinatario.correo }}</div>
+            </td>
+            <td>{{ m.remitente }}</td>
+            <td>
+                <span class="badge" style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; font-size:0.75rem;">
+                    {{ m.get_tipo_display }}
+                </span>
+            </td>
+            <td style="max-width: 300px; line-height: 1.4;">
+                <div style="word-break: break-word; font-size: 0.85rem; color: var(--gris-800);">
+                    {{ m.contenido|truncatechars:120 }}
+                </div>
+                {% if m.pedido %}
+                <div style="font-size:0.75rem; color:var(--azul); margin-top: 0.2rem;">
+                    Asociado a Pedido #{{ m.pedido.pk }}
+                </div>
+                {% endif %}
+            </td>
+            <td style="font-size: 0.82rem; color: var(--gris-600); white-space: nowrap;">
+                {{ m.fecha_envio|date:"d/m/Y H:i" }}
+            </td>
+            <td>
+                <span class="badge badge-{{ m.estado }}">{{ m.get_estado_display }}</span>
+            </td>
+            <td>
+                <div style="display: flex; gap: 0.4rem; align-items: center;">
+                    <button type="button" class="btn btn-sm btn-secondary" 
+                            onclick="abrirModalMensaje('{{ m.pk }}', '{{ m.destinatario.nombre|escapejs }} {{ m.destinatario.apellido|escapejs }}', '{{ m.destinatario.correo|escapejs }}', '{{ m.remitente|escapejs }}', '{{ m.get_tipo_display|escapejs }}', '{{ m.get_estado_display|escapejs }}', '{{ m.fecha_envio|date:"d/m/Y H:i" }}', '{{ m.contenido|escapejs }}', '{% if m.pedido %}#{{ m.pedido.pk }}{% endif %}', '{% url 'mensajes_detalle' m.pk %}')">
+                        Ver
+                    </button>
+                    <a class="btn btn-sm btn-danger" href="{% url 'mensajes_eliminar' m.pk %}">Eliminar</a>
+                </div>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="8" style="text-align:center; padding:2.5rem; color:var(--gris-500);">
+                {% if cliente_seleccionado %}
+                No hay mensajes para el usuario seleccionado.
+                {% else %}
+                No hay mensajes registrados.
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal Detalle de Mensaje -->
+<div id="modal-mensaje" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: var(--blanco); width: 100%; max-width: 560px; border-radius: var(--border-radius-lg); box-shadow: var(--sombra-xl); overflow: hidden;">
+        <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--gris-200); display: flex; justify-content: space-between; align-items: center;">
+            <h3 id="modal-titulo" style="font-size: 1.1rem; font-weight: 600; color: var(--gris-900); margin: 0;">Detalle del Mensaje</h3>
+            <button type="button" onclick="cerrarModalMensaje()" style="background:none; border:none; font-size:1.5rem; line-height:1; cursor:pointer; color:var(--gris-400);">&times;</button>
+        </div>
+        <div style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; max-height: 70vh; overflow-y: auto;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <span style="font-size:0.75rem; text-transform:uppercase; font-weight:600; color:var(--gris-500);">Destinatario</span>
+                    <div id="modal-destinatario" style="font-size:0.9rem; font-weight:600; color:var(--gris-800); margin-top:0.2rem;"></div>
+                    <div id="modal-correo" style="font-size:0.8rem; color:var(--gris-500);"></div>
+                </div>
+                <div>
+                    <span style="font-size:0.75rem; text-transform:uppercase; font-weight:600; color:var(--gris-500);">Remitente</span>
+                    <div id="modal-remitente" style="font-size:0.9rem; font-weight:500; color:var(--gris-800); margin-top:0.2rem;"></div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                <div>
+                    <span style="font-size:0.75rem; text-transform:uppercase; font-weight:600; color:var(--gris-500);">Tipo</span>
+                    <div id="modal-tipo" style="font-size:0.85rem; font-weight:500; margin-top:0.2rem;"></div>
+                </div>
+                <div>
+                    <span style="font-size:0.75rem; text-transform:uppercase; font-weight:600; color:var(--gris-500);">Estado</span>
+                    <div id="modal-estado" style="font-size:0.85rem; font-weight:500; margin-top:0.2rem;"></div>
+                </div>
+                <div>
+                    <span style="font-size:0.75rem; text-transform:uppercase; font-weight:600; color:var(--gris-500);">Fecha</span>
+                    <div id="modal-fecha" style="font-size:0.82rem; color:var(--gris-600); margin-top:0.2rem;"></div>
+                </div>
+            </div>
+
+            <div id="modal-pedido-container" style="display: none;">
+                <span style="font-size:0.75rem; text-transform:uppercase; font-weight:600; color:var(--gris-500);">Pedido Asociado</span>
+                <div id="modal-pedido" style="font-size:0.88rem; color:var(--azul); font-weight:500; margin-top:0.2rem;"></div>
+            </div>
+
+            <div>
+                <span style="font-size:0.75rem; text-transform:uppercase; font-weight:600; color:var(--gris-500);">Contenido Completo</span>
+                <div id="modal-contenido" style="background:var(--gris-50); border:1px solid var(--gris-200); border-left:4px solid var(--azul); border-radius:var(--border-radius-md); padding:1rem; margin-top:0.35rem; font-size:0.9rem; line-height:1.5; color:var(--gris-800); white-space:pre-wrap; word-break:break-word;"></div>
+            </div>
+        </div>
+        <div style="padding: 1rem 1.5rem; background: var(--gris-50); border-top: 1px solid var(--gris-200); display: flex; justify-content: space-between; align-items: center;">
+            <a id="modal-link-completo" href="#" class="btn btn-sm btn-secondary">Ver página completa</a>
+            <button type="button" class="btn btn-sm btn-primary" onclick="cerrarModalMensaje()">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function abrirModalMensaje(id, destinatario, correo, remitente, tipo, estado, fecha, contenido, pedido, urlDetalle) {
+    document.getElementById('modal-titulo').textContent = 'Mensaje #' + id;
+    document.getElementById('modal-destinatario').textContent = destinatario;
+    document.getElementById('modal-correo').textContent = correo;
+    document.getElementById('modal-remitente').textContent = remitente;
+    document.getElementById('modal-tipo').textContent = tipo;
+    document.getElementById('modal-estado').textContent = estado;
+    document.getElementById('modal-fecha').textContent = fecha;
+    document.getElementById('modal-contenido').textContent = contenido;
+    
+    const pedidoCont = document.getElementById('modal-pedido-container');
+    if (pedido) {
+        pedidoCont.style.display = 'block';
+        document.getElementById('modal-pedido').textContent = 'Pedido ' + pedido;
+    } else {
+        pedidoCont.style.display = 'none';
+    }
+
+    document.getElementById('modal-link-completo').href = urlDetalle;
+    const modal = document.getElementById('modal-mensaje');
+    modal.style.display = 'flex';
+}
+
+function cerrarModalMensaje() {
+    document.getElementById('modal-mensaje').style.display = 'none';
+}
+
+window.addEventListener('click', function(e) {
+    const modal = document.getElementById('modal-mensaje');
+    if (e.target === modal) {
+        cerrarModalMensaje();
+    }
+});
+</script>
+{% endblock %}

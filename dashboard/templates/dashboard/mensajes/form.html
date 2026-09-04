@@ -1,0 +1,50 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ titulo }} | Haze Studios{% endblock %}
+
+{% block content %}
+<h1>{{ titulo }}</h1>
+<div class="form-wrap">
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group">
+            <label>{{ field.label }}</label>
+            {{ field }}
+            {% if field.name == 'contenido' %}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.3rem;">
+                <span class="help-text" id="char-counter">0 / 500 caracteres</span>
+                {% if field.help_text %}<span class="help-text">{{ field.help_text }}</span>{% endif %}
+            </div>
+            {% else %}
+                {% if field.help_text %}<div class="help-text">{{ field.help_text }}</div>{% endif %}
+            {% endif %}
+            {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        {% endfor %}
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Guardar y Enviar</button>
+            <a class="btn btn-secondary" href="{% url 'mensajes_list' %}">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('id_contenido');
+    const counter = document.getElementById('char-counter');
+    if (textarea && counter) {
+        function updateCounter() {
+            const len = textarea.value.length;
+            counter.textContent = len + ' / 500 caracteres';
+            if (len > 500) {
+                counter.style.color = 'var(--rojo)';
+            } else {
+                counter.style.color = 'var(--gris-500)';
+            }
+        }
+        textarea.addEventListener('input', updateCounter);
+        updateCounter();
+    }
+});
+</script>
+{% endblock %}

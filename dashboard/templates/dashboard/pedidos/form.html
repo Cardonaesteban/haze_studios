@@ -6,15 +6,45 @@
     <form method="post">
         {% csrf_token %}
 
-        <h3 style="font-size:1rem;font-weight:600;color:var(--gris-700);margin-bottom:1rem;">Datos del pedido</h3>
-        {% for field in form %}
-        <div class="form-group">
-            <label>{{ field.label }}{% if field.field.required %} <span style="color:var(--rojo)">*</span>{% endif %}</label>
-            {{ field }}
-            {% if field.help_text %}<div class="help-text">{{ field.help_text }}</div>{% endif %}
-            {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        <h3 style="font-size:1rem;font-weight:700;color:var(--gris-800);margin-bottom:1rem;">📋 Datos Generales del Pedido</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:1rem;margin-bottom:1rem;">
+            <div class="form-group" style="margin:0;">
+                <label>{{ form.cliente.label }}{% if form.cliente.field.required %} <span style="color:var(--rojo)">*</span>{% endif %}</label>
+                {{ form.cliente }}
+                {% if form.cliente.errors %}<ul class="errorlist">{% for e in form.cliente.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="form-group" style="margin:0;">
+                <label>{{ form.fecha_pedido.label }}{% if form.fecha_pedido.field.required %} <span style="color:var(--rojo)">*</span>{% endif %}</label>
+                {{ form.fecha_pedido }}
+                {% if form.fecha_pedido.errors %}<ul class="errorlist">{% for e in form.fecha_pedido.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="form-group" style="margin:0;">
+                <label>{{ form.estado.label }}{% if form.estado.field.required %} <span style="color:var(--rojo)">*</span>{% endif %}</label>
+                {{ form.estado }}
+                {% if form.estado.errors %}<ul class="errorlist">{% for e in form.estado.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
         </div>
-        {% endfor %}
+
+        <hr style="border:none;border-top:1px solid var(--gris-200);margin:1.5rem 0;">
+        <h3 style="font-size:1rem;font-weight:700;color:var(--gris-800);margin-bottom:1rem;">📍 Información de Despacho y Contacto</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:1rem;margin-bottom:1rem;">
+            <div class="form-group" style="margin:0;">
+                <label>{{ form.telefono_contacto.label }}</label>
+                {{ form.telefono_contacto }}
+                {% if form.telefono_contacto.errors %}<ul class="errorlist">{% for e in form.telefono_contacto.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="form-group" style="margin:0;">
+                <label>{{ form.direccion_envio.label }}</label>
+                {{ form.direccion_envio }}
+                {% if form.direccion_envio.errors %}<ul class="errorlist">{% for e in form.direccion_envio.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+        </div>
+        <div class="form-group" style="margin-bottom:1rem;">
+            <label>{{ form.notas_adicionales.label }}</label>
+            {{ form.notas_adicionales }}
+            {% if form.notas_adicionales.help_text %}<div class="help-text">{{ form.notas_adicionales.help_text }}</div>{% endif %}
+            {% if form.notas_adicionales.errors %}<ul class="errorlist">{% for e in form.notas_adicionales.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
 
         <hr style="border:none;border-top:1px solid var(--gris-200);margin:1.5rem 0;">
         <h3 style="font-size:1rem;font-weight:600;color:var(--gris-700);margin-bottom:1rem;">🛍️ Productos del pedido</h3>

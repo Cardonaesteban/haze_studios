@@ -2,11 +2,31 @@
 {% block title %}Proveedores | Haze Studios{% endblock %}
 
 {% block content %}
-<h1>Administración de Proveedores</h1>
-<div class="page-actions">
-    <span>{{ proveedores|length }} proveedor(es)</span>
+<div class="page-header">
+    <h1>Administración de Proveedores</h1>
     <a class="btn btn-primary" href="{% url 'proveedores_crear' %}">+ Registrar proveedor</a>
 </div>
+
+<div class="page-actions" style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <form method="get" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <label for="proveedor-select" style="font-size: 0.85rem; font-weight: 500; color: var(--gris-700);">Filtrar por proveedor:</label>
+        <select name="proveedor" id="proveedor-select" class="form-control" style="width: auto; min-width: 220px; padding: 0.4rem 0.6rem; border-radius: var(--border-radius-md); border: 1px solid var(--gris-300);" onchange="this.form.submit()">
+            <option value="">Todos los proveedores</option>
+            {% for p in todos_proveedores %}
+            <option value="{{ p.pk }}" {% if proveedor_seleccionado == p.pk %}selected{% endif %}>
+                {{ p.nombre }}
+            </option>
+            {% endfor %}
+        </select>
+        {% if proveedor_seleccionado %}
+        <a href="{% url 'proveedores_list' %}" class="btn btn-sm btn-secondary" title="Quitar filtro">Limpiar</a>
+        {% endif %}
+    </form>
+    <span style="font-size: 0.88rem; font-weight: 600; color: var(--gris-700);">
+        {{ total_proveedores }} proveedor(es) registrado(s)
+    </span>
+</div>
+
 <div class="table-wrap">
     <table>
         <thead>
@@ -17,16 +37,24 @@
         <tr>
             <td>{{ p.pk }}</td>
             <td>{{ p.nombre }}</td>
-            <td>{{ p.telefono }}</td>
-            <td>{{ p.correo }}</td>
-            <td>{{ p.direccion }}</td>
+            <td>{{ p.telefono|default:"—" }}</td>
+            <td>{{ p.correo|default:"—" }}</td>
+            <td>{{ p.direccion|default:"—" }}</td>
             <td class="botones">
                 <a class="btn-editar" href="{% url 'proveedores_editar' p.pk %}">✏️ Editar</a>
                 <a class="btn-eliminar" href="{% url 'proveedores_eliminar' p.pk %}">🗑️ Eliminar</a>
             </td>
         </tr>
         {% empty %}
-        <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--gris-500)">No hay proveedores.</td></tr>
+        <tr>
+            <td colspan="6" style="text-align:center;padding:2rem;color:var(--gris-500)">
+                {% if proveedor_seleccionado %}
+                No se encontró el proveedor seleccionado.
+                {% else %}
+                No hay proveedores registrados.
+                {% endif %}
+            </td>
+        </tr>
         {% endfor %}
         </tbody>
     </table>

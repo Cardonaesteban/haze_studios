@@ -7,6 +7,26 @@
     <a class="btn btn-primary" href="{% url 'roles_crear' %}">+ Nuevo rol</a>
 </div>
 
+<div class="page-actions" style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <form method="get" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <label for="estado-select" style="font-size: 0.85rem; font-weight: 500; color: var(--gris-700);">Filtrar por estado:</label>
+        <select name="estado" id="estado-select" class="form-control" style="width: auto; min-width: 200px; padding: 0.4rem 0.6rem; border-radius: var(--border-radius-md); border: 1px solid var(--gris-300);" onchange="this.form.submit()">
+            <option value="">Todos los estados</option>
+            {% for val, label in estados %}
+            <option value="{{ val }}" {% if estado_seleccionado == val %}selected{% endif %}>
+                {{ label }}
+            </option>
+            {% endfor %}
+        </select>
+        {% if estado_seleccionado %}
+        <a href="{% url 'roles_list' %}" class="btn btn-sm btn-secondary" title="Quitar filtro">Limpiar</a>
+        {% endif %}
+    </form>
+    <span style="font-size: 0.88rem; font-weight: 600; color: var(--gris-700);">
+        {{ total_roles }} rol(es) registrado(s)
+    </span>
+</div>
+
 <div class="table-wrap">
     <table>
         <thead><tr><th>Rol</th><th>Descripción</th><th>Permisos</th><th>Estado</th><th>Usuarios asignados</th><th>Acciones</th></tr></thead>
@@ -31,7 +51,15 @@
             </td>
         </tr>
         {% empty %}
-        <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--gris-500)">No hay roles definidos.</td></tr>
+        <tr>
+            <td colspan="6" style="text-align:center;padding:2rem;color:var(--gris-500)">
+                {% if estado_seleccionado %}
+                No hay roles con el estado seleccionado.
+                {% else %}
+                No hay roles definidos.
+                {% endif %}
+            </td>
+        </tr>
         {% endfor %}
         </tbody>
     </table>

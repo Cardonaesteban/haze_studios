@@ -2,6 +2,7 @@ from decimal import Decimal
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxLengthValidator
 from django.utils import timezone
 
 
@@ -411,6 +412,63 @@ class TokenRecuperacion(models.Model):
         return not self.usado and timezone.now() < limite
 
 # ──────────────────────────────────────────────
-# DISEÑADORES}
+# MENSAJES ENVIADOS A USUARIOS
 # ──────────────────────────────────────────────
+
+class Mensaje(models.Model):
+    TIPO_CHOICES = [
+        ('notificacion_pedido', 'Notificación de Pedido'),
+        ('informativo', 'Informativo'),
+        ('promocional', 'Promocional'),
+        ('soporte', 'Soporte'),
+    ]
+
+    ESTADO_CHOICES = [
+        ('enviado', 'Enviado'),
+        ('entregado', 'Entregado'),
+        ('leido', 'Leído'),
+        ('fallido', 'Fallido'),
+    ]
+
+    destinatario = models.ForeignKey(
+        Cliente, on_delete=models.CASCADE,
+        related_name='mensajes', db_column='id_destinatario',
+        help_text='Usuario destinatario del mensaje'
+    )
+    remitente = models.CharField(max_length=120, default='Haze Studios')
+    tipo = models.CharField(max_length=30, choices=TIPO_CHOICES, default='notificacion_pedido')
+    contenido = models.CharField(
+        max_length=500,
+        validators=[MaxLengthValidator(500)],
+        help_text='Contenido del mensaje (máximo 500 caracteres)'
+    )
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='enviado')
+    fecha_envio = models.DateTimeField(auto_now_add=True)
+    pedido = models.ForeignKey(
+        Pedido, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='mensajes_enviados'
+    )
+
+    class Meta:
+        db_table = 'mensajes'
+        verbose_name = 'Mensaje'
+        verbose_name_plural = 'Mensajes'
+        ordering = ['-fecha_envio']
+
+    def clean(self):
+        super().clean()
+        if self.contenido and len(self.contenido) > 500:
+            raise ValidationError({'contenido': 'El contenido del mensaje no podrá superar los 500 caracteres.'})
+        if not self.destinatario_id:
+            raise ValidationError({'destinatario': 'Debe especificar un usuario destinatario existente en el sistema.'})
+        elif not Cliente.objects.filter(pk=self.destinatario_id).exists():
+            raise ValidationError({'destinatario': 'El usuario destinatario no existe en el sistema.'})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'Mensaje #{self.pk} a {self.destinatario} [{self.get_tipo_display()}]'
+
 

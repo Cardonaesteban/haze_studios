@@ -37,8 +37,31 @@
     </table>
 </div>
 
-<!-- Historial de movimientos -->
-<p class="section-title">Historial de movimientos</p>
+<!-- Historial de movimientos con filtro -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+    <p class="section-title" style="margin: 0;">Historial de movimientos</p>
+</div>
+
+<div class="page-actions" style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <form method="get" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <label for="tipo-select" style="font-size: 0.85rem; font-weight: 500; color: var(--gris-700);">Filtrar por tipo de movimiento:</label>
+        <select name="tipo" id="tipo-select" class="form-control" style="width: auto; min-width: 200px; padding: 0.4rem 0.6rem; border-radius: var(--border-radius-md); border: 1px solid var(--gris-300);" onchange="this.form.submit()">
+            <option value="">Todos los tipos</option>
+            {% for val, label in tipos %}
+            <option value="{{ val }}" {% if tipo_seleccionado == val %}selected{% endif %}>
+                {{ label }}
+            </option>
+            {% endfor %}
+        </select>
+        {% if tipo_seleccionado %}
+        <a href="{% url 'stock_list' %}" class="btn btn-sm btn-secondary" title="Quitar filtro">Limpiar</a>
+        {% endif %}
+    </form>
+    <span style="font-size: 0.88rem; font-weight: 600; color: var(--gris-700);">
+        {{ total_movimientos }} movimiento(s) registrado(s)
+    </span>
+</div>
+
 <div class="table-wrap">
     <table>
         <thead>
@@ -57,7 +80,15 @@
             <td>{{ m.usuario.username|default:"—" }}</td>
         </tr>
         {% empty %}
-        <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--gris-500)">No hay movimientos registrados.</td></tr>
+        <tr>
+            <td colspan="8" style="text-align:center;padding:2rem;color:var(--gris-500)">
+                {% if tipo_seleccionado %}
+                No hay movimientos para el tipo seleccionado.
+                {% else %}
+                No hay movimientos registrados.
+                {% endif %}
+            </td>
+        </tr>
         {% endfor %}
         </tbody>
     </table>

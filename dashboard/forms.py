@@ -1,3 +1,4 @@
+import re
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
@@ -5,7 +6,7 @@ from django.core.exceptions import ValidationError
 from .models import (
     Cliente, Producto, Categoria, Proveedor, Disenador,
     Pedido, DetallePedido, MovimientoStock,
-    Rol, Permiso, PerfilUsuario
+    Rol, Permiso, PerfilUsuario, Mensaje
 )
 
 
@@ -137,6 +138,23 @@ class ProductoForm(forms.ModelForm):
         return stock
 
 
+class ProductoEditarForm(ProductoForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'stock' in self.fields:
+            self.fields['stock'].disabled = True
+            self.fields['stock'].help_text = 'El stock no se puede modificar desde aquí. Se gestiona desde la sección de Stock.'
+        if 'stock_minimo' in self.fields:
+            self.fields['stock_minimo'].disabled = True
+            self.fields['stock_minimo'].help_text = 'El stock mínimo no se puede modificar desde aquí. Se gestiona desde la sección de Stock.'
+
+    def clean_stock(self):
+        return self.instance.stock if self.instance and self.instance.pk else 0
+
+    def clean_stock_minimo(self):
+        return self.instance.stock_minimo if self.instance and self.instance.pk else 0
+
+
 # ──────────────────────────────────────────────
 # CATEGORÍAS
 # ──────────────────────────────────────────────
@@ -222,14 +240,96 @@ class DisenadorForm(forms.ModelForm):
 # PEDIDOS
 # ──────────────────────────────────────────────
 
+def estructurar_notas_pedido(notas):
+    """Parsea el texto de notas para extraer de forma organizada teléfono, dirección e instrucciones."""
+    if not notas:
+        return {'es_estructurado': False, 'texto_original': '', 'telefono': None, 'direccion': None, 'instrucciones': None, 'otros': None}
+
+    info = {
+        'telefono': None,
+        'direccion': None,
+        'instrucciones': None,
+        'otros': [],
+        'es_estructurado': False,
+        'texto_original': notas
+    }
+
+    lineas = [l.strip() for l in str(notas).split('\n') if l.strip()]
+    otras = []
+
+    for linea in lineas:
+        m_tel = re.match(r'^(?:📞\s*)?(?:Contacto|Teléfono|Telefono):\s*(.+)$', linea, re.IGNORECASE)
+        m_dir = re.match(r'^(?:📍\s*)?(?:Entrega|Dirección de Entrega|Direccion de Entrega|Dirección|Direccion):\s*(.+)$', linea, re.IGNORECASE)
+        m_inst = re.match(r'^(?:💬\s*)?(?:Notas|Instrucciones|Notas del cliente|Instrucciones del cliente|Notas cliente):\s*(.+)$', linea, re.IGNORECASE)
+
+        if m_tel:
+            info['telefono'] = m_tel.group(1).strip()
+            info['es_estructurado'] = True
+        elif m_dir:
+            info['direccion'] = m_dir.group(1).strip()
+            info['es_estructurado'] = True
+        elif m_inst:
+            info['instrucciones'] = m_inst.group(1).strip()
+            info['es_estructurado'] = True
+        elif not linea.startswith('•') and not linea.lower().startswith('prendas'):
+            otras.append(linea)
+
+    if otras:
+        info['otros'] = "\n".join(otras)
+
+    return info
+
+
 class PedidoForm(forms.ModelForm):
+    telefono_contacto = forms.CharField(
+        label='Teléfono de contacto',
+        required=False,
+        widget=forms.TextInput(attrs={'placeholder': 'Ej. 3001234567'})
+    )
+    direccion_envio = forms.CharField(
+        label='Dirección de entrega',
+        required=False,
+        widget=forms.TextInput(attrs={'placeholder': 'Ej. Calle 123 #45-67, Apto 201'})
+    )
+    notas_adicionales = forms.CharField(
+        label='Notas u observaciones del pedido',
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 2, 'placeholder': 'Instrucciones especiales para el mensajero o notas del pedido'})
+    )
+
     class Meta:
         model = Pedido
-        fields = ['cliente', 'fecha_pedido', 'estado', 'notas']
+        fields = ['cliente', 'fecha_pedido', 'estado']
         widgets = {
             'fecha_pedido': forms.DateInput(attrs={'type': 'date'}),
-            'notas': forms.Textarea(attrs={'rows': 2}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            notas_raw = self.instance.notas or ''
+            info = estructurar_notas_pedido(notas_raw)
+            if info.get('telefono'):
+                self.fields['telefono_contacto'].initial = info['telefono']
+            elif self.instance.cliente and getattr(self.instance.cliente, 'telefono', None):
+                self.fields['telefono_contacto'].initial = self.instance.cliente.telefono
+
+            if info.get('direccion'):
+                self.fields['direccion_envio'].initial = info['direccion']
+            elif self.instance.cliente and getattr(self.instance.cliente, 'direccion', None):
+                self.fields['direccion_envio'].initial = self.instance.cliente.direccion
+
+            partes_notas = []
+            if info.get('instrucciones'):
+                partes_notas.append(info['instrucciones'])
+            if info.get('otros'):
+                partes_notas.append(info['otros'])
+
+            texto_final = '\n'.join(partes_notas).strip()
+            if not texto_final and not info.get('es_estructurado'):
+                texto_final = notas_raw.strip()
+
+            self.fields['notas_adicionales'].initial = texto_final
 
     def clean_cliente(self):
         cliente = self.cleaned_data.get('cliente')
@@ -242,6 +342,26 @@ class PedidoForm(forms.ModelForm):
         if not fecha:
             raise ValidationError('La fecha del pedido es obligatoria.')
         return fecha
+
+    def save(self, commit=True):
+        pedido = super().save(commit=False)
+        tel = self.cleaned_data.get('telefono_contacto', '').strip()
+        dir_envio = self.cleaned_data.get('direccion_envio', '').strip()
+        notas_adic = self.cleaned_data.get('notas_adicionales', '').strip()
+
+        partes = []
+        if tel:
+            partes.append(f"Contacto: {tel}")
+        if dir_envio:
+            partes.append(f"Entrega: {dir_envio}")
+        if notas_adic:
+            partes.append(f"Instrucciones del cliente: {notas_adic}")
+
+        pedido.notas = "\n".join(partes)
+
+        if commit:
+            pedido.save()
+        return pedido
 
 
 class DetallePedidoForm(forms.ModelForm):
@@ -478,3 +598,44 @@ class CambiarContrasenaForm(forms.Form):
         if p1 and p2 and p1 != p2:
             raise forms.ValidationError('Las contraseñas no coinciden.')
         return cleaned
+
+
+# ──────────────────────────────────────────────
+# MENSAJES ENVIADOS A USUARIOS
+# ──────────────────────────────────────────────
+
+class MensajeForm(forms.ModelForm):
+    class Meta:
+        model = Mensaje
+        fields = ['destinatario', 'remitente', 'tipo', 'contenido', 'estado']
+        widgets = {
+            'remitente': forms.TextInput(attrs={'placeholder': 'Ej: Haze Studios'}),
+            'contenido': forms.Textarea(attrs={
+                'rows': 4,
+                'maxlength': '500',
+                'placeholder': 'Escriba el contenido del mensaje (máximo 500 caracteres)...'
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['destinatario'].queryset = Cliente.objects.all().order_by('nombre', 'apellido')
+        self.fields['destinatario'].empty_label = 'Seleccione un usuario destinatario'
+        self.fields['contenido'].help_text = 'El contenido del mensaje no podrá superar los 500 caracteres.'
+
+    def clean_destinatario(self):
+        destinatario = self.cleaned_data.get('destinatario')
+        if not destinatario:
+            raise ValidationError('Debe seleccionar un usuario destinatario existente en el sistema.')
+        if not Cliente.objects.filter(pk=destinatario.pk).exists():
+            raise ValidationError('El usuario destinatario no existe en el sistema.')
+        return destinatario
+
+    def clean_contenido(self):
+        contenido = (self.cleaned_data.get('contenido') or '').strip()
+        if not contenido:
+            raise ValidationError('El contenido del mensaje es obligatorio.')
+        if len(contenido) > 500:
+            raise ValidationError('El contenido del mensaje no podrá superar los 500 caracteres.')
+        return contenido
+

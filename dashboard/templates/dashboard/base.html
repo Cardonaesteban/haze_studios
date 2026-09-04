@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Haze Studios{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/haze.css' %}">
+    <link rel="stylesheet" href="{% static 'css/haze.css' %}?v=3">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /* Dropdown admin */
@@ -49,6 +49,7 @@
         <a class="nav-link" href="{% url 'pedidos_list' %}">Pedidos</a>
         <a class="nav-link" href="{% url 'proveedores_list' %}">Proveedores</a>
         <a class="nav-link" href="{% url 'disenadores_list' %}">Diseñadores</a>
+        <a class="nav-link" href="{% url 'mensajes_list' %}">Mensajes</a>
         {% if user_es_admin %}
         <div class="nav-dropdown">
             <button class="nav-dropdown-btn"> Admin ▾</button>

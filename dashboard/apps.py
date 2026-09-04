@@ -5,5 +5,5 @@ class DashboardConfig(AppConfig):
     name = 'dashboard'
     verbose_name = 'Dashboard Admin'
 
-def ready(self):
-    import dashboard.signals
+    def ready(self):
+        import dashboard.signals
