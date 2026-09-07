@@ -14,7 +14,7 @@ from dashboard.models import (
     Cliente, Producto, Categoria, Disenador, Pedido, DetallePedido, MovimientoStock
 )
 from django.db.models import Count, Q
-from .models import TokenRecuperacionCliente
+from .models import TokenRecuperacionCliente, Favorito
 from .forms import (
     LoginClienteForm, RegistroClienteForm, PerfilClienteForm,
     CambiarPasswordClienteForm, SolicitarRecuperacionClienteForm,
@@ -246,12 +246,51 @@ def producto_detalle(request, pk):
     ).exclude(pk=producto.pk)[:4]
     cliente = get_cliente_actual(request)
 
+    es_favorito = False
+    if cliente:
+        es_favorito = Favorito.objects.filter(cliente=cliente, producto=producto).exists()
+
     context = {
         'producto': producto,
         'productos_relacionados': productos_relacionados,
         'cliente': cliente,
+        'es_favorito': es_favorito,
     }
     return render(request, 'tienda/producto_detalle.html', context)
+
+# ──────────────────────────────────────────────
+# FAVORITOS DE CLIENTES
+# ──────────────────────────────────────────────
+@cliente_required
+def favoritos_toggle(request, producto_id):
+    """Agrega o quita un producto de favoritos del cliente actual."""
+    cliente = get_cliente_actual(request)
+    producto = get_object_or_404(Producto, pk=producto_id, estado='activo')
+
+    favorito, creado = Favorito.objects.get_or_create(cliente=cliente, producto=producto)
+    if not creado:
+        favorito.delete()
+        messages.info(request, f'"{producto.nombre}" se quitó de tus favoritos.')
+    else:
+        messages.success(request, f'"{producto.nombre}" se agregó a tus favoritos.')
+
+    siguiente = request.POST.get('next') or request.GET.get('next')
+    if siguiente:
+        return redirect(siguiente)
+    return redirect('tienda_producto_detalle', pk=producto_id)
+
+
+@cliente_required
+def mis_favoritos(request):
+    """Lista de productos favoritos del cliente actual."""
+    cliente = get_cliente_actual(request)
+    favoritos = Favorito.objects.filter(cliente=cliente).select_related('producto', 'producto__categoria')
+
+    context = {
+        'favoritos': favoritos,
+        'cliente': cliente,
+    }
+    return render(request, 'tienda/mis_favoritos.html', context)
 
 
 # ──────────────────────────────────────────────
@@ -470,7 +509,7 @@ def checkout(request):
                     pedido = Pedido.objects.create(
                         cliente=cliente,
                         fecha_pedido=timezone.now().date(),
-                        estado='pendiente',
+                        estado='pendiente_pago',
                         total=carrito_data['total_general'],
                         notas=notas_finales.strip()
                     )
@@ -510,7 +549,7 @@ def checkout(request):
                     request.session.modified = True
 
                     messages.success(request, f'¡Pedido #{pedido.pk} realizado con éxito!')
-                    return redirect('tienda_pedido_confirmado', pedido_id=pedido.pk)
+                    return redirect('tienda_confirmar_pago', pedido_id=pedido.pk)
 
             except ValueError as e:
                 messages.error(request, str(e))
@@ -536,6 +575,42 @@ def checkout(request):
     }
     return render(request, 'tienda/checkout.html', context)
 
+@cliente_required
+def confirmar_pago(request, pedido_id):
+    """Simula la respuesta de la pasarela de pago (no hay integración real todavía)."""
+    cliente = get_cliente_actual(request)
+    if cliente is None:
+        return redirect('tienda_login')
+
+    pedido = get_object_or_404(Pedido, pk=pedido_id, cliente=cliente)
+
+    if pedido.verificar_expiracion():
+        messages.error(request, f'El tiempo para confirmar el pago del pedido #{pedido.pk} expiró. Se canceló y el stock fue liberado.')
+        return redirect('tienda_carrito')
+
+    if pedido.estado != 'pendiente_pago':
+        return redirect('tienda_pedido_confirmado', pedido_id=pedido.pk)
+
+    if request.method == 'POST':
+        resultado = request.POST.get('resultado')
+        if resultado == 'aprobado':
+            pedido.estado = 'pendiente'
+            pedido.save(update_fields=['estado'])
+            messages.success(request, f'¡Pago aprobado! Pedido #{pedido.pk} confirmado.')
+            return redirect('tienda_pedido_confirmado', pedido_id=pedido.pk)
+        else:
+            pedido.cancelar(motivo=f'Cancelación del pedido #{pedido.pk} por rechazo de la pasarela de pago')
+            messages.error(request, f'La pasarela rechazó la transacción. Pedido #{pedido.pk} cancelado y el stock fue liberado.')
+            return redirect('tienda_carrito')
+
+    segundos_restantes = int((pedido.fecha_creacion + Pedido.TIEMPO_LIMITE_PAGO - timezone.now()).total_seconds())
+
+    context = {
+        'pedido': pedido,
+        'cliente': cliente,
+        'segundos_restantes': max(0, segundos_restantes),
+    }
+    return render(request, 'tienda/confirmar_pago.html', context)
 
 @cliente_required
 def pedido_confirmado(request, pedido_id):
@@ -554,30 +629,39 @@ def pedido_confirmado(request, pedido_id):
 
 @cliente_required
 def mis_pedidos(request):
-    """Historial de pedidos realizados por el cliente."""
     cliente = get_cliente_actual(request)
     pedidos = Pedido.objects.filter(cliente=cliente).order_by('-id').prefetch_related('detalles__producto')
-
-    context = {
-        'pedidos': pedidos,
-        'cliente': cliente,
-    }
+    for p in pedidos:
+        p.verificar_expiracion()
+    context = {'pedidos': pedidos, 'cliente': cliente}
     return render(request, 'tienda/mis_pedidos.html', context)
 
 
 @cliente_required
 def pedido_detalle(request, pedido_id):
-    """Vista detallada de un pedido específico."""
     cliente = get_cliente_actual(request)
     pedido = get_object_or_404(Pedido, pk=pedido_id, cliente=cliente)
+    pedido.verificar_expiracion()
     detalles = obtener_detalles_con_talla(pedido)
-
-    context = {
-        'pedido': pedido,
-        'detalles': detalles,
-        'cliente': cliente,
-    }
+    context = {'pedido': pedido, 'detalles': detalles, 'cliente': cliente}
     return render(request, 'tienda/pedido_detalle.html', context)
+
+@cliente_required
+def pedido_cancelar(request, pedido_id):
+    """Permite al cliente cancelar su pedido si el estado lo permite"""
+    cliente = get_cliente_actual(request)
+    if cliente is None:
+        return redirect('tienda_login')
+
+    pedido = get_object_or_404(Pedido, pk=pedido_id, cliente=cliente)
+
+    if pedido.cancelar():
+        messages.success(request, f'Pedido #{pedido.pk} cancelado correctamente.')
+    else:
+        messages.error(request, f'No se puede cancelar el pedido #{pedido.pk}. Estado actual: {pedido.estado}.')
+
+    return redirect('tienda_pedido_detalle', pedido_id=pedido.pk)
+    
 
 
 # ──────────────────────────────────────────────

@@ -37,8 +37,8 @@
             <td>{{ c.nombre }}</td>
             <td>{{ c.descripcion|truncatechars:60 }}</td>
             <td class="botones">
-                <a class="btn-editar" href="{% url 'categorias_editar' c.pk %}">✏️ Editar</a>
-                <a class="btn-eliminar" href="{% url 'categorias_eliminar' c.pk %}">🗑️ Eliminar</a>
+                <a class="btn-editar" href="{% url 'categorias_editar' c.pk %}"> Editar</a>
+                <a class="btn-eliminar" href="{% url 'categorias_eliminar' c.pk %}"> Eliminar</a>
             </td>
         </tr>
         {% empty %}

@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxLengthValidator
 from django.utils import timezone
+from datetime import timedelta
 
 
 # ──────────────────────────────────────────────
@@ -119,8 +120,15 @@ class Proveedor(models.Model):
 
 
 class Disenador(models.Model):
+    ESTADO_CHOICES = [
+        ('activo', 'Activo'),
+        ('inactivo', 'Inactivo'),
+    ]
+
+
     nombre = models.CharField(max_length=150)
     telefono = models.CharField(max_length=30, blank=True, default='')
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='activo')
 
     class Meta:
         db_table = 'disenadores'
@@ -130,6 +138,10 @@ class Disenador(models.Model):
 
     def __str__(self):
         return self.nombre
+    
+    def toggle_estado(self):
+        self.estado = 'inactivo' if self.estado == 'activo' else 'activo'
+        self.save()
 
 
 class Producto(models.Model):
@@ -297,7 +309,10 @@ class Cliente(models.Model):
 # ──────────────────────────────────────────────
 
 class Pedido(models.Model):
+    TIEMPO_LIMITE_PAGO = timedelta(minutes=15)
+
     ESTADO_CHOICES = [
+        ('pendiente_pago', 'Pendiente de pago'),
         ('pendiente', 'Pendiente'),
         ('procesando', 'Procesando'),
         ('enviado', 'Enviado'),
@@ -310,7 +325,8 @@ class Pedido(models.Model):
         db_column='id_cliente', related_name='pedidos'
     )
     fecha_pedido = models.DateField()
-    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente_pago')
     total = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))
     notas = models.TextField(blank=True, default='')
 
@@ -334,6 +350,47 @@ class Pedido(models.Model):
         self.total = total
         self.save(update_fields=['total'])
         return total
+
+    def puede_cancelar(self):
+        return self.estado in ['pendiente_pago', 'pendiente', 'procesando']
+
+    def ha_expirado(self):
+        """True si sigue pendiente de pago y ya pasaron los 15 minutos límite."""
+        if self.estado != 'pendiente_pago':
+            return False
+        return timezone.now() > self.fecha_creacion + self.TIEMPO_LIMITE_PAGO
+
+    def _restaurar_stock(self, motivo):
+        for detalle in self.detalles.select_related('producto'):
+            producto = detalle.producto
+            stock_anterior = producto.stock
+            producto.stock += detalle.cantidad
+            producto.save(update_fields=['stock'])
+            MovimientoStock.objects.create(
+                producto=producto,
+                tipo='entrada',
+                cantidad=detalle.cantidad,
+                stock_anterior=stock_anterior,
+                stock_posterior=producto.stock,
+                motivo=motivo,
+                pedido=self,
+            )
+
+    def cancelar(self, motivo=None):
+        """Cancela el pedido (manual, por rechazo de pago o por expiración) y devuelve el stock."""
+        if not self.puede_cancelar():
+            return False
+        self._restaurar_stock(motivo or f'Cancelación del pedido #{self.pk}')
+        self.estado = 'cancelado'
+        self.save(update_fields=['estado'])
+        return True
+
+    def verificar_expiracion(self):
+        """Si el tiempo límite de pago se venció, cancela el pedido automáticamente."""
+        if self.ha_expirado():
+            self.cancelar(motivo=f'Cancelación automática del pedido #{self.pk} por tiempo de espera agotado (15 min)')
+            return True
+        return False
 
 
 class DetallePedido(models.Model):
@@ -472,5 +529,3 @@ class Mensaje(models.Model):
 
     def __str__(self):
         return f'Mensaje #{self.pk} a {self.destinatario} [{self.get_tipo_display()}]'
-
-

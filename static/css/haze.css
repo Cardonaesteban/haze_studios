@@ -1579,4 +1579,5 @@ a.pill-compact-btn { text-decoration: none; }
     font-weight: 600;
 }
 
-
+.mt-sm { margin-top: 0.75rem; }
+.mt-lg { margin-top: 1.75rem; }

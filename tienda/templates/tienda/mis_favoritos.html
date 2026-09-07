@@ -1,0 +1,50 @@
+{% extends "tienda/base_tienda.html" %}
+{% load static %}
+
+{% block title %}Mis Favoritos | Haze Studios{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="tienda-page-title">Mis Favoritos</h1>
+        <p class="tienda-page-subtitle">Las prendas que guardaste para más tarde.</p>
+    </div>
+</div>
+
+{% if favoritos %}
+<div class="product-grid">
+    {% for fav in favoritos %}
+    <div class="product-card">
+        <div class="product-card-img" style="height:220px;">
+            <span class="badge-oversize">CORTE OVERSIZE</span>
+            <img src="{% static fav.producto.get_imagen_url %}" alt="{{ fav.producto.nombre }}" class="product-card-real-img" loading="lazy">
+        </div>
+        <div class="product-card-body">
+            <a href="{% url 'tienda_producto_detalle' fav.producto.pk %}" class="product-title">{{ fav.producto.nombre }}</a>
+            <div style="font-size:0.75rem;color:var(--gris-500);font-weight:600;margin:0.25rem 0 0.5rem;">
+                Agregado el {{ fav.fecha_agregado|date:"d/m/Y" }}
+            </div>
+            <div class="product-price">${{ fav.producto.precio }}</div>
+            <div class="product-card-actions" style="display:flex;gap:0.5rem;">
+                <a href="{% url 'tienda_producto_detalle' fav.producto.pk %}" class="btn btn-primary btn-sm" style="flex:1;padding:0.65rem;">
+                    Ver Prenda
+                </a>
+                <form method="post" action="{% url 'tienda_favoritos_toggle' fav.producto.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{% url 'tienda_mis_favoritos' %}">
+                    <button type="submit" class="btn btn-outline btn-sm" style="padding:0.65rem;" title="Quitar de favoritos">
+                        ❤️
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="tienda-card" style="padding:2rem;text-align:center;">
+    <p style="color:var(--gris-600);">Todavía no has agregado prendas a tus favoritos.</p>
+    <a href="{% url 'tienda_productos' %}" class="btn btn-primary" style="margin-top:1rem;">Ver Colección</a>
+</div>
+{% endif %}
+{% endblock %}

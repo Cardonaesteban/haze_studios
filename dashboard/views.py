@@ -319,6 +319,11 @@ def categorias_editar(request, pk):
 @admin_required
 def categorias_eliminar(request, pk):
     categoria = get_object_or_404(Categoria, pk=pk)
+
+    if categoria.productos.exists():
+        messages.error(request, f'No se puede eliminar la categoría "{categoria.nombre}" porque tiene productos asociados.')
+        return redirect('categorias_list')
+    
     if request.method == 'POST':
         categoria.delete()
         messages.success(request, 'Categoría eliminada.')
@@ -570,7 +575,12 @@ def disenadores_eliminar(request, pk):
         return redirect('disenadores_list')
     return render(request, 'dashboard/confirmar_eliminar.html', {'objeto': disenador, 'tipo': 'diseñador'})
 
-
+@admin_required
+def disenadores_toggle_estado(request, pk):
+    disenador = get_object_or_404(Disenador, pk=pk)
+    disenador.toggle_estado()
+    messages.success(request, f'Estado de {disenador} cambiado a {disenador.estado}.')
+    return redirect('disenadores_list')
 # ──────────────────────────────────────────────
 # ROLES
 # ──────────────────────────────────────────────

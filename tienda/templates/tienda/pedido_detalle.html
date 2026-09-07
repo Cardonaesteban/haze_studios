@@ -97,11 +97,22 @@
         </div>
         {% endif %}
 
+        {% if pedido.puede_cancelar %}
         <div style="margin-top:1.75rem;">
-            <a href="{% url 'tienda_mis_pedidos' %}" class="btn btn-outline btn-sm" style="width:100%;text-align:center;display:block;padding:0.65rem;">
-                Volver a la lista de pedidos
+            <a href="{% url 'tienda_pedido_cancelar' pedido.pk %}"
+               class="btn btn-danger btn-sm"
+               style="width:100%;text-align:center;display:block;padding:0.65rem;"
+               onclick="return confirm('¿Estás seguro de que deseas cancelar este pedido? Esta acción no se puede deshacer.');">
+                Cancelar Pedido
             </a>
         </div>
+        {% endif %}
+
+        <div class="{% if pedido.puede_cancelar %}mt-sm{% else %}mt-lg{% endif %}">
+    <a href="{% url 'tienda_mis_pedidos' %}" class="btn btn-outline btn-sm" style="width:100%;text-align:center;display:block;padding:0.65rem;">
+        Volver a la lista de pedidos
+    </a>
+</div>
     </div>
 </div>
 {% endblock %}

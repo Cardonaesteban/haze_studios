@@ -205,6 +205,12 @@ class ProductoEditarForm(ProductoForm):
     def clean_stock_minimo(self):
         return self.instance.stock_minimo if self.instance and self.instance.pk else 0
 
+    def clean_diseñador(self):
+        disenador = self.cleaned_data.get('disenador')
+        if disenador and disenador.estado == 'inactivo':
+            raise ValidationError('El diseñador {diseñador.nombre} está inactivo y no puede ser asignado a un producto.')
+        return disenador
+
 
 # ──────────────────────────────────────────────
 # CATEGORÍAS
@@ -226,7 +232,12 @@ class CategoriaForm(forms.ModelForm):
             raise ValidationError('Ya existe una categoría con ese nombre.')
         if any(c.isdigit() for c in nombre):
             raise ValidationError('El nombre de la categoría no puede contener números.')
+        if '' in nombre:
+            raise ValidationError('El nombre de la categoría no puede contener espacios en blanco.')
+        if not nombre.isalpha():
+            raise ValidationError('El nombre de la categoría solo puede contener letras.')
         return nombre
+        
 
 
     

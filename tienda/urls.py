@@ -6,6 +6,8 @@ urlpatterns = [
     path('', views.inicio, name='tienda_inicio'),
     path('productos/', views.productos, name='tienda_productos'),
     path('productos/<int:pk>/', views.producto_detalle, name='tienda_producto_detalle'),
+    path('favoritos/', views.mis_favoritos, name='tienda_mis_favoritos'),
+    path('favoritos/toggle/<int:producto_id>/', views.favoritos_toggle, name='tienda_favoritos_toggle'),
 
     # Carrito de Compras
     path('carrito/', views.carrito, name='tienda_carrito'),
@@ -16,9 +18,11 @@ urlpatterns = [
 
     # Proceso de Compra (Checkout) y Pedidos
     path('checkout/', views.checkout, name='tienda_checkout'),
+    path('pedidos/<int:pedido_id>/confirmar-pago/', views.confirmar_pago, name='tienda_confirmar_pago'),
     path('pedidos/confirmado/<int:pedido_id>/', views.pedido_confirmado, name='tienda_pedido_confirmado'),
     path('pedidos/mis-pedidos/', views.mis_pedidos, name='tienda_mis_pedidos'),
     path('pedidos/<int:pedido_id>/', views.pedido_detalle, name='tienda_pedido_detalle'),
+    path('pedidos/<int:pedido_id>/cancelar/', views.pedido_cancelar, name='tienda_pedido_cancelar'),
 
     # Autenticación y Registro de Clientes
     path('login/', views.login_cliente, name='tienda_login'),

@@ -1,0 +1,86 @@
+{% extends "tienda/base_tienda.html" %}
+{% load static %}
+
+{% block title %}Confirmar Pago | Haze Studios{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="tienda-page-title">Confirmar Pago</h1>
+        <p class="tienda-page-subtitle">Pedido #{{ pedido.pk }} — completa el pago para confirmar tu compra.</p>
+    </div>
+</div>
+
+<div class="cart-wrap">
+    <div class="tienda-card" style="padding:2rem;">
+        <h2 style="font-size:1.25rem;font-weight:900;color:var(--gris-900);margin-bottom:1.25rem;">
+            Estado de la Transacción
+        </h2>
+
+        <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--border-radius-lg);padding:1rem;margin-bottom:1.5rem;">
+            <div style="font-size:0.88rem;color:var(--gris-600);">
+                Total a pagar: <strong style="color:var(--gris-900);">${{ pedido.total }}</strong>
+            </div>
+            <div style="font-size:0.88rem;color:var(--gris-600);margin-top:0.35rem;">
+                Tiempo restante para confirmar:
+                <strong id="contador" style="color:var(--gris-900);">
+                    <span id="minutos"></span>:<span id="segundos"></span>
+                </strong>
+            </div>
+        </div>
+
+        <p style="font-size:0.85rem;color:var(--gris-500);margin-bottom:1.5rem;">
+            Esta pasarela de pago es una simulación (aún no hay integración real). Elige un resultado para continuar:
+        </p>
+
+        <form method="post" action="{% url 'tienda_confirmar_pago' pedido_id=pedido.pk %}">
+            {% csrf_token %}
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                <button type="submit" name="resultado" value="aprobado" class="btn btn-primary" style="padding:0.9rem 2rem;">
+                    Simular Pago Aprobado
+                </button>
+                <button type="submit" name="resultado" value="rechazado" class="btn btn-outline" style="padding:0.9rem 2rem;">
+                    Simular Pago Rechazado
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="summary-card">
+        <h3 style="font-size:1.2rem;font-weight:900;color:var(--gris-900);margin-bottom:1.25rem;">
+            Resumen del Pedido
+        </h3>
+
+        <div class="summary-total">
+            <span>Total a Pagar:</span>
+            <span>${{ pedido.total }}</span>
+        </div>
+
+        <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:var(--border-radius-md);padding:0.85rem;margin-top:1.25rem;font-size:0.8rem;color:#991B1B;font-weight:600;">
+            Si no confirmas el pago dentro del tiempo límite, el pedido se cancelará automáticamente y el stock reservado será liberado.
+        </div>
+    </div>
+</div>
+
+
+<script>
+let segundosRestantes = {{ segundos_restantes }};
+const elMin = document.getElementById('minutos');
+const elSeg = document.getElementById('segundos');
+
+function actualizarContador() {
+    if (segundosRestantes <= 0) {
+        window.location.reload();
+        return;
+    }
+    const m = Math.floor(segundosRestantes / 60);
+    const s = segundosRestantes % 60;
+    elMin.textContent = String(m).padStart(2, '0');
+    elSeg.textContent = String(s).padStart(2, '0');
+    segundosRestantes--;
+}
+
+actualizarContador();
+setInterval(actualizarContador, 1000);
+</script>
+{% endblock %}

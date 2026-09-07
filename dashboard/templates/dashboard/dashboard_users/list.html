@@ -51,10 +51,10 @@
                 {% endif %}
             </td>
             <td class="botones">
-                <a class="btn-editar" href="{% url 'dashboard_users_editar' u.pk %}">✏️ Editar</a>
-                <a class="btn-estado" href="{% url 'dashboard_users_rol' u.pk %}">🔐 Rol</a>
+                <a class="btn-editar" href="{% url 'dashboard_users_editar' u.pk %}"> Editar</a>
+                <a class="btn-estado" href="{% url 'dashboard_users_rol' u.pk %}"> Rol</a>
                 {% if u != request.user %}
-                <a class="btn-eliminar" href="{% url 'dashboard_users_eliminar' u.pk %}">🗑️ Eliminar</a>
+                <a class="btn-eliminar" href="{% url 'dashboard_users_eliminar' u.pk %}"> Eliminar</a>
                 {% endif %}
             </td>
         </tr>

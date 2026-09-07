@@ -50,6 +50,7 @@ urlpatterns = [
     path('disenadores/crear/', views.disenadores_crear, name='disenadores_crear'),
     path('disenadores/<int:pk>/editar/', views.disenadores_editar, name='disenadores_editar'),
     path('disenadores/<int:pk>/eliminar/', views.disenadores_eliminar, name='disenadores_eliminar'),
+    path('disenadores/<int:pk>/toggle-estado/', views.disenadores_toggle_estado, name='disenadores_toggle_estado'),
 
     # Roles (solo admin)
     path('roles/', views.roles_list, name='roles_list'),
