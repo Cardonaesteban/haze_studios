@@ -57,11 +57,13 @@
             </div>
 
             <!-- MÉTODOS DE PAGO -->
-            <div class="payment-methods-section">
+            <div class="payment-methods-section" x-data="{ metodoSeleccionado: 'contraentrega' }">
                 <div class="payment-methods-title">Método de Pago</div>
 
-                <label class="payment-option selected" id="payContraentrega">
-                    <input type="radio" name="metodo_pago" value="contraentrega" checked>
+                <label class="payment-option"
+                       :class="{ 'selected': metodoSeleccionado === 'contraentrega' }"
+                       @click="metodoSeleccionado = 'contraentrega'">
+                    <input type="radio" name="metodo_pago" value="contraentrega" x-model="metodoSeleccionado">
                     <div class="payment-option-info">
                         <div class="payment-option-name">Pago contra entrega</div>
                         <div class="payment-option-desc">Pagas al recibir tu pedido.</div>
@@ -89,7 +91,7 @@
             {% for item in items %}
             <div style="display:flex;justify-content:space-between;align-items:center;padding:0.65rem 0;border-bottom:1px solid var(--gris-100);">
                 <div style="display:flex;align-items:center;gap:0.75rem;">
-                    <img src="{% static item.producto.get_imagen_url %}" alt="{{ item.producto.nombre }}" class="table-product-thumb" style="width:46px;height:46px;">
+                    <img src="{{ item.producto.get_imagen_url }}" alt="{{ item.producto.nombre }}" class="table-product-thumb" style="width:46px;height:46px;">
                     <div>
                         <div style="font-weight:800;font-size:0.875rem;color:var(--gris-900);">{{ item.producto.nombre }}</div>
                         <div style="font-size:0.75rem;color:var(--gris-500);font-weight:600;">
@@ -119,14 +121,4 @@
         </div>
     </div>
 </div>
-
-<script>
-document.querySelectorAll('.payment-option:not(.disabled)').forEach(function(opt) {
-    opt.addEventListener('click', function() {
-        document.querySelectorAll('.payment-option').forEach(function(o) { o.classList.remove('selected'); });
-        this.classList.add('selected');
-        this.querySelector('input[type="radio"]').checked = true;
-    });
-});
-</script>
 {% endblock %}

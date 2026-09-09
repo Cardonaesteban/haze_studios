@@ -158,10 +158,29 @@ h1 {
 /* ── TABLA ───────────────────────────────── */
 .table-wrap {
     background: var(--blanco); border-radius: var(--border-radius-xl);
-    box-shadow: var(--sombra-xl); overflow: hidden;
+    box-shadow: var(--sombra-xl);
     animation: fadeIn 0.4s ease-out;
 }
 
+.table-wrap table {
+    border-radius: var(--border-radius-xl);
+}
+
+.table-wrap thead tr:first-child th:first-child {
+    border-top-left-radius: var(--border-radius-xl);
+}
+
+.table-wrap thead tr:first-child th:last-child {
+    border-top-right-radius: var(--border-radius-xl);
+}
+
+.table-wrap tbody tr:last-child td:first-child {
+    border-bottom-left-radius: var(--border-radius-xl);
+}
+
+.table-wrap tbody tr:last-child td:last-child {
+    border-bottom-right-radius: var(--border-radius-xl);
+}
 table { width: 100%; border-collapse: collapse; }
 
 thead tr { background: var(--gradiente-principal); color: var(--blanco); }
@@ -1581,3 +1600,4 @@ a.pill-compact-btn { text-decoration: none; }
 
 .mt-sm { margin-top: 0.75rem; }
 .mt-lg { margin-top: 1.75rem; }
+

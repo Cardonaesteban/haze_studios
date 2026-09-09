@@ -2,7 +2,7 @@
 {% block title %}Pedidos | Haze Studios{% endblock %}
 {% block content %}
 <div class="page-header">
-    <h1>🛒 Pedidos</h1>
+    <h1>Pedidos</h1>
     <a class="btn btn-primary" href="{% url 'pedidos_crear' %}">+ Nuevo pedido</a>
 </div>
 
@@ -28,86 +28,101 @@
 
 <div class="table-wrap">
     <table class="table">
-        <thead><tr><th>#</th><th>Cliente</th><th>Productos</th><th>Fecha</th><th>Estado</th><th>Cantidad</th><th>Total</th><th>Acciones</th></tr></thead>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Cliente</th>
+                <th>Productos</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Cantidad</th>
+                <th>Total</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
         <tbody>
-        {% for pedido in pedidos %}
-        <tr>
-            <td>{{ pedido.pk }}</td>
-            <td>{{ pedido.cliente }}</td>
-            <td>
-                {% for d in pedido.detalles.all %}
-                    <div style="font-size:0.85rem;margin-bottom:0.3rem;line-height:1.3;">
-                        <span style="font-weight:700;color:var(--gris-900);">{{ d.producto.nombre }}</span>
-                        {% if d.talla %}
-                            <span class="badge" style="background:#F1F5F9;color:#334155;border:1px solid #CBD5E1;font-size:0.7rem;padding:0.15rem 0.4rem;font-weight:700;">
-                                {{ d.talla }}
-                            </span>
-                        {% endif %}
-                        <span style="color:var(--gris-600);font-weight:600;">× {{ d.cantidad }}</span>
+            {% for pedido in pedidos %}
+            <tr>
+                <td>{{ pedido.pk }}</td>
+                <td>{{ pedido.cliente }}</td>
+                <td>
+                    {% for d in pedido.detalles.all %}
+                        <div style="font-size:0.85rem;margin-bottom:0.3rem;line-height:1.3;">
+                            <span style="font-weight:700;color:var(--gris-900);">{{ d.producto.nombre }}</span>
+                            {% if d.talla %}
+                                <span class="badge" style="background:#F1F5F9;color:#334155;border:1px solid #CBD5E1;font-size:0.7rem;padding:0.15rem 0.4rem;font-weight:700;">
+                                    {{ d.talla }}
+                                </span>
+                            {% endif %}
+                            <span style="color:var(--gris-600);font-weight:600;">× {{ d.cantidad }}</span>
+                        </div>
+                    {% empty %}
+                        <span style="color:var(--gris-400);font-size:0.85rem;">Sin productos</span>
+                    {% endfor %}
+                </td>
+                <td>{{ pedido.fecha_pedido|date:"d/m/Y" }}</td>
+                <td><span class="badge badge-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span></td>
+                <td style="font-weight:700;text-align:center;">{{ pedido.cantidad_total }}</td>
+                <td style="font-weight:700;">${{ pedido.total }}</td>
+                <td>
+                    <a class="btn btn-sm btn-secondary" href="{% url 'pedidos_detalle' pedido.pk %}">Ver</a>
+                    <a class="btn btn-sm btn-secondary" href="{% url 'pedidos_editar' pedido.pk %}">Editar</a>
+
+                    <div class="dropdown-estado"
+                         style="position:relative; display:inline-block;"
+                         x-data="{ open: false, abrirHaciaArriba: false }"
+                         @click.outside="open = false">
+
+                        <button type="button" class="btn btn-sm btn-secondary dropdown-estado-btn"
+                                @click="
+                                    open = !open;
+                                    if (open) {
+                                        $nextTick(() => {
+                                            const menu = $refs.menu;
+                                            const espacioAbajo = window.innerHeight - $el.getBoundingClientRect().bottom;
+                                            abrirHaciaArriba = espacioAbajo < menu.offsetHeight + 20;
+                                        });
+                                    }
+                                ">
+                            Estado ▾
+                        </button>
+
+                        <div class="dropdown-estado-menu"
+                             x-ref="menu"
+                             x-show="open"
+                             x-cloak
+                             :style="{ top: abrirHaciaArriba ? 'auto' : 'calc(100% + 4px)', bottom: abrirHaciaArriba ? 'calc(100% + 4px)' : 'auto' }"
+                             style="position:absolute; right:0; background:#ffffff; border:1px solid var(--gris-200); border-radius:var(--border-radius-md); box-shadow:0 10px 25px -5px rgba(0,0,0,0.15), 0 8px 10px -6px rgba(0,0,0,0.1); min-width:145px; z-index:1000; padding:0.35rem;">
+                            {% for val, label in pedido.ESTADO_CHOICES %}
+                            <form method="post" action="{% url 'pedidos_estado' pedido.pk %}" style="margin:0;">
+                                {% csrf_token %}
+                                <input type="hidden" name="nuevo_estado" value="{{ val }}">
+                                <button type="submit" class="dropdown-estado-item"
+                                        style="width:100%; text-align:left; background:none; border:none; padding:0.45rem 0.65rem; font-size:0.8rem; font-weight:{% if pedido.estado == val %}700{% else %}500{% endif %}; color:{% if pedido.estado == val %}var(--azul){% else %}var(--gris-700){% endif %}; cursor:{% if pedido.estado == val %}default{% else %}pointer{% endif %}; border-radius:var(--border-radius-sm); display:flex; justify-content:space-between; align-items:center;"
+                                        {% if pedido.estado == val %}disabled{% endif %}>
+                                    <span>{{ label }}</span>
+                                    {% if pedido.estado == val %}<span style="font-size:0.75rem; color:var(--azul);">●</span>{% endif %}
+                                </button>
+                            </form>
+                            {% endfor %}
+                        </div>
                     </div>
-                {% empty %}
-                    <span style="color:var(--gris-400);font-size:0.85rem;">Sin productos</span>
-                {% endfor %}
-            </td>
-            <td>{{ pedido.fecha_pedido|date:"d/m/Y" }}</td>
-            <td><span class="badge badge-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span></td>
-            <td style="font-weight:700;text-align:center;">{{ pedido.cantidad_total }}</td>
-            <td style="font-weight:700;">${{ pedido.total }}</td>
-            <td>
-                <a class="btn btn-sm btn-secondary" href="{% url 'pedidos_detalle' pedido.pk %}">Ver</a>
-                <a class="btn btn-sm btn-secondary" href="{% url 'pedidos_editar' pedido.pk %}">Editar</a>
-                <div class="dropdown-estado" style="position:relative; display:inline-block;">
-                    <button type="button" class="btn btn-sm btn-secondary dropdown-estado-btn" onclick="toggleDropdownEstado(event, this)">
-                        Estado ▾
-                    </button>
-                    <div class="dropdown-estado-menu" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:#ffffff; border:1px solid var(--gris-200); border-radius:var(--border-radius-md); box-shadow:0 10px 25px -5px rgba(0,0,0,0.15), 0 8px 10px -6px rgba(0,0,0,0.1); min-width:145px; z-index:1000; padding:0.35rem;">
-                        {% for val, label in pedido.ESTADO_CHOICES %}
-                        <form method="post" action="{% url 'pedidos_estado' pedido.pk %}" style="margin:0;">
-                            {% csrf_token %}
-                            <input type="hidden" name="nuevo_estado" value="{{ val }}">
-                            <button type="submit" class="dropdown-estado-item" style="width:100%; text-align:left; background:none; border:none; padding:0.45rem 0.65rem; font-size:0.8rem; font-weight:{% if pedido.estado == val %}700{% else %}500{% endif %}; color:{% if pedido.estado == val %}var(--azul){% else %}var(--gris-700){% endif %}; cursor:{% if pedido.estado == val %}default{% else %}pointer{% endif %}; border-radius:var(--border-radius-sm); display:flex; justify-content:space-between; align-items:center;" {% if pedido.estado == val %}disabled{% endif %}>
-                                <span>{{ label }}</span>
-                                {% if pedido.estado == val %}<span style="font-size:0.75rem; color:var(--azul);">●</span>{% endif %}
-                            </button>
-                        </form>
-                        {% endfor %}
-                    </div>
-                </div>
-                <a class="btn btn-sm btn-danger" href="{% url 'pedidos_eliminar' pedido.pk %}">Eliminar</a>
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="8" style="text-align:center;padding:2rem;color:var(--gris-500)">
-                {% if estado_seleccionado %}
-                No hay pedidos con el estado seleccionado.
-                {% else %}
-                No hay pedidos registrados.
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
+
+                    <a class="btn btn-sm btn-danger" href="{% url 'pedidos_eliminar' pedido.pk %}">Eliminar</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" style="text-align:center;padding:2rem;color:var(--gris-500)">
+                    {% if estado_seleccionado %}
+                    No hay pedidos con el estado seleccionado.
+                    {% else %}
+                    No hay pedidos registrados.
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
         </tbody>
     </table>
 </div>
-
-<script>
-function toggleDropdownEstado(e, btn) {
-    e.stopPropagation();
-    const menu = btn.nextElementSibling;
-    const isVisible = menu.style.display === 'block';
-    document.querySelectorAll('.dropdown-estado-menu').forEach(function(m) {
-        m.style.display = 'none';
-    });
-    menu.style.display = isVisible ? 'none' : 'block';
-}
-
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('.dropdown-estado')) {
-        document.querySelectorAll('.dropdown-estado-menu').forEach(function(m) {
-            m.style.display = 'none';
-        });
-    }
-});
-</script>
 {% endblock %}

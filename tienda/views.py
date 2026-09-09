@@ -2,6 +2,7 @@ from decimal import Decimal
 import re
 import unicodedata
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
 from django.urls import reverse
 from django.core.mail import send_mail
 from django.contrib.auth.hashers import check_password, make_password
@@ -577,7 +578,7 @@ def checkout(request):
 
 @cliente_required
 def confirmar_pago(request, pedido_id):
-    """Simula la respuesta de la pasarela de pago (no hay integración real todavía)."""
+    """Pantalla de confirmación final del pedido (pago contra entrega)."""
     cliente = get_cliente_actual(request)
     if cliente is None:
         return redirect('tienda_login')
@@ -585,7 +586,7 @@ def confirmar_pago(request, pedido_id):
     pedido = get_object_or_404(Pedido, pk=pedido_id, cliente=cliente)
 
     if pedido.verificar_expiracion():
-        messages.error(request, f'El tiempo para confirmar el pago del pedido #{pedido.pk} expiró. Se canceló y el stock fue liberado.')
+        messages.error(request, f'El tiempo para confirmar el pedido #{pedido.pk} expiró.')
         return redirect('tienda_carrito')
 
     if pedido.estado != 'pendiente_pago':
@@ -596,18 +597,20 @@ def confirmar_pago(request, pedido_id):
         if resultado == 'aprobado':
             pedido.estado = 'pendiente'
             pedido.save(update_fields=['estado'])
-            messages.success(request, f'¡Pago aprobado! Pedido #{pedido.pk} confirmado.')
+            messages.success(request, f'¡Pedido #{pedido.pk} confirmado!')
             return redirect('tienda_pedido_confirmado', pedido_id=pedido.pk)
         else:
-            pedido.cancelar(motivo=f'Cancelación del pedido #{pedido.pk} por rechazo de la pasarela de pago')
-            messages.error(request, f'La pasarela rechazó la transacción. Pedido #{pedido.pk} cancelado y el stock fue liberado.')
+            pedido.cancelar(motivo=f'Cancelación del pedido #{pedido.pk} por el cliente en confirmación')
+            messages.error(request, f'Pedido #{pedido.pk} cancelado')
             return redirect('tienda_carrito')
 
     segundos_restantes = int((pedido.fecha_creacion + Pedido.TIEMPO_LIMITE_PAGO - timezone.now()).total_seconds())
+    detalles = obtener_detalles_con_talla(pedido)
 
     context = {
         'pedido': pedido,
         'cliente': cliente,
+        'detalles': detalles,
         'segundos_restantes': max(0, segundos_restantes),
     }
     return render(request, 'tienda/confirmar_pago.html', context)
@@ -871,3 +874,71 @@ def recuperar_password_confirmar_cliente(request, token):
         'form': form,
         'token_obj': token_obj,
     })
+
+# ──────────────────────────────────────────────
+# FAVORITOS API (SIN RECARGAR PÁGINA) Y LISTA DE FAVORITOS
+# ──────────────────────────────────────────────
+
+@cliente_required
+def favoritos_toggle_api(request, producto_id):
+    """
+    Vista API que recibe peticiones POST desde Alpine.js para agregar/quitar favoritos
+    SIN recargar la página. Devuelve JSON con el resultado.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    
+    try:
+        import json
+        cliente = get_cliente_actual(request)
+        if cliente is None:
+            return JsonResponse({'success': False, 'error': 'Cliente no autenticado'}, status=401)
+        
+        producto = get_object_or_404(Producto, pk=producto_id, estado='activo')
+        
+        data = json.loads(request.body)
+        accion = data.get('accion')
+        
+        if accion == 'agregar':
+            favorito, creado = Favorito.objects.get_or_create(cliente=cliente, producto=producto)
+            es_favorito = True
+            mensaje = f'"{producto.nombre}" agregado a favoritos'
+        elif accion == 'quitar':
+            Favorito.objects.filter(cliente=cliente, producto=producto).delete()
+            es_favorito = False
+            mensaje = f'"{producto.nombre}" quitado de favoritos'
+        else:
+            return JsonResponse({'success': False, 'error': 'Acción inválida'}, status=400)
+        
+        return JsonResponse({
+            'success': True,
+            'es_favorito': es_favorito,
+            'message': mensaje
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Datos inválidos'}, status=400)
+    except Producto.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Producto no encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@cliente_required
+def mis_favoritos(request):
+    """
+    Muestra todos los productos que el cliente ha marcado como favoritos.
+    """
+    cliente = get_cliente_actual(request)
+    favoritos = Favorito.objects.filter(cliente=cliente).select_related('producto', 'producto__categoria')
+    
+    # También obtener la lista de IDs para el template
+    favoritos_ids = favoritos.values_list('producto_id', flat=True)
+    
+    context = {
+        'favoritos': favoritos,
+        'favoritos_ids': list(favoritos_ids),
+        'total_favoritos': favoritos.count(),
+        'cliente': cliente,
+    }
+    return render(request, 'tienda/mis_favoritos.html', context)

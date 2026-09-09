@@ -1,55 +1,82 @@
 {% extends "tienda/base_tienda.html" %}
 {% load static %}
 
-{% block title %}Confirmar Pago | Haze Studios{% endblock %}
+{% block title %}Confirmar Pedido | Haze Studios{% endblock %}
 
 {% block content %}
 <div class="page-header">
     <div>
-        <h1 class="tienda-page-title">Confirmar Pago</h1>
-        <p class="tienda-page-subtitle">Pedido #{{ pedido.pk }} — completa el pago para confirmar tu compra.</p>
+        <h1 class="tienda-page-title">Confirmar Pedido</h1>
+        <p class="tienda-page-subtitle">Pedido #{{ pedido.pk }} — revisa tus prendas y confirma para agendar la entrega.</p>
     </div>
 </div>
 
 <div class="cart-wrap">
     <div class="tienda-card" style="padding:2rem;">
         <h2 style="font-size:1.25rem;font-weight:900;color:var(--gris-900);margin-bottom:1.25rem;">
-            Estado de la Transacción
+            Estado del Pedido
         </h2>
 
-        <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--border-radius-lg);padding:1rem;margin-bottom:1.5rem;">
+        <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--border-radius-lg);padding:1rem;margin-bottom:1.5rem;"
+             x-data="contadorPedido({{ segundos_restantes }})"
+             x-init="iniciar()">
             <div style="font-size:0.88rem;color:var(--gris-600);">
-                Total a pagar: <strong style="color:var(--gris-900);">${{ pedido.total }}</strong>
+                Total a pagar contra entrega: <strong style="color:var(--gris-900);">${{ pedido.total }}</strong>
             </div>
             <div style="font-size:0.88rem;color:var(--gris-600);margin-top:0.35rem;">
                 Tiempo restante para confirmar:
-                <strong id="contador" style="color:var(--gris-900);">
-                    <span id="minutos"></span>:<span id="segundos"></span>
+                <strong style="color:var(--gris-900);">
+                    <span x-text="minutos"></span>:<span x-text="segundos"></span>
                 </strong>
             </div>
         </div>
 
         <p style="font-size:0.85rem;color:var(--gris-500);margin-bottom:1.5rem;">
-            Esta pasarela de pago es una simulación (aún no hay integración real). Elige un resultado para continuar:
+            Estamos agendando tu pedido con el equipo de despacho. Confirma para que salga a entrega.
         </p>
 
-        <form method="post" action="{% url 'tienda_confirmar_pago' pedido_id=pedido.pk %}">
+        <form method="post" action="{% url 'tienda_confirmar_pago' pedido_id=pedido.pk %}" id="form-pago">
             {% csrf_token %}
-            <div style="display:flex;gap:1rem;flex-wrap:wrap;">
-                <button type="submit" name="resultado" value="aprobado" class="btn btn-primary" style="padding:0.9rem 2rem;">
-                    Simular Pago Aprobado
+            <input type="hidden" name="resultado" id="resultado-input" value="">
+            
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;" x-show="!procesando">
+                <button type="button" class="btn btn-primary" style="padding:0.9rem 2rem;" @click="procesarPago('aprobado')">
+                    Confirmar Pedido
                 </button>
-                <button type="submit" name="resultado" value="rechazado" class="btn btn-outline" style="padding:0.9rem 2rem;">
-                    Simular Pago Rechazado
+                <button type="button" class="btn btn-outline" style="padding:0.9rem 2rem;" @click="procesarPago('rechazado')">
+                    Cancelar Pedido
                 </button>
+            </div>
+
+            <div x-show="procesando" style="display:flex;align-items:center;gap:0.6rem;color:var(--gris-600);font-size:0.9rem;font-weight:600;">
+                <span class="spinner"></span> <span x-text="textoProcesando"></span>
             </div>
         </form>
     </div>
 
     <div class="summary-card">
         <h3 style="font-size:1.2rem;font-weight:900;color:var(--gris-900);margin-bottom:1.25rem;">
-            Resumen del Pedido
+            Prendas en la Orden
         </h3>
+
+        <div style="max-height:290px;overflow-y:auto;margin-bottom:1rem;">
+            {% for det in detalles %}
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.65rem 0;border-bottom:1px solid var(--gris-100);">
+                <div style="display:flex;align-items:center;gap:0.75rem;">
+                    <img src="{{ det.producto.get_imagen_url }}" alt="{{ det.producto.nombre }}" class="table-product-thumb" style="width:46px;height:46px;">
+                    <div>
+                        <div style="font-weight:800;font-size:0.875rem;color:var(--gris-900);">{{ det.producto.nombre }}</div>
+                        <div style="font-size:0.75rem;color:var(--gris-500);font-weight:600;">
+                            {% if det.talla %}Talla: {{ det.talla }} × {% endif %}{{ det.cantidad }}
+                        </div>
+                    </div>
+                </div>
+                <div style="font-weight:900;font-size:0.95rem;color:var(--gris-900);">
+                    ${{ det.subtotal }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
 
         <div class="summary-total">
             <span>Total a Pagar:</span>
@@ -57,30 +84,81 @@
         </div>
 
         <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:var(--border-radius-md);padding:0.85rem;margin-top:1.25rem;font-size:0.8rem;color:#991B1B;font-weight:600;">
-            Si no confirmas el pago dentro del tiempo límite, el pedido se cancelará automáticamente y el stock reservado será liberado.
+            Si no confirmas dentro del tiempo límite, el pedido se cancelará automáticamente
         </div>
     </div>
 </div>
 
+<style>
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--gris-300, #ccc);
+    border-top-color: var(--gris-900, #111);
+    border-radius: 50%;
+    display: inline-block;
+    animation: girar 0.7s linear infinite;
+}
+@keyframes girar {
+    to { transform: rotate(360deg); }
+}
+</style>
 
 <script>
-let segundosRestantes = {{ segundos_restantes }};
-const elMin = document.getElementById('minutos');
-const elSeg = document.getElementById('segundos');
+document.addEventListener('alpine:init', () => {
+    Alpine.data('contadorPedido', (segundosIniciales) => ({
+        tiempoRestante: segundosIniciales,
+        minutos: 0,
+        segundos: 0,
+        intervalo: null,
+        procesando: false,
+        textoProcesando: 'Confirmando tu pedido, no cierres esta ventana...',
 
-function actualizarContador() {
-    if (segundosRestantes <= 0) {
-        window.location.reload();
-        return;
-    }
-    const m = Math.floor(segundosRestantes / 60);
-    const s = segundosRestantes % 60;
-    elMin.textContent = String(m).padStart(2, '0');
-    elSeg.textContent = String(s).padStart(2, '0');
-    segundosRestantes--;
-}
+        iniciar() {
+            this.actualizar();
+            this.intervalo = setInterval(() => {
+                this.tiempoRestante--;
+                this.actualizar();
+                
+                if (this.tiempoRestante <= 0) {
+                    clearInterval(this.intervalo);
+                    window.location.reload();
+                }
+            }, 1000);
+        },
 
-actualizarContador();
-setInterval(actualizarContador, 1000);
+        actualizar() {
+            const m = Math.floor(this.tiempoRestante / 60);
+            const s = this.tiempoRestante % 60;
+            this.minutos = String(m).padStart(2, '0');
+            this.segundos = String(s).padStart(2, '0');
+        },
+
+        procesarPago(resultado) {
+            document.getElementById('resultado-input').value = resultado;
+            this.procesando = true;
+            
+            if (resultado === 'aprobado') {
+                this.textoProcesando = 'Confirmando tu pedido, no cierres esta ventana...';
+            } else {
+                this.textoProcesando = 'Cancelando tu pedido, no cierres esta ventana...';
+            }
+            
+            if (this.intervalo) {
+                clearInterval(this.intervalo);
+            }
+
+            setTimeout(() => {
+                document.getElementById('form-pago').submit();
+            }, 1200);
+        },
+
+        destroy() {
+            if (this.intervalo) {
+                clearInterval(this.intervalo);
+            }
+        }
+    }));
+});
 </script>
 {% endblock %}

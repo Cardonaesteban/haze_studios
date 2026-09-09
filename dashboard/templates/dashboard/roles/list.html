@@ -3,7 +3,7 @@
 {% block content %}
 
 <div class="page-header">
-    <h1>🔐 Roles</h1>
+    <h1> Roles</h1>
     <a class="btn btn-primary" href="{% url 'roles_crear' %}">+ Nuevo rol</a>
 </div>
 
@@ -45,9 +45,9 @@
             <td><span class="badge badge-{{ r.estado }}">{{ r.get_estado_display }}</span></td>
             <td>{{ r.usuarios.count }} usuario(s)</td>
             <td class="botones">
-                <a class="btn-editar" href="{% url 'roles_editar' r.pk %}">✏️ Editar</a>
-                <a class="btn-estado" href="{% url 'roles_estado' r.pk %}">🔄 Estado</a>
-                <a class="btn-eliminar" href="{% url 'roles_eliminar' r.pk %}">🗑️ Eliminar</a>
+                <a class="btn-editar" href="{% url 'roles_editar' r.pk %}">Editar</a>
+                <a class="btn-estado" href="{% url 'roles_estado' r.pk %}"> Estado</a>
+                <a class="btn-eliminar" href="{% url 'roles_eliminar' r.pk %}"> Eliminar</a>
             </td>
         </tr>
         {% empty %}

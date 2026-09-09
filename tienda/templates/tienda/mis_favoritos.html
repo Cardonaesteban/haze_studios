@@ -6,45 +6,81 @@
 {% block content %}
 <div class="page-header">
     <div>
-        <h1 class="tienda-page-title">Mis Favoritos</h1>
-        <p class="tienda-page-subtitle">Las prendas que guardaste para más tarde.</p>
+        <h1 class="tienda-page-title">❤️ Mis Favoritos</h1>
+        <p class="tienda-page-subtitle">Tus prendas guardadas para comprar después.</p>
     </div>
 </div>
 
 {% if favoritos %}
 <div class="product-grid">
-    {% for fav in favoritos %}
+    {% for favorito in favoritos %}
     <div class="product-card">
-        <div class="product-card-img" style="height:220px;">
+        <div class="product-card-img" style="height:220px;position:relative;">
             <span class="badge-oversize">CORTE OVERSIZE</span>
-            <img src="{% static fav.producto.get_imagen_url %}" alt="{{ fav.producto.nombre }}" class="product-card-real-img" loading="lazy">
+            <img src="{{ favorito.producto.get_imagen_url }}" alt="{{ favorito.producto.nombre }}" class="product-card-real-img" loading="lazy">
+            
+            <!-- Botón quitar favoritos con Alpine -->
+            <button type="button"
+                    x-data="{ esFavorito: true }"
+                    @click="
+                        esFavorito = false;
+                        fetch(`/tienda/favoritos/toggle-api/{{ favorito.producto.pk }}/`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': '{{ csrf_token }}',
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ accion: 'quitar' })
+                        }).then(() => {
+                            window.location.reload();
+                        }).catch(() => {
+                            esFavorito = true;
+                        });
+                    "
+                    style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.9);border:none;border-radius:50%;width:36px;height:36px;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.15);transition:all 0.2s;"
+                    @mouseenter="this.style.transform='scale(1.1)'"
+                    @mouseleave="this.style.transform='scale(1)'">
+                <span x-text="esFavorito ? '❤️' : '🤍'"></span>
+            </button>
         </div>
         <div class="product-card-body">
-            <a href="{% url 'tienda_producto_detalle' fav.producto.pk %}" class="product-title">{{ fav.producto.nombre }}</a>
+            <a href="{% url 'tienda_producto_detalle' favorito.producto.pk %}" class="product-title">{{ favorito.producto.nombre }}</a>
             <div style="font-size:0.75rem;color:var(--gris-500);font-weight:600;margin:0.25rem 0 0.5rem;">
-                Agregado el {{ fav.fecha_agregado|date:"d/m/Y" }}
+                Agregado el {{ favorito.fecha_agregado|date:"d/m/Y" }}
             </div>
-            <div class="product-price">${{ fav.producto.precio }}</div>
-            <div class="product-card-actions" style="display:flex;gap:0.5rem;">
-                <a href="{% url 'tienda_producto_detalle' fav.producto.pk %}" class="btn btn-primary btn-sm" style="flex:1;padding:0.65rem;">
+            <div class="product-price">${{ favorito.producto.precio }}</div>
+            <div class="product-card-actions">
+                <a href="{% url 'tienda_producto_detalle' favorito.producto.pk %}" class="btn btn-primary btn-sm" style="width:100%;padding:0.65rem;">
                     Ver Prenda
                 </a>
-                <form method="post" action="{% url 'tienda_favoritos_toggle' fav.producto.pk %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="next" value="{% url 'tienda_mis_favoritos' %}">
-                    <button type="submit" class="btn btn-outline btn-sm" style="padding:0.65rem;" title="Quitar de favoritos">
-                        ❤️
-                    </button>
-                </form>
             </div>
         </div>
     </div>
     {% endfor %}
 </div>
+
+<div style="margin-top:1.5rem;text-align:center;font-size:0.9rem;color:var(--gris-500);">
+    Tienes <strong style="color:var(--gris-900);">{{ favoritos|length }}</strong> prenda(s) en favoritos
+</div>
+
 {% else %}
-<div class="tienda-card" style="padding:2rem;text-align:center;">
-    <p style="color:var(--gris-600);">Todavía no has agregado prendas a tus favoritos.</p>
-    <a href="{% url 'tienda_productos' %}" class="btn btn-primary" style="margin-top:1rem;">Ver Colección</a>
+<div style="text-align:center;padding:4rem 2rem;background:#FAFAFA;border-radius:var(--border-radius-lg);">
+    <div style="font-size:4rem;margin-bottom:1rem;">🤍</div>
+    <h3 style="font-size:1.5rem;font-weight:700;color:var(--gris-700);margin-bottom:0.5rem;">
+        No tienes favoritos aún
+    </h3>
+    <p style="color:var(--gris-500);margin-bottom:1.5rem;">
+        Explora nuestra colección y guarda tus prendas favoritas.
+    </p>
+    <a href="{% url 'tienda_productos' %}" class="btn btn-primary" style="padding:0.75rem 2rem;">
+        Ver Colección
+    </a>
 </div>
 {% endif %}
+
+<div style="margin-top:2rem;text-align:center;">
+    <a href="{% url 'tienda_productos' %}" class="btn btn-outline" style="padding:0.75rem 2rem;">
+        ← Seguir explorando
+    </a>
+</div>
 {% endblock %}

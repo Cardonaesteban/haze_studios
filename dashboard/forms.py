@@ -66,6 +66,12 @@ class ClienteForm(forms.ModelForm):
         if len(telefono) > 15:
             raise ValidationError('El teléfono no puede tener más de 15 dígitos.')
         return telefono
+    
+    def clean_direccion(self):
+        direccion = self.cleaned_data.get('direccion', '').strip()
+        if len(direccion) < 10:
+            raise ValidationError('La dirección debe tener al menos 10 caracteres.')
+        return direccion
 
     def clean_correo(self):
         correo = self.cleaned_data.get('correo', '').strip().lower()
@@ -100,6 +106,7 @@ class ClienteForm(forms.ModelForm):
         if commit:
             cliente.save()
         return cliente
+    
 
 
 # ──────────────────────────────────────────────
@@ -232,9 +239,7 @@ class CategoriaForm(forms.ModelForm):
             raise ValidationError('Ya existe una categoría con ese nombre.')
         if any(c.isdigit() for c in nombre):
             raise ValidationError('El nombre de la categoría no puede contener números.')
-        if '' in nombre:
-            raise ValidationError('El nombre de la categoría no puede contener espacios en blanco.')
-        if not nombre.isalpha():
+        if not all(c.isalpha() or c.isspace() for c in nombre):
             raise ValidationError('El nombre de la categoría solo puede contener letras.')
         return nombre
         
@@ -289,11 +294,7 @@ class ProveedorForm(forms.ModelForm):
         # correo es opcional en proveedor, pero si viene debe ser válido (el campo EmailField ya lo valida)
         return correo
 
-    def clean_direccion(self):
-        direccion = self.cleaned_data.get('direccion', '').strip()
-        if not direccion:
-            raise ValidationError('La dirección es obligatoria.')
-        return direccion
+    
 
 # ──────────────────────────────────────────────
 # DISEÑADORES

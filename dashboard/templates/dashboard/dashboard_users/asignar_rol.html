@@ -4,12 +4,12 @@
 <h1>{{ titulo }}</h1>
 <div class="form-wrap">
     <p style="color:var(--gris-600);margin-bottom:1.25rem;font-size:0.9rem;">
-        Asigna un rol a <strong>{{ objeto.username }}</strong>. El rol determina los permisos de acceso al dashboard.
+        Asigna un rol a <strong>{{ objeto.username }}</strong>
     </p>
     <form method="post">{% csrf_token %}
         {% for field in form %}
         <div class="form-group">
-            <label>{{ field.label }}</label>
+            <label>{{ field.label }}{% if field.field.required %} <span style="color:var(--rojo)">*</span>{% endif %}</label>
             {{ field }}
             {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
         </div>

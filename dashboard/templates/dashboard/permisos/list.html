@@ -3,7 +3,7 @@
 {% block content %}
 
 <div class="page-header">
-    <h1>🛡️ Permisos</h1>
+    <h1>Permisos</h1>
     <a class="btn btn-primary" href="{% url 'permisos_crear' %}">+ Nuevo permiso</a>
 </div>
 
@@ -44,8 +44,8 @@
                 {% endfor %}
             </td>
             <td class="botones">
-                <a class="btn-editar" href="{% url 'permisos_editar' p.pk %}">✏️ Editar</a>
-                <a class="btn-eliminar" href="{% url 'permisos_eliminar' p.pk %}">🗑️ Eliminar</a>
+                <a class="btn-editar" href="{% url 'permisos_editar' p.pk %}">Editar</a>
+                <a class="btn-eliminar" href="{% url 'permisos_eliminar' p.pk %}">Eliminar</a>
             </td>
         </tr>
         {% empty %}

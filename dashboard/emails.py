@@ -52,7 +52,7 @@ def enviar_notificacion_estado_pedido(pedido, estado_anterior=None):
         f"El equipo de Haze Studios"
     )
 
-    # HTML elegante corporativo (sin emojis)
+    # HTML - INICIALIZAR filas_html ANTES de usarla
     filas_html = ""
     for d in detalles:
         nombre_prod = getattr(d.producto, 'nombre', 'Producto')
@@ -66,6 +66,16 @@ def enviar_notificacion_estado_pedido(pedido, estado_anterior=None):
             </td>
             <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 14px; color: #0f172a; font-weight: 600; text-align: right;">
                 ${d.subtotal():,.0f}
+            </td>
+        </tr>
+        """
+
+    # Si no hay detalles, mostrar un mensaje en la tabla
+    if not filas_html:
+        filas_html = """
+        <tr>
+            <td colspan="3" style="padding: 10px 12px; text-align: center; color: #64748b;">
+                Sin productos en este pedido
             </td>
         </tr>
         """
@@ -165,4 +175,3 @@ def enviar_notificacion_estado_pedido(pedido, estado_anterior=None):
     except Exception as e:
         logger.error(f"Error al enviar notificación de pedido #{pedido.pk}: {e}")
         return False
-

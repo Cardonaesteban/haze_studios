@@ -19,7 +19,7 @@
     <!-- IMAGEN REAL EN ALTA RESOLUCIÓN -->
     <div class="detail-preview">
         <span class="badge-oversize" style="top:18px;left:18px;">CORTE OVERSIZE</span>
-        <img src="{% static producto.get_imagen_url %}" alt="{{ producto.nombre }}" class="detail-real-img">
+        <img src="{{ producto.get_imagen_url }}" alt="{{ producto.nombre }}" class="detail-real-img">
     </div>
 
     <!-- INFORMACIÓN DE COMPRA -->
@@ -28,27 +28,33 @@
             HAZE ESENCIALES OVERSIZE
         </span>
 
-              <h1 style="font-size:2rem;font-weight:900;margin:0.75rem 0 0.5rem;color:var(--gris-900);">
+        <h1 style="font-size:2rem;font-weight:900;margin:0.75rem 0 0.5rem;color:var(--gris-900);">
             {{ producto.nombre }}
         </h1>
 
-        {% if cliente %}
-        <form method="post" action="{% url 'tienda_favoritos_toggle' producto.pk %}" style="display:inline-block;margin-bottom:1rem;">
-            {% csrf_token %}
-            <input type="hidden" name="next" value="{% url 'tienda_producto_detalle' producto.pk %}">
-            <button type="submit" class="btn btn-outline btn-sm" style="padding:0.5rem 1.1rem;">
-                {% if es_favorito %}
-                    ❤️ Quitar de Favoritos
-                {% else %}
-                    🤍 Agregar a Favoritos
-                {% endif %}
-            </button>
-        </form>
-        {% else %}
-        <a href="{% url 'tienda_login' %}?next={% url 'tienda_producto_detalle' producto.pk %}" class="btn btn-outline btn-sm" style="padding:0.5rem 1.1rem;display:inline-block;margin-bottom:1rem;">
-            🤍 Inicia sesión para guardar en Favoritos
-        </a>
-        {% endif %}
+<!-- BOTÓN DE FAVORITOS CON ALPINE -->
+{% if cliente %}
+<div x-data="favoritoHandler({{ es_favorito|yesno:'true,false' }}, {{ producto.pk }})" 
+     style="display:inline-block;margin-bottom:1rem;">
+    <button type="button" 
+            @click="toggleFavorito()" 
+            :disabled="cargando"
+            class="btn btn-outline btn-sm"
+            style="padding:0.5rem 1.1rem;display:inline-flex;align-items:center;gap:0.5rem;"
+            :style="cargando ? 'opacity:0.6;cursor:wait;' : 'opacity:1;'">
+        <span x-text="esFavorito ? '❤️' : '🤍'" 
+              style="font-size:1.1rem;"
+              :style="esFavorito ? 'color:#EF4444;' : 'color:#9CA3AF;'"></span>
+        <span x-text="esFavorito ? 'Quitar de Favoritos' : 'Agregar a Favoritos'" 
+              style="font-size:0.85rem;font-weight:600;"></span>
+        <span x-show="cargando" style="display:inline-block;width:14px;height:14px;border:2px solid #E5E7EB;border-top-color:#111827;border-radius:50%;animation:girarFav 0.7s linear infinite;"></span>
+    </button>
+</div>
+{% else %}
+<a href="{% url 'tienda_login' %}?next={% url 'tienda_producto_detalle' producto.pk %}" class="btn btn-outline btn-sm" style="padding:0.5rem 1.1rem;display:inline-block;margin-bottom:1rem;">
+    🤍 Inicia sesión para guardar en Favoritos
+</a>
+{% endif %}
 
         <div style="display:flex;gap:1.25rem;align-items:center;margin-bottom:1.5rem;">
             <div style="font-size:2rem;font-weight:900;color:var(--gris-900);">
@@ -99,9 +105,9 @@
                         Cantidad:
                     </label>
                     <div class="qty-controller">
-                        <button type="button" class="qty-btn" onclick="let input = document.getElementById('prod_qty'); if(parseInt(input.value) > 1) input.value = parseInt(input.value) - 1;">−</button>
+                        <button type="button" class="qty-btn" onclick="let inputMenos = document.getElementById('prod_qty'); if(parseInt(inputMenos.value) > 1) inputMenos.value = parseInt(inputMenos.value) - 1;">−</button>
                         <input type="number" name="cantidad" id="prod_qty" value="1" min="1" max="{{ producto.stock }}" required class="qty-input">
-                        <button type="button" class="qty-btn" onclick="let input = document.getElementById('prod_qty'); if(parseInt(input.value) < {{ producto.stock }}) input.value = parseInt(input.value) + 1;">+</button>
+                        <button type="button" class="qty-btn" onclick="let inputMas = document.getElementById('prod_qty'); if(parseInt(inputMas.value) < {{ producto.stock }}) inputMas.value = parseInt(inputMas.value) + 1;">+</button>
                     </div>
                 </div>
                 <div style="flex:1;">
@@ -155,7 +161,7 @@
         <div class="product-card">
             <div class="product-card-img" style="height:220px;">
                 <span class="badge-oversize">CORTE OVERSIZE</span>
-                <img src="{% static rel.get_imagen_url %}" alt="{{ rel.nombre }}" class="product-card-real-img" loading="lazy">
+                <img src="{{ rel.get_imagen_url }}" alt="{{ rel.nombre }}" class="product-card-real-img" loading="lazy">
             </div>
             <div class="product-card-body">
                 <a href="{% url 'tienda_producto_detalle' rel.pk %}" class="product-title">{{ rel.nombre }}</a>
@@ -172,6 +178,12 @@
 </div>
 {% endif %}
 
+<style>
+@keyframes girarFav {
+    to { transform: rotate(360deg); }
+}
+</style>
+
 <script>
 function switchTab(evt, tabId) {
     document.querySelectorAll('.tab-trigger').forEach(b => b.classList.remove('active'));
@@ -179,5 +191,68 @@ function switchTab(evt, tabId) {
     evt.currentTarget.classList.add('active');
     document.getElementById(tabId).classList.add('active');
 }
+
+document.addEventListener('alpine:init', () => {
+    Alpine.data('favoritoHandler', (estadoInicial, productoId) => ({
+        esFavorito: estadoInicial,
+        productoId: productoId,
+        cargando: false,
+        hover: false,
+
+        async toggleFavorito() {
+            // Evitar múltiples clics mientras se procesa
+            if (this.cargando) return;
+            
+            // Cambiar estado optimistamente (feedback inmediato)
+            const nuevoEstado = !this.esFavorito;
+            this.esFavorito = nuevoEstado;
+            this.cargando = true;
+
+            try {
+                // Enviar petición al backend con Fetch API
+                const response = await fetch(`/tienda/favoritos/toggle-api/${this.productoId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': this.getCookie('csrftoken'),
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        accion: nuevoEstado ? 'agregar' : 'quitar'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    // Si falla, revertir al estado anterior
+                    this.esFavorito = !nuevoEstado;
+                    console.error('Error al cambiar favorito:', data.error);
+                }
+            } catch (error) {
+                // Si hay error de red, revertir
+                this.esFavorito = !nuevoEstado;
+                console.error('Error de red:', error);
+            } finally {
+                this.cargando = false;
+            }
+        },
+
+        // Función auxiliar para obtener el CSRF token de las cookies
+        getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    }));
+});
 </script>
 {% endblock %}

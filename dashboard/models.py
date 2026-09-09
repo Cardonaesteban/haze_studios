@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MaxLengthValidator
 from django.utils import timezone
 from datetime import timedelta
+from django.templatetags.static import static
 
 
 # ──────────────────────────────────────────────
@@ -77,7 +78,7 @@ class PerfilUsuario(models.Model):
         return f'{self.user.username} — {self.rol}'
 
     def es_admin(self):
-        return self.rol and self.rol.nombre == 'admin'
+        return self.tiene_permiso('acceso_dashboard')
 
     def tiene_permiso(self, codigo):
         if not self.rol:
@@ -192,16 +193,17 @@ class Producto(models.Model):
         nombre_lower = (self.nombre or '').lower()
         if 'hoodie' in nombre_lower or 'buzo' in nombre_lower or 'capota' in nombre_lower:
             if 'crema' in nombre_lower or 'blanco' in nombre_lower or 'beige' in nombre_lower:
-                return 'img/products/hoodie_cream.jpg'
-            return 'img/products/hoodie_black.jpg'
+                ruta = 'img/products/hoodie_cream.jpg'
+            else:
+                ruta = 'img/products/hoodie_black.jpg'
         elif 'camiseta' in nombre_lower or 't-shirt' in nombre_lower or 'remera' in nombre_lower or 'camisa' in nombre_lower:
-            return 'img/products/tshirt_white.jpg'
+            ruta = 'img/products/tshirt_white.jpg'
         elif 'pantalon' in nombre_lower or 'pantalón' in nombre_lower or 'cargo' in nombre_lower or 'jogger' in nombre_lower or 'jean' in nombre_lower:
-            return 'img/products/pants_cargo.jpg'
+            ruta = 'img/products/pants_cargo.jpg'
         elif 'chaqueta' in nombre_lower or 'bomber' in nombre_lower or 'jacket' in nombre_lower:
-            return 'img/products/jacket_bomber.jpg'
+            ruta = 'img/products/jacket_bomber.jpg'
         elif 'sweatshirt' in nombre_lower or 'crewneck' in nombre_lower or 'saco' in nombre_lower:
-            return 'img/products/crewneck_charcoal.jpg'
+            ruta = 'img/products/crewneck_charcoal.jpg'
         else:
             gallery = [
                 'img/products/hoodie_black.jpg',
@@ -212,7 +214,9 @@ class Producto(models.Model):
                 'img/products/jacket_bomber.jpg',
             ]
             idx = (self.pk or 1) % len(gallery)
-            return gallery[idx]
+            ruta = gallery[idx]
+        return static(ruta)
+    
     def clean(self):
         if self.precio is not None and self.precio < 0:
             raise ValidationError({'precio': 'El precio no puede ser negativo.'})

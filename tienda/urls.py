@@ -6,8 +6,10 @@ urlpatterns = [
     path('', views.inicio, name='tienda_inicio'),
     path('productos/', views.productos, name='tienda_productos'),
     path('productos/<int:pk>/', views.producto_detalle, name='tienda_producto_detalle'),
-    path('favoritos/', views.mis_favoritos, name='tienda_mis_favoritos'),
-    path('favoritos/toggle/<int:producto_id>/', views.favoritos_toggle, name='tienda_favoritos_toggle'),
+
+    # Favoritos
+    path('favoritos/', views.mis_favoritos, name='tienda_favoritos'),
+    path('favoritos/toggle-api/<int:producto_id>/', views.favoritos_toggle_api, name='tienda_favoritos_toggle_api'),
 
     # Carrito de Compras
     path('carrito/', views.carrito, name='tienda_carrito'),

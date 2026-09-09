@@ -51,6 +51,10 @@ Proyecto en desarrollo como parte del proceso de formación en Análisis y Desar
     docker compose up
 '''
 
+## Crear superusuario docker
+
+docker compose exec web python manage.py createsuperuser
+
 1. Abre el navegador en `http://localhost:8000`
 
 > La primera vez puede tardar unos minutos mientras Docker descarga las imágenes y aplica las migraciones automáticamente.
@@ -59,10 +63,6 @@ Proyecto en desarrollo como parte del proceso de formación en Análisis y Desar
 ```bash
 docker-compose down
 ```
-## Crear superuser con docker
-
-docker compose exec web python manage.py createsuperuser
-
 
 ---
 

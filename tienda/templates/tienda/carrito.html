@@ -39,7 +39,7 @@
                         <tr {% if item.sin_stock %}class="row-alert"{% endif %}>
                             <td>
                                 <div class="table-product-cell">
-                                    <img src="{% static item.producto.get_imagen_url %}" alt="{{ item.producto.nombre }}" class="table-product-thumb">
+                                    <img src="{{ item.producto.get_imagen_url }}" alt="{{ item.producto.nombre }}" class="table-product-thumb">
                                     <div>
                                         <div style="font-weight:800;color:var(--gris-900);">
                                             <a href="{% url 'tienda_producto_detalle' item.producto.pk %}" style="color:var(--gris-900);text-decoration:none;">

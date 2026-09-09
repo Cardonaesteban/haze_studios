@@ -630,8 +630,8 @@ def roles_eliminar(request, pk):
 @admin_required
 def roles_toggle_estado(request, pk):
     rol = get_object_or_404(Rol, pk=pk)
-    rol.activo = not rol.activo
-    rol.save()
+    rol.toggle_estado()
+    messages.success(request, f'Estado de {rol} cambiado a {rol.estado}.')
     return redirect('roles_list')
 
 # ──────────────────────────────────────────────

@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="page-header">
-    <h1>Administración de Proveedores</h1>
+    <h1>Proveedores</h1>
     <a class="btn btn-primary" href="{% url 'proveedores_crear' %}">+ Registrar proveedor</a>
 </div>
 
@@ -41,8 +41,8 @@
             <td>{{ p.correo|default:"—" }}</td>
             <td>{{ p.direccion|default:"—" }}</td>
             <td class="botones">
-                <a class="btn-editar" href="{% url 'proveedores_editar' p.pk %}">✏️ Editar</a>
-                <a class="btn-eliminar" href="{% url 'proveedores_eliminar' p.pk %}">🗑️ Eliminar</a>
+                <a class="btn-editar" href="{% url 'proveedores_editar' p.pk %}">Editar</a>
+                <a class="btn-eliminar" href="{% url 'proveedores_eliminar' p.pk %}">Eliminar</a>
             </td>
         </tr>
         {% empty %}
