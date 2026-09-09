@@ -526,6 +526,12 @@ def proveedores_eliminar(request, pk):
         return redirect('proveedores_list')
     return render(request, 'dashboard/confirmar_eliminar.html', {'objeto': proveedor, 'tipo': 'proveedor'})
 
+@admin_required
+def proveedores_toggle_estado(request, pk):
+    proveedor = get_object_or_404(Proveedor, pk=pk)
+    proveedor.toggle_estado()
+    messages.success(request, f'Estado de {proveedor} cambiado a {proveedor.estado}.')
+    return redirect('proveedores_list')
 
 # ──────────────────────────────────────────────
 # DISEÑADORES

@@ -169,7 +169,20 @@ class ProductoForm(forms.ModelForm):
             raise ValidationError('El stock mínimo no puede ser mayor que el stock actual.')
         return stock_minimo
     
-    
+    def clean_disenador(self):
+        disenador = self.cleaned_data.get('disenador')
+        if disenador and disenador.estado == 'inactivo':
+            raise ValidationError(f'El diseñador {disenador.nombre} está inactivo y no puede ser asignado a un producto.')
+        return disenador
+
+    def clean_proveedor(self):
+        proveedor = self.cleaned_data.get('proveedor')
+        if proveedor and proveedor.estado == 'inactivo':
+            raise ValidationError(f'El proveedor {proveedor.nombre} está inactivo y no puede ser asignado a un producto.')
+        return proveedor
+
+
+
 class ProductoEditarForm(ProductoForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -212,11 +225,17 @@ class ProductoEditarForm(ProductoForm):
     def clean_stock_minimo(self):
         return self.instance.stock_minimo if self.instance and self.instance.pk else 0
 
-    def clean_diseñador(self):
+    def clean_disenador(self):
         disenador = self.cleaned_data.get('disenador')
         if disenador and disenador.estado == 'inactivo':
-            raise ValidationError('El diseñador {diseñador.nombre} está inactivo y no puede ser asignado a un producto.')
+            raise ValidationError(f'El diseñador {disenador.nombre} está inactivo y no puede ser asignado a un producto.')
         return disenador
+
+    def clean_proveedor(self):
+        proveedor = self.cleaned_data.get('proveedor')
+        if proveedor and proveedor.estado == 'inactivo':
+            raise ValidationError(f'El proveedor {proveedor.nombre} está inactivo y no puede ser asignado a un producto.')
+        return proveedor
 
 
 # ──────────────────────────────────────────────
@@ -293,6 +312,7 @@ class ProveedorForm(forms.ModelForm):
                 raise ValidationError('Ya existe un proveedor con ese correo.')
         # correo es opcional en proveedor, pero si viene debe ser válido (el campo EmailField ya lo valida)
         return correo
+
 
     
 

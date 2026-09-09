@@ -30,7 +30,7 @@
 <div class="table-wrap">
     <table>
         <thead>
-            <tr><th>ID</th><th>Nombre</th><th>Teléfono</th><th>Correo</th><th>Dirección</th><th>Acciones</th></tr>
+            <tr><th>ID</th><th>Nombre</th><th>Teléfono</th><th>Correo</th><th>Dirección</th><th>Estado</th><th>Acciones</th></tr>
         </thead>
         <tbody>
         {% for p in proveedores %}
@@ -40,14 +40,22 @@
             <td>{{ p.telefono|default:"—" }}</td>
             <td>{{ p.correo|default:"—" }}</td>
             <td>{{ p.direccion|default:"—" }}</td>
+            <td>
+                {% if p.estado == 'activo' %}
+                    <span class="badge badge-activo">Activo</span>
+                {% else %}
+                    <span class="badge badge-inactivo">Inactivo</span>
+                {% endif %}
+            </td>
             <td class="botones">
                 <a class="btn-editar" href="{% url 'proveedores_editar' p.pk %}">Editar</a>
                 <a class="btn-eliminar" href="{% url 'proveedores_eliminar' p.pk %}">Eliminar</a>
+                <a class="btn-estado" href="{% url 'proveedores_toggle_estado' p.pk %}">Estado</a>
             </td>
         </tr>
         {% empty %}
         <tr>
-            <td colspan="6" style="text-align:center;padding:2rem;color:var(--gris-500)">
+            <td colspan="7" style="text-align:center;padding:2rem;color:var(--gris-500)">
                 {% if proveedor_seleccionado %}
                 No se encontró el proveedor seleccionado.
                 {% else %}

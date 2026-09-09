@@ -105,16 +105,26 @@ class Categoria(models.Model):
 
 
 class Proveedor(models.Model):
+    ESTADO_CHOICES=[
+        ('activo', 'Activo'),
+        ('inactivo', 'Inactivo'),
+    ]
+
     nombre = models.CharField(max_length=150)
     telefono = models.CharField(max_length=30, blank=True, default='')
     correo = models.EmailField(blank=True, default='')
     direccion = models.TextField(blank=True, default='')
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='activo')
 
     class Meta:
         db_table = 'proveedores'
         verbose_name = 'Proveedor'
         verbose_name_plural = 'Proveedores'
         ordering = ['nombre']
+
+    def toggle_estado(self):
+        self.estado = 'inactivo' if self.estado == 'activo' else 'activo'
+        self.save()
 
     def __str__(self):
         return self.nombre

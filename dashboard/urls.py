@@ -44,6 +44,7 @@ urlpatterns = [
     path('proveedores/crear/', views.proveedores_crear, name='proveedores_crear'),
     path('proveedores/<int:pk>/editar/', views.proveedores_editar, name='proveedores_editar'),
     path('proveedores/<int:pk>/eliminar/', views.proveedores_eliminar, name='proveedores_eliminar'),
+    path('proveedores/<int:pk>/toggle-estado/', views.proveedores_toggle_estado, name='proveedores_toggle_estado'),
 
     # Diseñadores
     path('disenadores/', views.disenadores_list, name='disenadores_list'),
