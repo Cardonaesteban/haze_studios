@@ -32,24 +32,24 @@ class ClienteForm(forms.ModelForm):
         }
 
     def clean_nombre(self):
-        v = self.cleaned_data.get('nombre', '').strip()
-        if not v:
+        nombre = self.cleaned_data.get('nombre', '').strip()
+        if not nombre:
             raise ValidationError('El nombre es obligatorio.')
-        if len(v) < 2:
+        if len(nombre) < 2:
             raise ValidationError('El nombre debe tener al menos 2 caracteres.')
-        if any(c.isdigit() for c in v):
+        if any(c.isdigit() for c in nombre):
             raise ValidationError('El nombre no puede contener números.')
-        return v
+        return nombre
 
     def clean_apellido(self):
-        v = self.cleaned_data.get('apellido', '').strip()
-        if not v:
+        apellido = self.cleaned_data.get('apellido', '').strip()
+        if not apellido:
             raise ValidationError('El apellido es obligatorio.')
-        if len(v) < 2:
+        if len(apellido) < 2:
             raise ValidationError('El apellido debe tener al menos 2 caracteres.')
-        if any(c.isdigit() for c in v):
+        if any(c.isdigit() for c in apellido):
             raise ValidationError('El apellido no puede contener números.')
-        return v
+        return apellido
 
     def clean_telefono(self):
         telefono = self.cleaned_data.get('telefono', '').strip()
