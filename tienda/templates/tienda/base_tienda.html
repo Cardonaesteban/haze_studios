@@ -80,23 +80,25 @@
     {% include "tienda/includes/tienda_messages.html" %}
 
     {% block content %}{% endblock %}
-
-    <footer class="tienda-footer">
-        <div class="tienda-footer-brand">
-            <img src="{% static 'img/haze_logo.svg' %}" alt="Haze Studios" class="tienda-footer-logo">
-            <span>HAZE STUDIOS — MODA URBANA & PRENDAS OVERSIZE</span>
-        </div>
-        <p style="margin-bottom:0.85rem;color:var(--gris-500);">Diseño contemporáneo, confección de alto gramaje y siluetas con caída holgada.</p>
-        <div style="display:flex;gap:1.5rem;justify-content:center;font-size:0.84rem;flex-wrap:wrap;">
-            <a href="{% url 'tienda_inicio' %}" style="color:var(--gris-600);text-decoration:none;font-weight:700;">Inicio</a>
-            <a href="{% url 'tienda_productos' %}" style="color:var(--gris-600);text-decoration:none;font-weight:700;">Catálogo de Prendas</a>
-            <a href="{% url 'tienda_favoritos' %}" style="color:var(--gris-600);text-decoration:none;font-weight:700;">❤️ Favoritos</a>
-            <a href="{% url 'tienda_carrito' %}" style="color:var(--gris-600);text-decoration:none;font-weight:700;">Carrito</a>
-            <a href="{% url 'login' %}" style="color:var(--gris-400);text-decoration:none;font-weight:600;">Acceso Administrativo</a>
-        </div>
-        <p style="margin-top:1.25rem;font-size:0.75rem;color:var(--gris-400);">© {% now "Y" %} Haze Studios. Todos los derechos reservados.</p>
-    </footer>
 </div>
+
+<footer class="tienda-footer">
+    <div class="tienda-footer-brand">
+        <img src="{% static 'img/haze_logo.svg' %}" alt="Haze Studios" class="tienda-footer-logo">
+        <span>HAZE STUDIOS — MODA URBANA & PRENDAS OVERSIZE</span>
+    </div>
+    <p style="margin-bottom:0.85rem;color:var(--gris-500);">Diseño contemporáneo, confección de alto gramaje y siluetas con caída holgada.</p>
+    <div style="display:flex;gap:1.5rem;justify-content:center;font-size:0.84rem;flex-wrap:wrap;">
+        <a href="{% url 'tienda_inicio' %}" style="color:var(--gris-600);text-decoration:none;font-weight:700;">Inicio</a>
+        <a href="{% url 'tienda_productos' %}" style="color:var(--gris-600);text-decoration:none;font-weight:700;">Catálogo de Prendas</a>
+        <a href="{% url 'tienda_favoritos' %}" style="color:var(--gris-600);text-decoration:none;font-weight:700;">❤️ Favoritos</a>
+        <a href="{% url 'tienda_carrito' %}" style="color:var(--gris-600);text-decoration:none;font-weight:700;">Carrito</a>
+        <a href="{% url 'login' %}" style="color:var(--gris-400);text-decoration:none;font-weight:600;">Acceso Administrativo</a>
+    </div>
+    <p style="margin-top:1.25rem;font-size:0.75rem;color:var(--gris-400);">© {% now "Y" %} Haze Studios. Todos los derechos reservados.</p>
+</footer>
+
+{% block extra_js %}{% endblock %}
 
 </body>
 </html>

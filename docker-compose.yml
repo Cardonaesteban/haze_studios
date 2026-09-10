@@ -40,6 +40,9 @@ services:
     # Mapea el puerto 8000 del computador al 8000 del contenedor
     ports:
       - "8000:8000"
+    # Variables de entorno para la aplicación Django
+    environment:
+      EXCHANGE_RATE_API_KEY: ${EXCHANGE_RATE_API_KEY}
     # Espera a que db pase el healthcheck antes de iniciar
     depends_on:
       db:

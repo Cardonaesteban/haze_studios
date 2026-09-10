@@ -31,12 +31,44 @@
 
             {% include "tienda/includes/tienda_form_errors.html" %}
 
-            <div class="form-group{% if form.direccion_envio.errors %} has-error{% endif %}">
-                <label for="{{ form.direccion_envio.id_for_label }}">{{ form.direccion_envio.label }} *</label>
-                {{ form.direccion_envio }}
-                {% for e in form.direccion_envio.errors %}
-                <div class="tienda-field-error">{{ e }}</div>
-                {% endfor %}
+            <div x-data="checkoutUbicacion('{{ form.departamento.value|default:'' }}', '{{ form.ciudad.value|default:'' }}')" x-init="init()">
+
+                <div class="form-group{% if form.departamento.errors %} has-error{% endif %}">
+                    <label for="id_departamento">Departamento *</label>
+                    <select name="departamento" id="id_departamento" x-model="departamentoNombre" @change="onDepartamentoChange()">
+                        <option value="">-- Selecciona un departamento --</option>
+                        <template x-for="dep in departamentos" :key="dep.id">
+                            <option :value="dep.name" x-text="dep.name"></option>
+                        </template>
+                    </select>
+                    <template x-if="cargandoDepartamentos"><small class="help">Cargando departamentos...</small></template>
+                    {% for e in form.departamento.errors %}
+                    <div class="tienda-field-error">{{ e }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group{% if form.ciudad.errors %} has-error{% endif %}">
+                    <label for="id_ciudad">Ciudad *</label>
+                    <select name="ciudad" id="id_ciudad" x-model="ciudadNombre" :disabled="ciudades.length === 0">
+                        <option value="">-- Selecciona una ciudad --</option>
+                        <template x-for="c in ciudades" :key="c.id">
+                            <option :value="c.name" x-text="c.name"></option>
+                        </template>
+                    </select>
+                    <template x-if="cargandoCiudades"><small class="help">Cargando ciudades...</small></template>
+                    {% for e in form.ciudad.errors %}
+                    <div class="tienda-field-error">{{ e }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group{% if form.direccion_envio.errors %} has-error{% endif %}">
+                    <label for="{{ form.direccion_envio.id_for_label }}">{{ form.direccion_envio.label }} *</label>
+                    {{ form.direccion_envio }}
+                    {% for e in form.direccion_envio.errors %}
+                    <div class="tienda-field-error">{{ e }}</div>
+                    {% endfor %}
+                </div>
+
             </div>
 
             <div class="form-group{% if form.telefono_contacto.errors %} has-error{% endif %}">
@@ -121,4 +153,62 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function checkoutUbicacion(departamentoInicial, ciudadInicial) {
+    return {
+        departamentos: [],
+        ciudades: [],
+        departamentoNombre: departamentoInicial,
+        ciudadNombre: ciudadInicial,
+        cargandoDepartamentos: false,
+        cargandoCiudades: false,
+
+        async init() {
+            await this.cargarDepartamentos();
+            if (this.departamentoNombre) {
+                await this.cargarCiudades(this.departamentoNombre);
+            }
+        },
+
+        async cargarDepartamentos() {
+            this.cargandoDepartamentos = true;
+            try {
+                const res = await fetch('https://api-colombia.com/api/v1/Department');
+                const data = await res.json();
+                this.departamentos = data.sort((a, b) => a.name.localeCompare(b.name));
+            } catch (e) {
+                console.error('No se pudieron cargar los departamentos:', e);
+            } finally {
+                this.cargandoDepartamentos = false;
+            }
+        },
+
+        async onDepartamentoChange() {
+            this.ciudadNombre = '';
+            this.ciudades = [];
+            if (this.departamentoNombre) {
+                await this.cargarCiudades(this.departamentoNombre);
+            }
+        },
+
+        async cargarCiudades(nombreDepartamento) {
+            const dep = this.departamentos.find(d => d.name === nombreDepartamento);
+            if (!dep) return;
+            this.cargandoCiudades = true;
+            try {
+                const res = await fetch(`https://api-colombia.com/api/v1/Department/${dep.id}/cities`);
+                const data = await res.json();
+                this.ciudades = data.sort((a, b) => a.name.localeCompare(b.name));
+            } catch (e) {
+                console.error('No se pudieron cargar las ciudades:', e);
+            } finally {
+                this.cargandoCiudades = false;
+            }
+        }
+    };
+}
+</script>
 {% endblock %}

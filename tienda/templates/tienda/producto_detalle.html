@@ -60,6 +60,11 @@
             <div style="font-size:2rem;font-weight:900;color:var(--gris-900);">
                 ${{ producto.precio }}
             </div>
+            {% if precio_usd %}
+            <div style="font-size:0.85rem;color:var(--gris-500);font-weight:600;">
+                ≈ ${{ precio_usd }} USD
+            </div>
+            {% endif %}
             {% if producto.stock > 0 %}
                 {% if producto.stock <= producto.stock_minimo %}
                     <span class="badge badge-pendiente">¡Últimas {{ producto.stock }} unidades disponibles!</span>

@@ -1,6 +1,9 @@
 from decimal import Decimal
 import re
 import unicodedata
+import requests
+from django.conf import settings
+from django.core.cache import cache
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.urls import reverse
@@ -239,6 +242,31 @@ def productos(request):
     return render(request, 'tienda/productos.html', context)
 
 
+def obtener_tasa_usd_cop():
+    """
+    Devuelve cuántos COP equivalen a 1 USD, usando caché de 24 horas
+    para no agotar la cuota gratuita de ExchangeRate-API (1500 req/mes).
+    """
+    tasa = cache.get('tasa_usd_cop')
+    if tasa is not None:
+        return tasa
+
+    if not settings.EXCHANGE_RATE_API_KEY:
+        return None
+
+    try:
+        url = f'https://v6.exchangerate-api.com/v6/{settings.EXCHANGE_RATE_API_KEY}/latest/USD'
+        respuesta = requests.get(url, timeout=5)
+        data = respuesta.json()
+        if data.get('result') == 'success':
+            tasa = data['conversion_rates']['COP']
+            cache.set('tasa_usd_cop', tasa, 60 * 60 * 24)  # 24 horas
+            return tasa
+    except requests.RequestException:
+        pass
+    return None
+
+
 def producto_detalle(request, pk):
     """Ficha de detalle de la prenda oversize, guía de medidas y botón de compra."""
     producto = get_object_or_404(Producto, pk=pk, estado='activo')
@@ -251,11 +279,17 @@ def producto_detalle(request, pk):
     if cliente:
         es_favorito = Favorito.objects.filter(cliente=cliente, producto=producto).exists()
 
+    tasa_usd_cop = obtener_tasa_usd_cop()
+    precio_usd = None
+    if tasa_usd_cop:
+        precio_usd = round(producto.precio / Decimal(str(tasa_usd_cop)), 2)
+
     context = {
         'producto': producto,
         'productos_relacionados': productos_relacionados,
         'cliente': cliente,
         'es_favorito': es_favorito,
+        'precio_usd': precio_usd,
     }
     return render(request, 'tienda/producto_detalle.html', context)
 

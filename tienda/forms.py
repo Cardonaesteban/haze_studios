@@ -206,9 +206,19 @@ class ConfirmarPasswordClienteForm(forms.Form):
 
 
 class CheckoutForm(forms.Form):
+    departamento = forms.CharField(
+        label='Departamento',
+        required=True,
+        widget=forms.Select(attrs={'class': 'select-departamento'})
+    )
+    ciudad = forms.CharField(
+        label='Ciudad',
+        required=True,
+        widget=forms.Select(attrs={'class': 'select-ciudad'})
+    )
     direccion_envio = forms.CharField(
-        label='Dirección completa de entrega',
-        widget=forms.Textarea(attrs={'rows': 2, 'placeholder': 'Calle/Carrera, Número, Barrio, Ciudad'}),
+        label='Dirección (calle/carrera, número, barrio)',
+        widget=forms.Textarea(attrs={'rows': 2, 'placeholder': 'Ej. Cra 45 #10-20, Barrio Laureles'}),
         required=True
     )
     telefono_contacto = forms.CharField(
@@ -223,11 +233,32 @@ class CheckoutForm(forms.Form):
         required=False
     )
 
+    def clean_departamento(self):
+        depto = self.cleaned_data.get('departamento', '').strip()
+        if not depto:
+            raise ValidationError('Selecciona un departamento.')
+        return depto
+
+    def clean_ciudad(self):
+        ciudad = self.cleaned_data.get('ciudad', '').strip()
+        if not ciudad:
+            raise ValidationError('Selecciona una ciudad.')
+        return ciudad
+
     def clean_direccion_envio(self):
         direccion = self.cleaned_data.get('direccion_envio', '').strip()
         if len(direccion) < 10:
             raise ValidationError('La dirección debe tener al menos 10 caracteres.')
         return direccion
+
+    def clean(self):
+        cleaned_data = super().clean()
+        depto = cleaned_data.get('departamento')
+        ciudad = cleaned_data.get('ciudad')
+        detalle = cleaned_data.get('direccion_envio')
+        if depto and ciudad and detalle:
+            cleaned_data['direccion_envio'] = f"{detalle}, {ciudad}, {depto}"
+        return cleaned_data
 
     def clean_telefono_contacto(self):
         telefono = self.cleaned_data.get('telefono_contacto', '').strip()

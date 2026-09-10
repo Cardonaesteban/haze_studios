@@ -1132,7 +1132,6 @@ small.help, p.help { color:#6c757d; font-size:.82rem; display:block; margin-top:
     background: var(--blanco);
     border-top: 1px solid var(--gris-200);
     text-align: center;
-    border-radius: var(--border-radius-xl);
     color: var(--gris-500);
     font-size: 0.85rem;
 }

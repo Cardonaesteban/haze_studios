@@ -17,9 +17,9 @@
             Estado del Pedido
         </h2>
 
-        <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--border-radius-lg);padding:1rem;margin-bottom:1.5rem;"
-             x-data="contadorPedido({{ segundos_restantes }})"
-             x-init="iniciar()">
+        <div x-data="contadorPedido({{ segundos_restantes }})" x-init="iniciar()">
+
+        <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--border-radius-lg);padding:1rem;margin-bottom:1.5rem;">
             <div style="font-size:0.88rem;color:var(--gris-600);">
                 Total a pagar contra entrega: <strong style="color:var(--gris-900);">${{ pedido.total }}</strong>
             </div>
@@ -52,6 +52,8 @@
                 <span class="spinner"></span> <span x-text="textoProcesando"></span>
             </div>
         </form>
+
+        </div>
     </div>
 
     <div class="summary-card">
