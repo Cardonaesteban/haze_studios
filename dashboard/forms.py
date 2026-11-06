@@ -121,7 +121,7 @@ class ProductoForm(forms.ModelForm):
             'stock_minimo','imagen', 'estado', 'categoria', 'proveedor', 'disenador'
         ]
         widgets = {
-            'descripcion': forms.Textarea(attrs={'rows': 3}),
+            'descripcion': forms.Textarea(attrs={'rows': 3}),   
         }
 
     def clean_nombre(self):

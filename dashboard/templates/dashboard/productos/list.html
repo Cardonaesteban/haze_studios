@@ -28,13 +28,14 @@
 
 <div class="table-wrap">
     <table class="table">
-        <thead><tr><th>Nombre</th><th>Categoría</th><th>Proveedor</th><th>Precio</th><th>Stock</th><th>Mín.</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <thead><tr><th>Nombre</th><th>Categoría</th><th>Proveedor</th><th>Diseñador</th><th>Precio</th><th>Stock</th><th>Mín.</th><th>Estado</th><th>Acciones</th></tr></thead>
         <tbody>
         {% for p in productos %}
         <tr class="{% if p.stock_bajo %}row-alert{% endif %}">
             <td>{{ p.nombre }}</td>
             <td>{{ p.categoria|default:"—" }}</td>
             <td>{{ p.proveedor|default:"—" }}</td>
+            <td>{{ p.disenador|default:"—" }}</td>
             <td>${{ p.precio }}</td>
             <td><strong>{{ p.stock }}</strong> {% if p.stock_bajo %}<span class="badge badge-salida">bajo</span>{% endif %}</td>
             <td>{{ p.stock_minimo }}</td>
