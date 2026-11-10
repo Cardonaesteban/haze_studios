@@ -1,14 +1,23 @@
 import os
 from pathlib import Path
+import dj_database_url
 
+# 1. Definición de rutas base (Usando pathlib)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-cambia-esta-clave-en-produccion-haze-studios'
+# 2. Clave secreta (Toma la variable de entorno en producción o usa la local por defecto)
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY', 
+    'django-insecure-local-dev-key-reemplazar-en-produccion'
+)
 
-DEBUG = True
+# 3. Modo depuración (False en producción por seguridad)
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
+# 4. Hosts permitidos (Permite Render y conexiones locales)
 ALLOWED_HOSTS = ['*']
 
+# 5. Aplicaciones instaladas
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -16,12 +25,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'dashboard.apps.DashboardConfig',
-    'tienda',
+    # Agrega tus aplicaciones locales aquí (ej: 'tienda', 'usuarios')
 ]
 
+# 6. Middleware (WhiteNoise se ubica justo debajo de SecurityMiddleware)
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Servidor de archivos estáticos en producción
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -30,15 +40,14 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# 7. Configuración de URLs y WSGI
+# ⚠️ Cambia 'tu_proyecto' por el nombre exacta de la carpeta de tu proyecto Django
 ROOT_URLCONF = 'haze_studios.urls'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [
-            BASE_DIR / 'dashboard' / 'templates',
-            BASE_DIR / 'tienda' / 'templates'
-        ],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -46,26 +55,23 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'dashboard.context_processors.user_es_admin',
-                'tienda.context_processors.tienda_context',
             ],
         },
     },
 ]
 
+# ⚠️ Cambia 'tu_proyecto' por el nombre de la carpeta de tu proyecto Django
 WSGI_APPLICATION = 'haze_studios.wsgi.application'
 
+# 8. Base de datos (PostgreSQL en producción vía DATABASE_URL, SQLite en desarrollo local)
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'haze_db',
-        'USER': 'haze_user',
-        'PASSWORD': 'haze1234',
-        'HOST': 'db',
-        'PORT': '3306',
-    }
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600
+    )
 }
 
+# 9. Validación de contraseñas
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -73,23 +79,19 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-LANGUAGE_CODE = 'es'
+# 10. Internacionalización
+LANGUAGE_CODE = 'es-co'  # Ajustado a español (Colombia)
 TIME_ZONE = 'America/Bogota'
 USE_I18N = True
 USE_TZ = True
 
+# 11. Archivos estáticos (CSS, JavaScript, Imágenes)
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else []
 
-MEDIA_URL = '/media/' 
-MEDIA_ROOT = BASE_DIR / 'media'
+# Compresión y caché de estáticos optimizada con WhiteNoise
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# 12. Configuración de clave primaria predeterminada
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/login/'
-
-DEFAULT_FROM_EMAIL = 'Haze Studios <noreply@hazestudios.com>'
-EXCHANGE_RATE_API_KEY = os.environ.get('EXCHANGE_RATE_API_KEY', '')
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
