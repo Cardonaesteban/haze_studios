@@ -86,11 +86,12 @@ USE_I18N = True
 USE_TZ = True
 
 # 11. Archivos estáticos
+# Archivos estáticos (CSS, JavaScript, Imágenes)
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else []
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
+# Almacenamiento optimizado de estáticos para WhiteNoise
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage' 
 # 12. Clave primaria predeterminada
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
