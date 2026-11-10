@@ -1,1 +1,0 @@
-web: gunicorn haze_studios.wsgi:application --bind 0.0.0.0:$PORT

@@ -1,0 +1,90 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Cuenta | Haze Studios</title>
+    <link rel="stylesheet" href="{% static 'css/haze.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="login-wrap tienda-auth-wrap">
+    <div class="login-box tienda-auth-box" style="max-width:520px;">
+        <div class="tienda-auth-header">
+            <img src="{% static 'img/haze_logo.svg' %}" alt="Haze Studios" class="tienda-auth-logo">
+            <div class="login-brand">HAZE STUDIOS</div>
+            <div class="tienda-auth-subtitle">REGISTRO DE NUEVO CLIENTE</div>
+        </div>
+
+        <h1 class="tienda-auth-title">Crear tu Cuenta</h1>
+
+        {% include "tienda/includes/tienda_form_errors.html" %}
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                <div class="form-group{% if form.nombre.errors %} has-error{% endif %}">
+                    <label for="{{ form.nombre.id_for_label }}">Nombre *</label>
+                    {{ form.nombre }}
+                    {% for e in form.nombre.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="form-group{% if form.apellido.errors %} has-error{% endif %}">
+                    <label for="{{ form.apellido.id_for_label }}">Apellido *</label>
+                    {{ form.apellido }}
+                    {% for e in form.apellido.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+                </div>
+            </div>
+
+            <div class="form-group{% if form.correo.errors %} has-error{% endif %}">
+                <label for="{{ form.correo.id_for_label }}">Correo electrónico *</label>
+                {{ form.correo }}
+                {% for e in form.correo.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                <div class="form-group{% if form.telefono.errors %} has-error{% endif %}">
+                    <label for="{{ form.telefono.id_for_label }}">Teléfono</label>
+                    {{ form.telefono }}
+                    {% for e in form.telefono.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="form-group{% if form.direccion.errors %} has-error{% endif %}">
+                    <label for="{{ form.direccion.id_for_label }}">Dirección de entrega</label>
+                    {{ form.direccion }}
+                    {% for e in form.direccion.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                <div class="form-group{% if form.contraseña.errors %} has-error{% endif %}">
+                    <label for="{{ form.contraseña.id_for_label }}">Contraseña *</label>
+                    {{ form.contraseña }}
+                    {% for e in form.contraseña.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="form-group{% if form.confirmar_contraseña.errors %} has-error{% endif %}">
+                    <label for="{{ form.confirmar_contraseña.id_for_label }}">Confirmar contraseña *</label>
+                    {{ form.confirmar_contraseña }}
+                    {% for e in form.confirmar_contraseña.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+                </div>
+            </div>
+
+            <div class="form-actions" style="margin-top:1.5rem;">
+                <button type="submit" class="btn btn-primary" style="width:100%;padding:0.85rem;font-size:1rem;">
+                    Completar Registro
+                </button>
+            </div>
+        </form>
+
+        <div class="tienda-auth-footer">
+            ¿Ya tienes una cuenta registrada?
+            <a href="{% url 'tienda_login' %}">Inicia sesión aquí</a>
+        </div>
+
+        <div class="tienda-auth-footer" style="margin-top:0.75rem;padding-top:0;border-top:none;">
+            <a href="{% url 'tienda_inicio' %}">← Volver a la portada de la tienda</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>
