@@ -1,0 +1,1 @@
+web: gunicorn haze_studios.wsgi:application

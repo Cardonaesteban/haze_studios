@@ -2,10 +2,10 @@ import os
 from pathlib import Path
 import dj_database_url
 
-# 1. Definición de rutas base (Usando pathlib)
+# 1. Definición de rutas base
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# 2. Clave secreta (Toma la variable de entorno en producción o usa la local por defecto)
+# 2. Clave secreta (Toma la variable de entorno o usa la clave local por defecto)
 SECRET_KEY = os.environ.get(
     'SECRET_KEY', 
     'django-insecure-local-dev-key-reemplazar-en-produccion'
@@ -26,13 +26,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # ⚠️ APLICACIONES LOCALES DEL PROYECTO HAZE STUDIOS
+    # ⚠️ SOLO APLICACIONES LOCALES EXISTENTES EN LA RAÍZ
     'dashboard',
-    'productos',
-    'tienda',
 ]
 
-# 6. Middleware (WhiteNoise ubicado justo debajo de SecurityMiddleware)
+# 6. Middleware (WhiteNoise para servir estáticos en producción)
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -49,7 +47,7 @@ ROOT_URLCONF = 'haze_studios.urls'
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'BACKEND': 'django.template.backends.DjangoTemplates',
         'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -65,7 +63,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'haze_studios.wsgi.application'
 
-# 8. Base de datos (PostgreSQL en producción vía DATABASE_URL, SQLite en desarrollo local)
+# 8. Base de datos (PostgreSQL vía DATABASE_URL o SQLite en local)
 DATABASES = {
     'default': dj_database_url.config(
         default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
@@ -87,12 +85,11 @@ TIME_ZONE = 'America/Bogota'
 USE_I18N = True
 USE_TZ = True
 
-# 11. Archivos estáticos (CSS, JavaScript, Imágenes)
+# 11. Archivos estáticos
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else []
 
-# Compresión y caché optimizada para WhiteNoise
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # 12. Clave primaria predeterminada
