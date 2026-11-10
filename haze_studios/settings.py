@@ -14,7 +14,7 @@ SECRET_KEY = os.environ.get(
 # 3. Modo depuración (False en producción por seguridad)
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-# 4. Hosts permitidos (Permite Render y conexiones locales)
+# 4. Hosts permitidos
 ALLOWED_HOSTS = ['*']
 
 # 5. Aplicaciones instaladas
@@ -25,13 +25,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # Agrega tus aplicaciones locales aquí (ej: 'tienda', 'usuarios')
+    
+    # ⚠️ APLICACIONES LOCALES DEL PROYECTO HAZE STUDIOS
+    'dashboard',
+    'productos',
+    'tienda',
 ]
 
-# 6. Middleware (WhiteNoise se ubica justo debajo de SecurityMiddleware)
+# 6. Middleware (WhiteNoise ubicado justo debajo de SecurityMiddleware)
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Servidor de archivos estáticos en producción
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -41,7 +45,6 @@ MIDDLEWARE = [
 ]
 
 # 7. Configuración de URLs y WSGI
-# ⚠️ Cambia 'tu_proyecto' por el nombre exacta de la carpeta de tu proyecto Django
 ROOT_URLCONF = 'haze_studios.urls'
 
 TEMPLATES = [
@@ -60,7 +63,6 @@ TEMPLATES = [
     },
 ]
 
-# ⚠️ Cambia 'tu_proyecto' por el nombre de la carpeta de tu proyecto Django
 WSGI_APPLICATION = 'haze_studios.wsgi.application'
 
 # 8. Base de datos (PostgreSQL en producción vía DATABASE_URL, SQLite en desarrollo local)
@@ -80,7 +82,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # 10. Internacionalización
-LANGUAGE_CODE = 'es-co'  # Ajustado a español (Colombia)
+LANGUAGE_CODE = 'es-co'
 TIME_ZONE = 'America/Bogota'
 USE_I18N = True
 USE_TZ = True
@@ -90,8 +92,8 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else []
 
-# Compresión y caché de estáticos optimizada con WhiteNoise
+# Compresión y caché optimizada para WhiteNoise
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# 12. Configuración de clave primaria predeterminada
+# 12. Clave primaria predeterminada
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
