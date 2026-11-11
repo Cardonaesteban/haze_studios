@@ -88,10 +88,12 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
 
-EXCHANGE_RATE_API_KEY = os.environ.get('EXCHANGE_RATE_API_KEY', '')
+from decouple import config
 
-_email_user = os.environ.get('EMAIL_HOST_USER', '')
-_email_pass = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EXCHANGE_RATE_API_KEY = config('EXCHANGE_RATE_API_KEY', default=os.environ.get('EXCHANGE_RATE_API_KEY', ''))
+
+_email_user = config('EMAIL_HOST_USER', default=os.environ.get('EMAIL_HOST_USER', ''))
+_email_pass = config('EMAIL_HOST_PASSWORD', default=os.environ.get('EMAIL_HOST_PASSWORD', ''))
 
 if _email_user and _email_pass:
     # Producción: enviar correos reales por Gmail SMTP
