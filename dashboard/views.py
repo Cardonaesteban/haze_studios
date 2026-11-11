@@ -19,6 +19,11 @@ from .forms import (
 )
 from .emails import enviar_notificacion_estado_pedido
 from django.db.models import ProtectedError
+from django.core.mail import send_mail
+from django.conf import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # ──────────────────────────────────────────────
@@ -854,8 +859,24 @@ def mensajes_list(request):
 def mensajes_crear(request):
     form = MensajeForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        mensaje = form.save()
-        messages.success(request, f'Mensaje #{mensaje.pk} registrado y enviado exitosamente a {mensaje.destinatario}.')
+        correo_destino = form.cleaned_data['destinatario'].correo  # campo `correo` verificado en modelo Cliente
+        tipo_display = dict(Mensaje.TIPO_CHOICES).get(
+            form.cleaned_data['tipo'], form.cleaned_data['tipo']  # .get() evita KeyError
+        )
+        try:
+            send_mail(
+                subject=f'[Haze Studios] {tipo_display}',
+                message=form.cleaned_data['contenido'],
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[correo_destino],
+                fail_silently=False,
+            )
+            # Solo se guarda en BD si el correo se envió correctamente
+            mensaje = form.save()
+            messages.success(request, f'Mensaje #{mensaje.pk} enviado exitosamente a {mensaje.destinatario}.')
+        except Exception as e:
+            logger.error(f'Error al enviar mensaje a {correo_destino}: {e}')
+            messages.error(request, f'No se pudo enviar el correo a {correo_destino}. Verifica la configuración SMTP y vuelve a intentarlo.')
         return redirect('mensajes_list')
     return render(request, 'dashboard/mensajes/form.html', {'form': form, 'titulo': 'Registrar mensaje'})
 

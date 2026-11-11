@@ -88,6 +88,22 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
 
-DEFAULT_FROM_EMAIL = 'Haze Studios <noreply@hazestudios.com>'
 EXCHANGE_RATE_API_KEY = os.environ.get('EXCHANGE_RATE_API_KEY', '')
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+_email_user = os.environ.get('EMAIL_HOST_USER', '')
+_email_pass = os.environ.get('EMAIL_HOST_PASSWORD', '')
+
+if _email_user and _email_pass:
+    # Producción: enviar correos reales por Gmail SMTP
+    EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST          = 'smtp.gmail.com'
+    EMAIL_PORT          = 587
+    EMAIL_USE_TLS       = True
+    EMAIL_HOST_USER     = _email_user
+    EMAIL_HOST_PASSWORD = _email_pass
+    DEFAULT_FROM_EMAIL  = f'Haze Studios <{_email_user}>'
+    EMAIL_TIMEOUT       = 10  # evita que el sitio se congele si Gmail no responde
+else:
+    # Local / sin credenciales: imprimir en consola (sin riesgo de error 500)
+    EMAIL_BACKEND      = 'django.core.mail.backends.console.EmailBackend'
+    DEFAULT_FROM_EMAIL = 'Haze Studios <noreply@hazestudios.com>'
