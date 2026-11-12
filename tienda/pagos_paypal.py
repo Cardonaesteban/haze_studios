@@ -90,15 +90,26 @@ def obtener_access_token():
     raise ValueError(f'Error de autenticación con PayPal: {error_desc}')
 
 
-def crear_orden_paypal(pedido, monto_usd):
+def crear_orden_paypal(pedido, monto_usd, return_url=None, cancel_url=None):
     """
     Crea una orden en la API v2 de PayPal Checkout.
-    Retorna el ID de orden generado por PayPal.
+    Retorna diccionario con 'order_id' y 'approve_url' para redirección directa sin ventanas emergentes.
     """
     token = obtener_access_token()
     url = f'{get_paypal_base_url()}/v2/checkout/orders'
 
     monto_formateado = f'{Decimal(str(monto_usd)):.2f}'
+
+    app_context = {
+        'brand_name': 'HAZE STUDIOS',
+        'landing_page': 'NO_PREFERENCE',
+        'user_action': 'PAY_NOW',
+        'shipping_preference': 'NO_SHIPPING',
+    }
+    if return_url:
+        app_context['return_url'] = return_url
+    if cancel_url:
+        app_context['cancel_url'] = cancel_url
 
     payload = {
         'intent': 'CAPTURE',
@@ -113,12 +124,7 @@ def crear_orden_paypal(pedido, monto_usd):
                 }
             }
         ],
-        'application_context': {
-            'brand_name': 'HAZE STUDIOS',
-            'landing_page': 'NO_PREFERENCE',
-            'user_action': 'PAY_NOW',
-            'shipping_preference': 'NO_SHIPPING',
-        }
+        'application_context': app_context,
     }
 
     headers = {
@@ -131,8 +137,18 @@ def crear_orden_paypal(pedido, monto_usd):
 
     if status in (200, 201) and 'id' in response:
         order_id = response['id']
+        approve_url = None
+        for link in response.get('links', []):
+            if link.get('rel') == 'approve':
+                approve_url = link.get('href')
+                break
+
         logger.info(f'Orden #{pedido.pk} creada en PayPal con ID {order_id}')
-        return order_id
+        return {
+            'order_id': order_id,
+            'approve_url': approve_url or f'https://www.sandbox.paypal.com/checkoutnow?token={order_id}',
+            'raw': response,
+        }
 
     error_msg = response.get('message') or response.get('details') or 'Error al crear orden en PayPal'
     logger.error(f'Fallo al crear orden en PayPal para Pedido #{pedido.pk}: {error_msg}')

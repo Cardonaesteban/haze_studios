@@ -23,6 +23,7 @@ urlpatterns = [
     path('pedidos/<int:pedido_id>/confirmar-pago/', views.confirmar_pago, name='tienda_confirmar_pago'),
     path('pedidos/<int:pedido_id>/paypal/crear-orden/', views.paypal_crear_orden, name='tienda_paypal_crear_orden'),
     path('pedidos/<int:pedido_id>/paypal/capturar-orden/', views.paypal_capturar_orden, name='tienda_paypal_capturar_orden'),
+    path('pedidos/<int:pedido_id>/paypal/retorno/', views.paypal_retorno, name='tienda_paypal_retorno'),
     path('pedidos/confirmado/<int:pedido_id>/', views.pedido_confirmado, name='tienda_pedido_confirmado'),
     path('pedidos/mis-pedidos/', views.mis_pedidos, name='tienda_mis_pedidos'),
     path('pedidos/<int:pedido_id>/', views.pedido_detalle, name='tienda_pedido_detalle'),
