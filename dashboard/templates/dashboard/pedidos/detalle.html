@@ -28,6 +28,25 @@
         <p style="font-size:0.78rem;color:var(--gris-500);margin-bottom:0.25rem;">TOTAL</p>
         <p style="font-weight:700;font-size:1.25rem;">${{ pedido.total }}</p>
     </div>
+    {% if pedido.metodo_pago %}
+    <div class="form-wrap" style="margin:0;padding:1.25rem 1.5rem;grid-column: span 2;">
+        <p style="font-size:0.78rem;color:var(--gris-500);margin-bottom:0.25rem;">MÉTODO DE PAGO Y AUDITORÍA</p>
+        <p style="font-weight:700;color:var(--azul);margin:0;">
+            {{ pedido.get_metodo_pago_display }}
+            {% if pedido.monto_usd %}(${{ pedido.monto_usd }} USD){% endif %}
+        </p>
+        {% if pedido.transaccion_id %}
+        <p style="font-size:0.8rem;color:var(--gris-600);margin:0.25rem 0 0;font-family:monospace;">
+            ID Transacción: {{ pedido.transaccion_id }}
+        </p>
+        {% endif %}
+        {% if pedido.fecha_pago %}
+        <p style="font-size:0.75rem;color:var(--gris-500);margin:0.2rem 0 0;">
+            Confirmado el: {{ pedido.fecha_pago|date:"d/m/Y H:i:s" }}
+        </p>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 
 {% if pedido.notas %}

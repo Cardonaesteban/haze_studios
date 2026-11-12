@@ -1,7 +1,12 @@
 from decimal import Decimal
+import json
+import logging
 import re
 import unicodedata
-import requests
+try:
+    import requests
+except ImportError:
+    requests = None
 from django.conf import settings
 from django.core.cache import cache
 from django.shortcuts import render, redirect, get_object_or_404
@@ -17,6 +22,8 @@ from functools import wraps
 from dashboard.models import (
     Cliente, Producto, Categoria, Disenador, Pedido, DetallePedido, MovimientoStock
 )
+from dashboard.emails import enviar_factura_pedido
+from .pagos_paypal import crear_orden_paypal, capturar_orden_paypal
 from django.db.models import Count, Q
 from .models import TokenRecuperacionCliente, Favorito
 from .forms import (
@@ -24,6 +31,8 @@ from .forms import (
     CambiarPasswordClienteForm, SolicitarRecuperacionClienteForm,
     ConfirmarPasswordClienteForm, CheckoutForm
 )
+
+logger = logging.getLogger(__name__)
 
 
 # ──────────────────────────────────────────────
@@ -251,7 +260,7 @@ def obtener_tasa_usd_cop():
     if tasa is not None:
         return tasa
 
-    if not settings.EXCHANGE_RATE_API_KEY:
+    if not settings.EXCHANGE_RATE_API_KEY or not requests:
         return None
 
     try:
@@ -612,7 +621,11 @@ def checkout(request):
 
 @cliente_required
 def confirmar_pago(request, pedido_id):
-    """Pantalla de confirmación final del pedido (pago contra entrega)."""
+    """
+    Pantalla de confirmación de pago con coexistencia de métodos:
+    Opción A: PayPal / Tarjeta Internacional (Smart Buttons SDK)
+    Opción B: Pago Contra Entrega (Efectivo al recibir)
+    """
     cliente = get_cliente_actual(request)
     if cliente is None:
         return redirect('tienda_login')
@@ -620,34 +633,166 @@ def confirmar_pago(request, pedido_id):
     pedido = get_object_or_404(Pedido, pk=pedido_id, cliente=cliente)
 
     if pedido.verificar_expiracion():
-        messages.error(request, f'El tiempo para confirmar el pedido #{pedido.pk} expiró.')
+        messages.error(request, f'El tiempo límite de 15 minutos para confirmar el pedido #{pedido.pk} expiró.')
         return redirect('tienda_carrito')
 
     if pedido.estado != 'pendiente_pago':
         return redirect('tienda_pedido_confirmado', pedido_id=pedido.pk)
 
     if request.method == 'POST':
+        metodo = request.POST.get('metodo')
         resultado = request.POST.get('resultado')
-        if resultado == 'aprobado':
-            pedido.estado = 'pendiente'
-            pedido.save(update_fields=['estado'])
-            messages.success(request, f'¡Pedido #{pedido.pk} confirmado!')
+
+        if metodo == 'contra_entrega' or resultado == 'aprobado':
+            with transaction.atomic():
+                pedido_lock = Pedido.objects.select_for_update().get(pk=pedido.pk, cliente=cliente)
+                if pedido_lock.verificar_expiracion():
+                    messages.error(request, f'El tiempo límite de espera para el pedido #{pedido.pk} expiró.')
+                    return redirect('tienda_carrito')
+
+                if pedido_lock.estado != 'pendiente_pago':
+                    return redirect('tienda_pedido_confirmado', pedido_id=pedido.pk)
+
+                pedido_lock.estado = 'pendiente'
+                pedido_lock.metodo_pago = 'contra_entrega'
+                pedido_lock.fecha_pago = timezone.now()
+                pedido_lock.save(update_fields=['estado', 'metodo_pago', 'fecha_pago'])
+
+                enviar_factura_pedido(pedido_lock)
+
+            messages.success(request, f'¡Pedido #{pedido.pk} confirmado exitosamente con pago contra entrega!')
             return redirect('tienda_pedido_confirmado', pedido_id=pedido.pk)
         else:
-            pedido.cancelar(motivo=f'Cancelación del pedido #{pedido.pk} por el cliente en confirmación')
-            messages.error(request, f'Pedido #{pedido.pk} cancelado')
+            with transaction.atomic():
+                pedido_lock = Pedido.objects.select_for_update().get(pk=pedido.pk, cliente=cliente)
+                pedido_lock.cancelar(motivo=f'Cancelación del pedido #{pedido.pk} por el cliente en confirmación')
+            messages.info(request, f'Pedido #{pedido.pk} cancelado. Los productos regresaron a tu disponibilidad.')
             return redirect('tienda_carrito')
 
     segundos_restantes = int((pedido.fecha_creacion + Pedido.TIEMPO_LIMITE_PAGO - timezone.now()).total_seconds())
     detalles = obtener_detalles_con_talla(pedido)
+
+    tasa = obtener_tasa_usd_cop() or Decimal('4000.00')
+    monto_usd = round(Decimal(str(pedido.total)) / Decimal(str(tasa)), 2)
+    if monto_usd <= Decimal('0.01'):
+        monto_usd = Decimal('1.00')
 
     context = {
         'pedido': pedido,
         'cliente': cliente,
         'detalles': detalles,
         'segundos_restantes': max(0, segundos_restantes),
+        'paypal_client_id': getattr(settings, 'PAYPAL_CLIENT_ID', '').strip(),
+        'monto_usd': monto_usd,
+        'tasa_usd_cop': tasa,
     }
     return render(request, 'tienda/confirmar_pago.html', context)
+
+
+@cliente_required
+def paypal_crear_orden(request, pedido_id):
+    """Genera la orden en PayPal Orders v2 vía AJAX para los Smart Buttons."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+    cliente = get_cliente_actual(request)
+    if not cliente:
+        return JsonResponse({'error': 'Debes iniciar sesión para continuar'}, status=401)
+
+    try:
+        with transaction.atomic():
+            pedido = Pedido.objects.select_for_update().get(pk=pedido_id, cliente=cliente)
+
+            if pedido.verificar_expiracion():
+                return JsonResponse({'error': 'El tiempo para pagar este pedido ha expirado (15 min).'}, status=400)
+
+            if pedido.estado != 'pendiente_pago':
+                return JsonResponse({'error': 'El pedido no se encuentra en estado pendiente de pago.'}, status=400)
+
+            tasa = obtener_tasa_usd_cop() or Decimal('4000.00')
+            monto_usd = round(Decimal(str(pedido.total)) / Decimal(str(tasa)), 2)
+            if monto_usd <= Decimal('0.01'):
+                monto_usd = Decimal('1.00')
+
+            order_id = crear_orden_paypal(pedido, monto_usd)
+
+            pedido.referencia_pago = order_id
+            pedido.monto_usd = monto_usd
+            pedido.save(update_fields=['referencia_pago', 'monto_usd'])
+
+            return JsonResponse({'id': order_id})
+    except Pedido.DoesNotExist:
+        return JsonResponse({'error': 'Pedido no encontrado'}, status=404)
+    except Exception as e:
+        logger.error(f"Error al crear orden en PayPal para pedido #{pedido_id}: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@cliente_required
+def paypal_capturar_orden(request, pedido_id):
+    """Captura los fondos autorizados por el cliente en PayPal de forma atómica y confirma la compra."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+    cliente = get_cliente_actual(request)
+    if not cliente:
+        return JsonResponse({'error': 'Debes iniciar sesión para continuar'}, status=401)
+
+    try:
+        data = {}
+        if request.body:
+            try:
+                data = json.loads(request.body.decode('utf-8'))
+            except Exception:
+                pass
+        order_id = data.get('orderID') or request.POST.get('orderID')
+        if not order_id:
+            return JsonResponse({'error': 'Identificador de orden de PayPal no suministrado.'}, status=400)
+
+        with transaction.atomic():
+            pedido = Pedido.objects.select_for_update().get(pk=pedido_id, cliente=cliente)
+
+            if pedido.verificar_expiracion():
+                return JsonResponse({'error': 'El tiempo para pagar este pedido ha expirado.'}, status=400)
+
+            if pedido.estado in ('procesando', 'enviado', 'entregado'):
+                # Ya fue capturado previamente (idempotencia)
+                return JsonResponse({
+                    'status': 'COMPLETED',
+                    'redirect_url': reverse('tienda_pedido_confirmado', args=[pedido.pk])
+                })
+
+            resultado = capturar_orden_paypal(order_id)
+
+            if resultado.get('success'):
+                pedido.estado = 'procesando'
+                pedido.metodo_pago = 'paypal'
+                pedido.transaccion_id = resultado.get('capture_id') or order_id
+                pedido.fecha_pago = timezone.now()
+                if resultado.get('monto_usd'):
+                    try:
+                        pedido.monto_usd = Decimal(str(resultado.get('monto_usd')))
+                    except Exception:
+                        pass
+                pedido.save(update_fields=['estado', 'metodo_pago', 'transaccion_id', 'fecha_pago', 'monto_usd'])
+
+                # Enviar factura por correo electrónico
+                enviar_factura_pedido(pedido)
+
+                messages.success(request, f'¡Pago aprobado con éxito! Tu pedido #{pedido.pk} está en proceso de despacho.')
+                return JsonResponse({
+                    'status': 'COMPLETED',
+                    'redirect_url': reverse('tienda_pedido_confirmado', args=[pedido.pk])
+                })
+            else:
+                error_msg = resultado.get('error', 'La transacción no pudo ser completada por PayPal.')
+                return JsonResponse({'status': 'FAILED', 'error': error_msg}, status=400)
+
+    except Pedido.DoesNotExist:
+        return JsonResponse({'error': 'Pedido no encontrado'}, status=404)
+    except Exception as e:
+        logger.error(f"Error al capturar orden PayPal para pedido #{pedido_id}: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
 
 @cliente_required
 def pedido_confirmado(request, pedido_id):

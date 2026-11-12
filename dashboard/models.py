@@ -346,6 +346,31 @@ class Pedido(models.Model):
     total = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))
     notas = models.TextField(blank=True, default='')
 
+    METODO_PAGO_CHOICES = [
+        ('paypal', 'PayPal / Tarjeta'),
+        ('contra_entrega', 'Pago contra entrega'),
+    ]
+    metodo_pago = models.CharField(
+        max_length=30, choices=METODO_PAGO_CHOICES, blank=True, null=True,
+        help_text='Método de pago seleccionado por el cliente'
+    )
+    referencia_pago = models.CharField(
+        max_length=100, blank=True, null=True,
+        help_text='Referencia o ID de orden generado para el pago'
+    )
+    transaccion_id = models.CharField(
+        max_length=100, blank=True, null=True,
+        help_text='ID de captura retornado por la pasarela'
+    )
+    monto_usd = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True,
+        help_text='Monto cobrado en USD cuando aplica'
+    )
+    fecha_pago = models.DateTimeField(
+        blank=True, null=True,
+        help_text='Fecha y hora en que se confirmó el pago'
+    )
+
     class Meta:
         db_table = 'pedidos'
         verbose_name = 'Pedido'
@@ -356,8 +381,8 @@ class Pedido(models.Model):
         return f'Pedido #{self.pk} — {self.cliente}'
 
     def toggle_estado(self):
-        estados = ['pendiente', 'procesando', 'enviado', 'entregado', 'cancelado']
-        idx = estados.index(self.estado)
+        estados = ['pendiente_pago', 'pendiente', 'procesando', 'enviado', 'entregado', 'cancelado']
+        idx = estados.index(self.estado) if self.estado in estados else 0
         self.estado = estados[(idx + 1) % len(estados)]
         self.save()
 
@@ -501,7 +526,6 @@ class Mensaje(models.Model):
     ESTADO_CHOICES = [
         ('enviado', 'Enviado'),
         ('entregado', 'Entregado'),
-        ('leido', 'Leído'),
         ('fallido', 'Fallido'),
     ]
 

@@ -1,120 +1,199 @@
 {% extends "tienda/base_tienda.html" %}
 {% load static %}
 
-{% block title %}Confirmar Pedido | Haze Studios{% endblock %}
+{% block title %}Confirmar Pago | Haze Studios{% endblock %}
 
 {% block content %}
 <div class="page-header">
     <div>
-        <h1 class="tienda-page-title">Confirmar Pedido</h1>
-        <p class="tienda-page-subtitle">Pedido #{{ pedido.pk }} — revisa tus prendas y confirma para agendar la entrega.</p>
+        <h1 class="tienda-page-title">Confirmar y Pagar</h1>
+        <p class="tienda-page-subtitle">Pedido #{{ pedido.pk }} — Selecciona tu método de pago para completar la compra.</p>
     </div>
 </div>
 
-<div class="cart-wrap">
-    <div class="tienda-card" style="padding:2rem;">
-        <h2 style="font-size:1.25rem;font-weight:900;color:var(--gris-900);margin-bottom:1.25rem;">
-            Estado del Pedido
-        </h2>
-
-        <div x-data="contadorPedido({{ segundos_restantes }})" x-init="iniciar()">
-
-        <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--border-radius-lg);padding:1rem;margin-bottom:1.5rem;">
-            <div style="font-size:0.88rem;color:var(--gris-600);">
-                Total a pagar contra entrega: <strong style="color:var(--gris-900);">${{ pedido.total }}</strong>
+<div class="cart-wrap" x-data="checkoutPago({{ segundos_restantes }})" x-init="iniciar()">
+    <div class="tienda-card" style="padding: 2rem;">
+        
+        <!-- Alerta de tiempo límite -->
+        <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 1.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+                <div style="font-size: 0.82rem; text-transform: uppercase; font-weight: 700; color: #92400E; letter-spacing: 0.5px;">Reserva de Stock Temporal</div>
+                <div style="font-size: 0.88rem; color: #78350F; margin-top: 0.15rem;">
+                    Prendas apartadas por <strong style="color: #92400E;"><span x-text="minutos"></span>:<span x-text="segundos"></span></strong> minutos
+                </div>
             </div>
-            <div style="font-size:0.88rem;color:var(--gris-600);margin-top:0.35rem;">
-                Tiempo restante para confirmar:
-                <strong style="color:var(--gris-900);">
-                    <span x-text="minutos"></span>:<span x-text="segundos"></span>
-                </strong>
+            <div style="text-align: right;">
+                <div style="font-size: 0.82rem; color: #78350F; font-weight: 600;">Total Orden</div>
+                <div style="font-size: 1.25rem; font-weight: 900; color: #111827;">${{ pedido.total|floatformat:0 }} COP</div>
             </div>
         </div>
 
-        <p style="font-size:0.85rem;color:var(--gris-500);margin-bottom:1.5rem;">
-            Estamos agendando tu pedido con el equipo de despacho. Confirma para que salga a entrega.
-        </p>
+        <!-- Selector de Métodos de Pago con Alpine.js -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; font-size: 0.875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gris-700); margin-bottom: 0.75rem;">
+                Elige tu Método de Pago:
+            </label>
 
-        <form method="post" action="{% url 'tienda_confirmar_pago' pedido_id=pedido.pk %}" id="form-pago">
-            {% csrf_token %}
-            <input type="hidden" name="resultado" id="resultado-input" value="">
-            
-            <div style="display:flex;gap:1rem;flex-wrap:wrap;" x-show="!procesando">
-                <button type="button" class="btn btn-primary" style="padding:0.9rem 2rem;" @click="procesarPago('aprobado')">
-                    Confirmar Pedido
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <!-- Botón Tab PayPal -->
+                <button type="button" 
+                        @click="metodo = 'paypal'"
+                        :style="metodo === 'paypal' ? 'border: 2px solid #2563EB; background: #EFF6FF;' : 'border: 2px solid var(--gris-200); background: #ffffff;'"
+                        style="padding: 1.1rem; border-radius: var(--border-radius-lg); text-align: left; cursor: pointer; transition: all 0.2s ease;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                        <span style="font-weight: 800; font-size: 0.95rem; color: #111827;">PayPal / Tarjeta</span>
+                        <span x-show="metodo === 'paypal'" style="width: 10px; height: 10px; border-radius: 50%; background: #2563EB;"></span>
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--gris-500); line-height: 1.4;">
+                        Tarjetas de crédito o débito internacionales y saldo PayPal.
+                    </div>
                 </button>
-                <button type="button" class="btn btn-outline" style="padding:0.9rem 2rem;" @click="procesarPago('rechazado')">
-                    Cancelar Pedido
+
+                <!-- Botón Tab Contra Entrega -->
+                <button type="button" 
+                        @click="metodo = 'contra_entrega'"
+                        :style="metodo === 'contra_entrega' ? 'border: 2px solid #2563EB; background: #EFF6FF;' : 'border: 2px solid var(--gris-200); background: #ffffff;'"
+                        style="padding: 1.1rem; border-radius: var(--border-radius-lg); text-align: left; cursor: pointer; transition: all 0.2s ease;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                        <span style="font-weight: 800; font-size: 0.95rem; color: #111827;">Pago Contra Entrega</span>
+                        <span x-show="metodo === 'contra_entrega'" style="width: 10px; height: 10px; border-radius: 50%; background: #2563EB;"></span>
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--gris-500); line-height: 1.4;">
+                        Paga en efectivo en moneda local al recibir tus prendas en casa.
+                    </div>
                 </button>
             </div>
-
-            <div x-show="procesando" style="display:flex;align-items:center;gap:0.6rem;color:var(--gris-600);font-size:0.9rem;font-weight:600;">
-                <span class="spinner"></span> <span x-text="textoProcesando"></span>
-            </div>
-        </form>
-
         </div>
+
+        <!-- Alerta de Error / Cancelación de Pago -->
+        <div x-show="mensajeError" style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: var(--border-radius-md); padding: 0.85rem 1rem; margin-bottom: 1.25rem; font-size: 0.85rem; color: #991B1B; font-weight: 600;" x-text="mensajeError"></div>
+
+        <!-- Contenido Opción A: PayPal -->
+        <div x-show="metodo === 'paypal'" style="background: #F9FAFB; border: 1px solid var(--gris-200); border-radius: var(--border-radius-lg); padding: 1.5rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--gris-200);">
+                <div>
+                    <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--gris-500); letter-spacing: 0.5px;">Monto a Liquidar en PayPal</span>
+                    <div style="font-size: 1.35rem; font-weight: 900; color: #111827; margin-top: 0.15rem;">
+                        ${{ monto_usd }} USD
+                    </div>
+                </div>
+                <div style="text-align: right; font-size: 0.8rem; color: var(--gris-500);">
+                    <span>Tasa de cambio aplicada:</span>
+                    <div style="font-weight: 600; color: var(--gris-700);">${{ tasa_usd_cop|floatformat:0 }} COP = 1 USD</div>
+                </div>
+            </div>
+
+            <div x-show="cargandoPayPal" style="text-align: center; padding: 1.5rem; color: var(--gris-600); font-size: 0.88rem; font-weight: 600;">
+                <span class="spinner"></span> Inicializando pasarela segura de PayPal...
+            </div>
+
+            <!-- Contenedor Oficial de los Botones de PayPal -->
+            <div id="paypal-button-container" x-show="!cargandoPayPal" style="min-height: 50px;"></div>
+        </div>
+
+        <!-- Contenido Opción B: Contra Entrega -->
+        <div x-show="metodo === 'contra_entrega'" style="background: #F9FAFB; border: 1px solid var(--gris-200); border-radius: var(--border-radius-lg); padding: 1.5rem; margin-bottom: 1.5rem;">
+            <div style="margin-bottom: 1rem; font-size: 0.88rem; color: var(--gris-700); line-height: 1.5;">
+                Has seleccionado <strong>Pago Contra Entrega</strong>. Prepararemos tu paquete en Haze Studios y pagarás en efectivo la suma exacta de <strong>${{ pedido.total|floatformat:0 }} COP</strong> cuando el mensajero llegue a tu dirección.
+            </div>
+
+            <form method="post" action="{% url 'tienda_confirmar_pago' pedido_id=pedido.pk %}" @submit="procesando = true">
+                {% csrf_token %}
+                <input type="hidden" name="metodo" value="contra_entrega">
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.95rem; font-size: 0.95rem; font-weight: 700;" :disabled="procesando">
+                    <span x-show="!procesando">Confirmar Despacho Contra Entrega</span>
+                    <span x-show="procesando"><span class="spinner"></span> Confirmando orden...</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Cancelar Pedido / Liberar Stock -->
+        <div style="border-top: 1px solid var(--gris-200); padding-top: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <span style="font-size: 0.8rem; color: var(--gris-500);">¿Deseas cambiar prendas o desistir de la compra?</span>
+            <form method="post" action="{% url 'tienda_confirmar_pago' pedido_id=pedido.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="resultado" value="cancelado">
+                <button type="submit" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.82rem; color: var(--gris-600);" onclick="return confirm('¿Seguro que deseas cancelar el pedido y regresar las prendas a la tienda?')">
+                    Cancelar Orden y Volver
+                </button>
+            </form>
+        </div>
+
     </div>
 
+    <!-- Resumen lateral de la orden -->
     <div class="summary-card">
-        <h3 style="font-size:1.2rem;font-weight:900;color:var(--gris-900);margin-bottom:1.25rem;">
-            Prendas en la Orden
+        <h3 style="font-size: 1.15rem; font-weight: 900; color: var(--gris-900); margin-bottom: 1.25rem;">
+            Prendas en tu Orden
         </h3>
 
-        <div style="max-height:290px;overflow-y:auto;margin-bottom:1rem;">
+        <div style="max-height: 290px; overflow-y: auto; margin-bottom: 1rem;">
             {% for det in detalles %}
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.65rem 0;border-bottom:1px solid var(--gris-100);">
-                <div style="display:flex;align-items:center;gap:0.75rem;">
-                    <img src="{{ det.producto.get_imagen_url }}" alt="{{ det.producto.nombre }}" class="table-product-thumb" style="width:46px;height:46px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.7rem 0; border-bottom: 1px solid var(--gris-100);">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <img src="{{ det.producto.get_imagen_url }}" alt="{{ det.producto.nombre }}" class="table-product-thumb" style="width: 44px; height: 44px; border-radius: 8px;">
                     <div>
-                        <div style="font-weight:800;font-size:0.875rem;color:var(--gris-900);">{{ det.producto.nombre }}</div>
-                        <div style="font-size:0.75rem;color:var(--gris-500);font-weight:600;">
+                        <div style="font-weight: 800; font-size: 0.875rem; color: var(--gris-900);">{{ det.producto.nombre }}</div>
+                        <div style="font-size: 0.75rem; color: var(--gris-500); font-weight: 600;">
                             {% if det.talla %}Talla: {{ det.talla }} × {% endif %}{{ det.cantidad }}
                         </div>
                     </div>
                 </div>
-                <div style="font-weight:900;font-size:0.95rem;color:var(--gris-900);">
-                    ${{ det.subtotal }}
+                <div style="font-weight: 900; font-size: 0.92rem; color: var(--gris-900);">
+                    ${{ det.subtotal|floatformat:0 }}
                 </div>
             </div>
             {% endfor %}
         </div>
 
-        <div class="summary-total">
-            <span>Total a Pagar:</span>
-            <span>${{ pedido.total }}</span>
+        <div class="summary-total" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-top: 2px solid var(--gris-200); font-size: 1.1rem; font-weight: 900;">
+            <span>Total COP:</span>
+            <span>${{ pedido.total|floatformat:0 }}</span>
         </div>
 
-        <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:var(--border-radius-md);padding:0.85rem;margin-top:1.25rem;font-size:0.8rem;color:#991B1B;font-weight:600;">
-            Si no confirmas dentro del tiempo límite, el pedido se cancelará automáticamente
+        <div style="font-size: 0.82rem; color: var(--gris-500); text-align: right; margin-top: -0.5rem; margin-bottom: 1rem;">
+            Aprox. ${{ monto_usd }} USD para pagos en línea
+        </div>
+
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: var(--border-radius-md); padding: 0.85rem; font-size: 0.8rem; color: #475569; line-height: 1.5;">
+            <strong>Dirección registrada:</strong><br>
+            {{ pedido.notas|default:"Entrega a domicilio con datos del cliente." }}
         </div>
     </div>
 </div>
 
 <style>
 .spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--gris-300, #ccc);
-    border-top-color: var(--gris-900, #111);
+    width: 14px;
+    height: 14px;
+    border: 2px solid #cbd5e1;
+    border-top-color: #1e293b;
     border-radius: 50%;
     display: inline-block;
     animation: girar 0.7s linear infinite;
+    vertical-align: middle;
 }
 @keyframes girar {
     to { transform: rotate(360deg); }
 }
 </style>
 
+<!-- Script Oficial de PayPal SDK -->
+{% if paypal_client_id %}
+<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=USD"></script>
+{% endif %}
+
 <script>
 document.addEventListener('alpine:init', () => {
-    Alpine.data('contadorPedido', (segundosIniciales) => ({
+    Alpine.data('checkoutPago', (segundosIniciales) => ({
         tiempoRestante: segundosIniciales,
-        minutos: 0,
-        segundos: 0,
+        minutos: '00',
+        segundos: '00',
         intervalo: null,
+        metodo: 'paypal',
         procesando: false,
-        textoProcesando: 'Confirmando tu pedido, no cierres esta ventana...',
+        cargandoPayPal: false,
+        mensajeError: '',
 
         iniciar() {
             this.actualizar();
@@ -127,32 +206,110 @@ document.addEventListener('alpine:init', () => {
                     window.location.reload();
                 }
             }, 1000);
+
+            // Inicializar botones de PayPal de forma segura
+            this.$nextTick(() => {
+                this.montarPayPal();
+            });
         },
 
         actualizar() {
-            const m = Math.floor(this.tiempoRestante / 60);
-            const s = this.tiempoRestante % 60;
+            const m = Math.max(0, Math.floor(this.tiempoRestante / 60));
+            const s = Math.max(0, this.tiempoRestante % 60);
             this.minutos = String(m).padStart(2, '0');
             this.segundos = String(s).padStart(2, '0');
         },
 
-        procesarPago(resultado) {
-            document.getElementById('resultado-input').value = resultado;
-            this.procesando = true;
-            
-            if (resultado === 'aprobado') {
-                this.textoProcesando = 'Confirmando tu pedido, no cierres esta ventana...';
-            } else {
-                this.textoProcesando = 'Cancelando tu pedido, no cierres esta ventana...';
-            }
-            
-            if (this.intervalo) {
-                clearInterval(this.intervalo);
+        montarPayPal() {
+            if (typeof paypal === 'undefined') {
+                return;
             }
 
-            setTimeout(() => {
-                document.getElementById('form-pago').submit();
-            }, 1200);
+            const self = this;
+            const container = document.getElementById('paypal-button-container');
+            if (!container) return;
+
+            paypal.Buttons({
+                style: {
+                    layout: 'vertical',
+                    color:  'black',
+                    shape:  'rect',
+                    label:  'pay',
+                    height: 48
+                },
+
+                createOrder: function(data, actions) {
+                    self.mensajeError = '';
+                    return fetch("{% url 'tienda_paypal_crear_orden' pedido.pk %}", {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(function(res) {
+                        return res.json();
+                    })
+                    .then(function(orderData) {
+                        if (orderData.error) {
+                            self.mensajeError = orderData.error;
+                            throw new Error(orderData.error);
+                        }
+                        return orderData.id;
+                    })
+                    .catch(function(err) {
+                        console.error('Error al crear orden PayPal:', err);
+                        if (!self.mensajeError) {
+                            self.mensajeError = 'No se pudo conectar con PayPal. Por favor reintenta o elige Pago Contra Entrega.';
+                        }
+                    });
+                },
+
+                onApprove: function(data, actions) {
+                    self.procesando = true;
+                    self.cargandoPayPal = true;
+
+                    return fetch("{% url 'tienda_paypal_capturar_orden' pedido.pk %}", {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            orderID: data.orderID
+                        })
+                    })
+                    .then(function(res) {
+                        return res.json();
+                    })
+                    .then(function(captureData) {
+                        if (captureData.redirect_url) {
+                            window.location.href = captureData.redirect_url;
+                        } else if (captureData.error) {
+                            self.procesando = false;
+                            self.cargandoPayPal = false;
+                            self.mensajeError = captureData.error;
+                        } else {
+                            window.location.reload();
+                        }
+                    })
+                    .catch(function(err) {
+                        console.error('Error al capturar orden PayPal:', err);
+                        self.procesando = false;
+                        self.cargandoPayPal = false;
+                        self.mensajeError = 'Ocurrió un error al confirmar la transacción con PayPal.';
+                    });
+                },
+
+                onCancel: function(data) {
+                    self.mensajeError = 'Pago cancelado. Tu pedido sigue reservado; puedes volver a intentar o seleccionar Pago Contra Entrega.';
+                },
+
+                onError: function(err) {
+                    console.error('PayPal Buttons Error:', err);
+                    self.mensajeError = 'Hubo un inconveniente con PayPal. Puedes intentar con otra tarjeta o elegir Pago Contra Entrega.';
+                }
+            }).render('#paypal-button-container');
         },
 
         destroy() {

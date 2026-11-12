@@ -15,10 +15,15 @@
         <div style="display:inline-block;background:var(--gris-100);border:1.5px dashed var(--gris-400);border-radius:var(--border-radius-lg);padding:0.75rem 2.25rem;font-size:1.4rem;font-weight:900;letter-spacing:0.05em;color:var(--gris-900);margin-bottom:1.5rem;">
             PEDIDO #{{ pedido.pk }}
         </div>
-        <div>
-            <span class="badge badge-pendiente" style="font-size:0.88rem;padding:0.4rem 1.15rem;font-weight:700;">
+        <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;">
+            <span class="badge badge-{{ pedido.estado }}" style="font-size:0.88rem;padding:0.4rem 1.15rem;font-weight:700;">
                 Estado: {{ pedido.get_estado_display }}
             </span>
+            {% if pedido.metodo_pago %}
+            <span class="badge" style="background:#F1F5F9;color:#334155;border:1px solid #CBD5E1;font-size:0.88rem;padding:0.4rem 1.15rem;font-weight:700;">
+                Método: {{ pedido.get_metodo_pago_display }}
+            </span>
+            {% endif %}
         </div>
     </div>
 

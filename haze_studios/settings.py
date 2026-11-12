@@ -89,7 +89,24 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
 
-from decouple import config
+try:
+    from decouple import config
+except ImportError:
+    _env_dict = {}
+    _env_file = BASE_DIR / '.env'
+    if _env_file.exists():
+        try:
+            with open(_env_file, 'r', encoding='utf-8') as _f:
+                for _line in _f:
+                    _line = _line.strip()
+                    if _line and not _line.startswith('#') and '=' in _line:
+                        _k, _v = _line.split('=', 1)
+                        _env_dict[_k.strip()] = _v.strip().strip("'\"")
+        except Exception:
+            pass
+
+    def config(key, default=''):
+        return _env_dict.get(key, os.environ.get(key, default))
 
 EXCHANGE_RATE_API_KEY = config('EXCHANGE_RATE_API_KEY', default=os.environ.get('EXCHANGE_RATE_API_KEY', ''))
 
@@ -110,3 +127,8 @@ else:
     # Local / sin credenciales: imprimir en consola (sin riesgo de error 500)
     EMAIL_BACKEND      = 'django.core.mail.backends.console.EmailBackend'
     DEFAULT_FROM_EMAIL = 'Haze Studios <noreply@hazestudios.com>'
+
+# PayPal
+PAYPAL_CLIENT_ID = config('PAYPAL_CLIENT_ID', default=os.environ.get('PAYPAL_CLIENT_ID', ''))
+PAYPAL_SECRET = config('PAYPAL_SECRET', default=os.environ.get('PAYPAL_SECRET', ''))
+PAYPAL_MODE = str(config('PAYPAL_MODE', default=os.environ.get('PAYPAL_MODE', 'sandbox'))).lower()
