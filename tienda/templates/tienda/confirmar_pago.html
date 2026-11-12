@@ -11,7 +11,7 @@
     </div>
 </div>
 
-<div class="cart-wrap" x-data="checkoutPago({{ segundos_restantes }})" x-init="iniciar()">
+<div class="cart-wrap" x-data="checkoutPago({{ segundos_restantes }}, '{{ pedido.metodo_pago|default:'paypal' }}')" x-init="iniciar()">
     <div class="tienda-card" style="padding: 2rem;">
         
         <!-- Alerta de tiempo límite -->
@@ -185,12 +185,12 @@
 
 <script>
 document.addEventListener('alpine:init', () => {
-    Alpine.data('checkoutPago', (segundosIniciales) => ({
+    Alpine.data('checkoutPago', (segundosIniciales, metodoInicial) => ({
         tiempoRestante: segundosIniciales,
         minutos: '00',
         segundos: '00',
         intervalo: null,
-        metodo: 'paypal',
+        metodo: metodoInicial || 'paypal',
         procesando: false,
         cargandoPayPal: false,
         mensajeError: '',

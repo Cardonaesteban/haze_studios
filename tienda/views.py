@@ -549,13 +549,17 @@ def checkout(request):
 
                     notas_finales = "\n".join(partes_notas)
 
+                    metodo_pago_post = request.POST.get('metodo_pago', 'paypal')
+                    metodo_pago_val = 'contra_entrega' if metodo_pago_post == 'contraentrega' else 'paypal'
+
                     # Crear Pedido principal en Dashboard
                     pedido = Pedido.objects.create(
                         cliente=cliente,
                         fecha_pedido=timezone.now().date(),
                         estado='pendiente_pago',
                         total=carrito_data['total_general'],
-                        notas=notas_finales.strip()
+                        notas=notas_finales.strip(),
+                        metodo_pago=metodo_pago_val
                     )
 
                     # Crear Detalles y descontar stock con movimiento

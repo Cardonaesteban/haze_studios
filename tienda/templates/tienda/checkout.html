@@ -89,8 +89,18 @@
             </div>
 
             <!-- MÉTODOS DE PAGO -->
-            <div class="payment-methods-section" x-data="{ metodoSeleccionado: 'contraentrega' }">
+            <div class="payment-methods-section" x-data="{ metodoSeleccionado: 'paypal' }">
                 <div class="payment-methods-title">Método de Pago</div>
+
+                <label class="payment-option"
+                       :class="{ 'selected': metodoSeleccionado === 'paypal' }"
+                       @click="metodoSeleccionado = 'paypal'">
+                    <input type="radio" name="metodo_pago" value="paypal" x-model="metodoSeleccionado">
+                    <div class="payment-option-info">
+                        <div class="payment-option-name">PayPal / Tarjeta de Crédito o Débito</div>
+                        <div class="payment-option-desc">Paga en línea de forma segura con tarjetas de crédito/débito o tu cuenta PayPal.</div>
+                    </div>
+                </label>
 
                 <label class="payment-option"
                        :class="{ 'selected': metodoSeleccionado === 'contraentrega' }"
@@ -98,7 +108,7 @@
                     <input type="radio" name="metodo_pago" value="contraentrega" x-model="metodoSeleccionado">
                     <div class="payment-option-info">
                         <div class="payment-option-name">Pago contra entrega</div>
-                        <div class="payment-option-desc">Pagas al recibir tu pedido.</div>
+                        <div class="payment-option-desc">Pagas en efectivo al recibir tu pedido en tu dirección de entrega.</div>
                     </div>
                 </label>
             </div>
