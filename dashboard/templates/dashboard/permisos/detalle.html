@@ -1,0 +1,63 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Permiso: {{ permiso.nombre }} | Haze Studios{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1>{{ permiso.nombre }}</h1>
+        <p style="color: var(--gris-500); font-size: 0.9rem; margin-top: 0.25rem;">
+            Vista de solo lectura del permiso del sistema
+        </p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="{% url 'permisos_list' %}" class="btn btn-secondary">← Volver a permisos</a>
+        <a href="{% url 'permisos_editar' permiso.pk %}" class="btn btn-primary">Editar descripción</a>
+    </div>
+</div>
+
+<div class="form-wrap" style="max-width: 600px; margin: 0 auto;">
+    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+        <div>
+            <label style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--gris-500); letter-spacing: 0.05em; display: block; margin-bottom: 0.35rem;">
+                Código del Sistema
+            </label>
+            <div>
+                <code style="background: var(--gris-100); border: 1px solid var(--gris-300); padding: 4px 10px; border-radius: var(--border-radius-sm); font-size: 0.9rem; font-weight: 600; color: var(--gris-800);">
+                    {{ permiso.codigo }}
+                </code>
+            </div>
+        </div>
+
+        <div>
+            <label style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--gris-500); letter-spacing: 0.05em; display: block; margin-bottom: 0.35rem;">
+                Nombre del Permiso
+            </label>
+            <div style="font-size: 1.05rem; font-weight: 600; color: var(--gris-900);">
+                {{ permiso.nombre }}
+            </div>
+        </div>
+
+        <div>
+            <label style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--gris-500); letter-spacing: 0.05em; display: block; margin-bottom: 0.35rem;">
+                Descripción
+            </label>
+            <div style="background: var(--gris-50); border: 1px solid var(--gris-200); border-radius: var(--border-radius-md); padding: 0.9rem 1rem; font-size: 0.9rem; color: var(--gris-700); line-height: 1.5;">
+                {{ permiso.descripcion|default:"Sin descripción registrada." }}
+            </div>
+        </div>
+
+        <div>
+            <label style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--gris-500); letter-spacing: 0.05em; display: block; margin-bottom: 0.35rem;">
+                Roles que tienen este permiso
+            </label>
+            <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.25rem;">
+                {% for r in permiso.roles.all %}
+                    <span class="badge badge-activo" style="font-size: 0.8rem; padding: 4px 10px;">{{ r.get_nombre_display }}</span>
+                {% empty %}
+                    <span style="color: var(--gris-400); font-size: 0.85rem;">Ningún rol tiene asignado este permiso actualmente.</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

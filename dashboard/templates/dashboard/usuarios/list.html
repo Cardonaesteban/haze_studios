@@ -50,10 +50,10 @@
                 <span class="badge badge-pendiente">{{ c.pedidos.count }} pedido(s)</span>
             </td>
             <td><span class="badge badge-{{ c.estado }}">{{ c.get_estado_display }}</span></td>
-            <td class="botones">
-                <a class="btn-editar" href="{% url 'usuarios_editar' c.pk %}"> Editar</a>
-                <a class="btn-eliminar" href="{% url 'usuarios_eliminar' c.pk %}"> Eliminar</a>
-                <a class="btn-estado" href="{% url 'usuarios_estado' c.pk %}"> Estado</a>
+            <td>
+                <a class="btn btn-sm btn-secondary" href="{% url 'usuarios_editar' c.pk %}">Editar</a>
+                <a class="btn btn-sm btn-secondary" href="{% url 'usuarios_estado' c.pk %}">Estado</a>
+                <a class="btn btn-sm btn-danger" href="{% url 'usuarios_eliminar' c.pk %}">Eliminar</a>
             </td>
         </tr>
         {% empty %}

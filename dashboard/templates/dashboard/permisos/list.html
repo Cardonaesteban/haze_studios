@@ -4,7 +4,6 @@
 
 <div class="page-header">
     <h1>Permisos</h1>
-    <a class="btn btn-primary" href="{% url 'permisos_crear' %}">+ Nuevo permiso</a>
 </div>
 
 <div class="page-actions" style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
@@ -43,9 +42,14 @@
                     <span style="color:var(--gris-400)">Ninguno</span>
                 {% endfor %}
             </td>
-            <td class="botones">
-                <a class="btn-editar" href="{% url 'permisos_editar' p.pk %}">Editar</a>
-                <a class="btn-eliminar" href="{% url 'permisos_eliminar' p.pk %}">Eliminar</a>
+            <td>
+                <a class="btn btn-sm btn-secondary" href="{% url 'permisos_detalle' p.pk %}">Ver</a>
+                <a class="btn btn-sm btn-secondary" href="{% url 'permisos_editar' p.pk %}">Editar</a>
+                <button type="button" class="btn btn-sm btn-danger btn-disabled"
+                        title="No se puede eliminar un permiso esencial"
+                        style="opacity: 0.35; cursor: not-allowed; pointer-events: auto;">
+                    Eliminar
+                </button>
             </td>
         </tr>
         {% empty %}

@@ -33,6 +33,8 @@ logger = logging.getLogger(__name__)
 def es_admin(user):
     if not getattr(user, 'is_authenticated', False):
         return False
+    if getattr(user, 'is_superuser', False):
+        return True
     try:
         return user.perfil.es_admin()
     except PerfilUsuario.DoesNotExist:
@@ -143,6 +145,20 @@ def productos_list(request):
         'total_productos': productos.count(),
     })
 
+def _obtener_imagenes_productos():
+    """Obtiene la lista de nombres de imágenes ya disponibles en media/productos/."""
+    ruta_dir = settings.MEDIA_ROOT / 'productos'
+    if not ruta_dir.exists():
+        return []
+    extensiones_validas = {'.jpg', '.jpeg', '.png', '.webp', '.gif'}
+    archivos = []
+    for item in ruta_dir.iterdir():
+        if item.is_file() and item.suffix.lower() in extensiones_validas:
+            archivos.append(item.name)
+    archivos.sort()
+    return archivos
+
+
 @admin_required
 def productos_crear(request):
     form = ProductoForm(request.POST or None, request.FILES or None)
@@ -157,7 +173,12 @@ def productos_crear(request):
             )
         messages.success(request, 'Producto registrado exitosamente.')
         return redirect('productos_list')
-    return render(request, 'dashboard/productos/form.html', {'form': form, 'titulo': 'Registrar producto'})
+    imagenes_existentes = _obtener_imagenes_productos()
+    return render(request, 'dashboard/productos/form.html', {
+        'form': form,
+        'titulo': 'Registrar producto',
+        'imagenes_existentes': imagenes_existentes,
+    })
 
 @admin_required
 def productos_editar(request, pk):
@@ -170,7 +191,13 @@ def productos_editar(request, pk):
         form.save()
         messages.success(request, 'Producto actualizado.')
         return redirect('productos_list')
-    return render(request, 'dashboard/productos/form.html', {'form': form, 'titulo': 'Editar producto', 'objeto': producto})
+    imagenes_existentes = _obtener_imagenes_productos()
+    return render(request, 'dashboard/productos/form.html', {
+        'form': form,
+        'titulo': 'Editar producto',
+        'objeto': producto,
+        'imagenes_existentes': imagenes_existentes,
+    })
 
 @admin_required
 def productos_eliminar(request, pk):
@@ -489,8 +516,9 @@ def pedidos_detalle(request, pk):
 
 @admin_required
 def proveedores_list(request):
+    from django.db.models import Count
     proveedor_id = request.GET.get('proveedor')
-    proveedores = Proveedor.objects.all().order_by('nombre')
+    proveedores = Proveedor.objects.annotate(total_productos=Count('productos')).order_by('nombre')
     todos_proveedores = list(proveedores)
     proveedor_seleccionado = None
     if proveedor_id and proveedor_id.isdigit():
@@ -544,8 +572,9 @@ def proveedores_toggle_estado(request, pk):
 
 @admin_required
 def disenadores_list(request):
+    from django.db.models import Count
     disenador_id = request.GET.get('disenador')
-    disenadores = Disenador.objects.all().order_by('nombre')
+    disenadores = Disenador.objects.annotate(total_productos=Count('productos')).order_by('nombre')
     todos_disenadores = list(disenadores)
     disenador_seleccionado = None
     if disenador_id and disenador_id.isdigit():
@@ -675,6 +704,13 @@ def permisos_crear(request):
     return render(request, 'dashboard/permisos/form.html', {'form': form, 'titulo': 'Crear permiso'})
 
 @admin_required
+def permisos_detalle(request, pk):
+    permiso = get_object_or_404(Permiso.objects.prefetch_related('roles'), pk=pk)
+    return render(request, 'dashboard/permisos/detalle.html', {
+        'permiso': permiso,
+    })
+
+@admin_required
 def permisos_editar(request, pk):
     permiso = get_object_or_404(Permiso, pk=pk)
     form = PermisoForm(request.POST or None, instance=permiso)
@@ -687,6 +723,9 @@ def permisos_editar(request, pk):
 @admin_required
 def permisos_eliminar(request, pk):
     permiso = get_object_or_404(Permiso, pk=pk)
+    if permiso.codigo in ['administrador', 'cliente']:
+        messages.error(request, f'No se puede eliminar el permiso esencial "{permiso.nombre}".')
+        return redirect('permisos_list')
     if request.method == 'POST':
         permiso.delete()
         messages.success(request, 'Permiso eliminado.')
@@ -859,16 +898,64 @@ def mensajes_list(request):
 def mensajes_crear(request):
     form = MensajeForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        correo_destino = form.cleaned_data['destinatario'].correo  # campo `correo` verificado en modelo Cliente
+        destinatario = form.cleaned_data['destinatario']
+        correo_destino = destinatario.correo  # campo `correo` verificado en modelo Cliente
         tipo_display = dict(Mensaje.TIPO_CHOICES).get(
             form.cleaned_data['tipo'], form.cleaned_data['tipo']  # .get() evita KeyError
         )
+        contenido = form.cleaned_data['contenido']
+        remitente = form.cleaned_data.get('remitente') or 'Haze Studios'
+
+        # Versión HTML  con el branding de Haze Studios
+        contenido_html_formateado = contenido.replace('\n', '<br>')
+        html_message = f"""
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #0f172a; }}
+                .container {{ max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }}
+                .header {{ background: #0f172a; color: #ffffff; padding: 28px 32px; text-align: center; }}
+                .header h1 {{ margin: 0; font-size: 20px; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; }}
+                .content {{ padding: 32px; }}
+                .type-badge {{ display: inline-block; background: #f1f5f9; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 9999px; margin-bottom: 16px; border: 1px solid #e2e8f0; }}
+                .message-box {{ background: #f8fafc; border-left: 4px solid #0f172a; padding: 18px 22px; border-radius: 6px; margin: 18px 0; font-size: 15px; line-height: 1.6; color: #1e293b; }}
+                .footer {{ background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px 32px; text-align: center; font-size: 13px; color: #64748b; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>HAZE STUDIOS</h1>
+                </div>
+                <div class="content">
+                    <span class="type-badge">{tipo_display}</span>
+                    <p style="font-size: 16px; margin-top: 0;">Hola <strong>{destinatario.nombre}</strong>,</p>
+                    <div class="message-box">
+                        {contenido_html_formateado}
+                    </div>
+                    <p style="font-size: 14px; color: #64748b; margin-bottom: 0;">
+                        Atentamente,<br>
+                        <strong>{remitente}</strong>
+                    </p>
+                </div>
+                <div class="footer">
+                    Haze Studios — Moda urbana contemporánea.<br>
+                    Si tienes dudas o preguntas, contáctanos a nuestro equipo de atención.
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
         try:
             send_mail(
                 subject=f'[Haze Studios] {tipo_display}',
-                message=form.cleaned_data['contenido'],
+                message=contenido,
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[correo_destino],
+                html_message=html_message,
                 fail_silently=False,
             )
             # Solo se guarda en BD si el correo se envió correctamente

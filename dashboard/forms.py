@@ -1,5 +1,6 @@
 import re
 from django import forms
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
@@ -180,6 +181,48 @@ class ProductoForm(forms.ModelForm):
         if proveedor and proveedor.estado == 'inactivo':
             raise ValidationError(f'El proveedor {proveedor.nombre} está inactivo y no puede ser asignado a un producto.')
         return proveedor
+
+    imagen_existente = forms.CharField(required=False, widget=forms.HiddenInput())
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Hacemos el campo de archivo opcional para permitir seleccionar imagen_existente
+        if 'imagen' in self.fields:
+            self.fields['imagen'].required = False
+        # Solo permitir seleccionar proveedores y diseñadores con estado activo
+        if 'proveedor' in self.fields:
+            self.fields['proveedor'].queryset = Proveedor.objects.filter(estado='activo').order_by('nombre')
+        if 'disenador' in self.fields:
+            self.fields['disenador'].queryset = Disenador.objects.filter(estado='activo').order_by('nombre')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        imagen = cleaned_data.get('imagen')
+        imagen_existente = cleaned_data.get('imagen_existente', '').strip()
+
+        # En creación (o si no tiene imagen previa), debe haber subido una o seleccionado una existente
+        tiene_imagen_previa = self.instance and self.instance.pk and bool(self.instance.imagen)
+        if not imagen and not imagen_existente and not tiene_imagen_previa:
+            self.add_error('imagen', 'Debe seleccionar una imagen para el producto (subir una nueva o elegir una existente).')
+
+        # Si se seleccionó una imagen existente, validar que realmente exista en el disco
+        if not imagen and imagen_existente:
+            ruta_archivo = settings.MEDIA_ROOT / 'productos' / imagen_existente
+            if not ruta_archivo.exists() or not ruta_archivo.is_file():
+                self.add_error('imagen', 'La imagen seleccionada no existe en el servidor.')
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        producto = super().save(commit=False)
+        # Si no se subió una nueva imagen pero se eligió una existente
+        img_existente = (self.cleaned_data.get('imagen_existente') or '').strip()
+        if not self.cleaned_data.get('imagen') and img_existente:
+            producto.imagen = f'productos/{img_existente}'
+        if commit:
+            producto.save()
+            self.save_m2m()
+        return producto
 
 
 
@@ -546,6 +589,11 @@ class MovimientoStockForm(forms.ModelForm):
             'cantidad': forms.NumberInput(attrs={'min': 1}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'producto' in self.fields:
+            self.fields['producto'].queryset = Producto.objects.filter(estado='activo').order_by('nombre')
+
     def clean_cantidad(self):
         cantidad = self.cleaned_data.get('cantidad')
         if cantidad is None:
@@ -558,6 +606,8 @@ class MovimientoStockForm(forms.ModelForm):
         producto = self.cleaned_data.get('producto')
         if not producto:
             raise ValidationError('Selecciona un producto.')
+        if producto.estado != 'activo':
+            raise ValidationError(f'El producto "{producto.nombre}" está inactivo y no admite movimientos de stock.')
         return producto
 
 
@@ -566,6 +616,12 @@ class MovimientoStockForm(forms.ModelForm):
 # ──────────────────────────────────────────────
 
 class RolForm(forms.ModelForm):
+    nombre = forms.CharField(
+        max_length=50,
+        label='Nombre del rol',
+        widget=forms.TextInput(attrs={'placeholder': 'Ej. Administrador, Cliente, Vendedor'})
+    )
+
     class Meta:
         model = Rol
         fields = ['nombre', 'descripcion', 'estado', 'permisos']
@@ -573,6 +629,17 @@ class RolForm(forms.ModelForm):
             'descripcion': forms.Textarea(attrs={'rows': 2}),
             'permisos': forms.CheckboxSelectMultiple(),
         }
+
+    def clean_nombre(self):
+        nombre = self.cleaned_data.get('nombre', '').strip()
+        if not nombre:
+            raise ValidationError('El nombre del rol es obligatorio.')
+        qs = Rol.objects.filter(nombre__iexact=nombre)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError('Ya existe un rol con este nombre.')
+        return nombre
 
     def save(self, commit=True):
         rol = super().save(commit=False)
@@ -587,10 +654,22 @@ class PermisoForm(forms.ModelForm):
         model = Permiso
         fields = ['codigo', 'nombre', 'descripcion']
         widgets = {
-            'descripcion': forms.Textarea(attrs={'rows': 2}),
+            'descripcion': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Descripción del permiso'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            # En la edición no se muestra el código
+            if 'codigo' in self.fields:
+                del self.fields['codigo']
+            # El nombre se deja deshabilitado para que solo se edite la descripción
+            if 'nombre' in self.fields:
+                self.fields['nombre'].disabled = True
+
     def clean_codigo(self):
+        if self.instance and self.instance.pk:
+            return self.instance.codigo
         codigo = self.cleaned_data.get('codigo', '').strip().lower().replace(' ', '_')
         if not codigo:
             raise ValidationError('El código es obligatorio.')
@@ -748,16 +827,17 @@ class MensajeForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['destinatario'].queryset = Cliente.objects.all().order_by('nombre', 'apellido')
+        self.fields['destinatario'].queryset = Cliente.objects.filter(estado='activo').order_by('nombre', 'apellido')
         self.fields['destinatario'].empty_label = 'Seleccione un usuario destinatario'
+        self.fields['destinatario'].label_from_instance = lambda obj: f"{obj.nombre} {obj.apellido} ({obj.correo})"
         self.fields['contenido'].help_text = 'El contenido del mensaje no podrá superar los 500 caracteres.'
 
     def clean_destinatario(self):
         destinatario = self.cleaned_data.get('destinatario')
         if not destinatario:
             raise ValidationError('Debe seleccionar un usuario destinatario existente en el sistema.')
-        if not Cliente.objects.filter(pk=destinatario.pk).exists():
-            raise ValidationError('El usuario destinatario no existe en el sistema.')
+        if not Cliente.objects.filter(pk=destinatario.pk, estado='activo').exists():
+            raise ValidationError('El usuario destinatario no existe o se encuentra inactivo.')
         return destinatario
 
     def clean_contenido(self):

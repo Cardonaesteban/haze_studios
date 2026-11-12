@@ -30,15 +30,20 @@
 <div class="table-wrap">
     <table>
         <thead>
-            <tr><th>ID</th><th>Nombre</th><th>Teléfono</th><th>Correo</th><th>Dirección</th><th>Estado</th><th>Acciones</th></tr>
+            <tr><th>ID</th><th>Nombre</th><th>Teléfono</th><th>Correo</th><th>Prendas asociadas</th><th>Dirección</th><th>Estado</th><th>Acciones</th></tr>
         </thead>
         <tbody>
         {% for p in proveedores %}
         <tr>
             <td>{{ p.pk }}</td>
-            <td>{{ p.nombre }}</td>
+            <td><strong>{{ p.nombre }}</strong></td>
             <td>{{ p.telefono|default:"—" }}</td>
             <td>{{ p.correo|default:"—" }}</td>
+            <td>
+                <span class="badge" style="background: var(--gris-100); color: var(--gris-800); border: 1px solid var(--gris-300);">
+                    {{ p.total_productos }} prenda(s)
+                </span>
+            </td>
             <td>{{ p.direccion|default:"—" }}</td>
             <td>
                 {% if p.estado == 'activo' %}
@@ -47,15 +52,15 @@
                     <span class="badge badge-inactivo">Inactivo</span>
                 {% endif %}
             </td>
-            <td class="botones">
-                <a class="btn-editar" href="{% url 'proveedores_editar' p.pk %}">Editar</a>
-                <a class="btn-eliminar" href="{% url 'proveedores_eliminar' p.pk %}">Eliminar</a>
-                <a class="btn-estado" href="{% url 'proveedores_toggle_estado' p.pk %}">Estado</a>
+            <td>
+                <a class="btn btn-sm btn-secondary" href="{% url 'proveedores_editar' p.pk %}">Editar</a>
+                <a class="btn btn-sm btn-secondary" href="{% url 'proveedores_toggle_estado' p.pk %}">Estado</a>
+                <a class="btn btn-sm btn-danger" href="{% url 'proveedores_eliminar' p.pk %}">Eliminar</a>
             </td>
         </tr>
         {% empty %}
         <tr>
-            <td colspan="7" style="text-align:center;padding:2rem;color:var(--gris-500)">
+            <td colspan="8" style="text-align:center;padding:2rem;color:var(--gris-500)">
                 {% if proveedor_seleccionado %}
                 No se encontró el proveedor seleccionado.
                 {% else %}

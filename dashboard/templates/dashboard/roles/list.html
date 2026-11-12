@@ -44,10 +44,10 @@
             </td>
             <td><span class="badge badge-{{ r.estado }}">{{ r.get_estado_display }}</span></td>
             <td>{{ r.usuarios.count }} usuario(s)</td>
-            <td class="botones">
-                <a class="btn-editar" href="{% url 'roles_editar' r.pk %}">Editar</a>
-                <a class="btn-estado" href="{% url 'roles_estado' r.pk %}"> Estado</a>
-                <a class="btn-eliminar" href="{% url 'roles_eliminar' r.pk %}"> Eliminar</a>
+            <td>
+                <a class="btn btn-sm btn-secondary" href="{% url 'roles_editar' r.pk %}">Editar</a>
+                <a class="btn btn-sm btn-secondary" href="{% url 'roles_estado' r.pk %}">Estado</a>
+                <a class="btn btn-sm btn-danger" href="{% url 'roles_eliminar' r.pk %}">Eliminar</a>
             </td>
         </tr>
         {% empty %}

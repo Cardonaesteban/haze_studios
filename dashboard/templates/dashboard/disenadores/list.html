@@ -29,13 +29,18 @@
 
 <div class="table-wrap">
     <table>
-        <thead><tr><th>ID</th><th>Nombre</th><th>Teléfono</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <thead><tr><th>ID</th><th>Nombre</th><th>Teléfono</th><th>Prendas asociadas</th><th>Estado</th><th>Acciones</th></tr></thead>
         <tbody>
         {% for d in disenadores %}
         <tr>
             <td>{{ d.pk }}</td>
-            <td>{{ d.nombre }}</td>
+            <td><strong>{{ d.nombre }}</strong></td>
             <td>{{ d.telefono|default:"—" }}</td>
+            <td>
+                <span class="badge" style="background: var(--gris-100); color: var(--gris-800); border: 1px solid var(--gris-300);">
+                    {{ d.total_productos }} prenda(s)
+                </span>
+            </td>
             <td>
                 {% if d.estado == 'activo' %}
                     <span class="badge badge-activo">Activo</span>
@@ -43,15 +48,15 @@
                     <span class="badge badge-inactivo">Inactivo</span>
                 {% endif %}
             </td>
-            <td class="botones">
-                <a class="btn-editar" href="{% url 'disenadores_editar' d.pk %}">Editar</a>
-                <a class="btn-estado" href="{% url 'disenadores_toggle_estado' d.pk %}">Estado</a>
-                <a class="btn-eliminar" href="{% url 'disenadores_eliminar' d.pk %}">Eliminar</a>
+            <td>
+                <a class="btn btn-sm btn-secondary" href="{% url 'disenadores_editar' d.pk %}">Editar</a>
+                <a class="btn btn-sm btn-secondary" href="{% url 'disenadores_toggle_estado' d.pk %}">Estado</a>
+                <a class="btn btn-sm btn-danger" href="{% url 'disenadores_eliminar' d.pk %}">Eliminar</a>
             </td>
         </tr>
         {% empty %}
         <tr>
-            <td colspan="5" style="text-align:center;padding:2rem;color:var(--gris-500)">
+            <td colspan="6" style="text-align:center;padding:2rem;color:var(--gris-500)">
                 {% if disenador_seleccionado %}
                 No se encontró el diseñador seleccionado.
                 {% else %}

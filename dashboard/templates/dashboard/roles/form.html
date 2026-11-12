@@ -2,20 +2,108 @@
 {% block title %}{{ titulo }} | Haze Studios{% endblock %}
 {% block content %}
 <h1>{{ titulo }}</h1>
-<div class="form-wrap">
+<div class="form-wrap" style="max-width: 700px;">
     <form method="post">{% csrf_token %}
         {% for field in form %}
-        <div class="form-group">
-            <label>{{ field.label }}{% if field.field.required %} <span style="color:var(--rojo)">*</span>{% endif %}</label>
-            {{ field }}
-            {% if field.help_text %}<div class="help-text">{{ field.help_text }}</div>{% endif %}
-            {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
-        </div>
+            {% if field.name == 'permisos' %}
+            <div class="form-group" style="margin-top: 1.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <label style="font-size: 0.95rem; font-weight: 700; color: var(--gris-900); margin: 0;">
+                        {{ field.label }}
+                    </label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="marcarTodosPermisos(true)">Seleccionar todos</button>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="marcarTodosPermisos(false)">Deseleccionar todos</button>
+                    </div>
+                </div>
+                <p style="font-size: 0.82rem; color: var(--gris-500); margin-bottom: 0.85rem;">
+                    Marca los módulos y acciones a los que tendrá acceso este rol.
+                </p>
+
+                <div class="permisos-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem;">
+                    {% for checkbox in field %}
+                    <label class="permiso-card" for="{{ checkbox.id_for_label }}"
+                           style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.85rem 1rem; border: 1px solid var(--gris-200); border-radius: var(--border-radius-md); background: var(--blanco); cursor: pointer; transition: all 0.2s ease; box-shadow: var(--sombra-sm); user-select: none;">
+                        <div style="margin-top: 0.15rem;">
+                            {{ checkbox.tag }}
+                        </div>
+                        <div style="flex: 1;">
+                            <span style="font-size: 0.88rem; font-weight: 600; color: var(--gris-800); display: block; line-height: 1.35;">
+                                {{ checkbox.choice_label }}
+                            </span>
+                        </div>
+                    </label>
+                    {% empty %}
+                    <div style="grid-column: 1 / -1; padding: 1.5rem; text-align: center; color: var(--gris-400); background: var(--gris-50); border-radius: var(--border-radius-md); border: 1px dashed var(--gris-200);">
+                        No hay permisos registrados.
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if field.help_text %}<div class="help-text">{{ field.help_text }}</div>{% endif %}
+                {% if field.errors %}<ul class="errorlist" style="margin-top: 0.5rem;">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            {% else %}
+            <div class="form-group">
+                <label>{{ field.label }}{% if field.field.required %} <span style="color:var(--rojo)">*</span>{% endif %}</label>
+                {{ field }}
+                {% if field.help_text %}<div class="help-text">{{ field.help_text }}</div>{% endif %}
+                {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            {% endif %}
         {% endfor %}
-        <div class="form-actions">
+        <div class="form-actions" style="margin-top: 2rem;">
             <button type="submit" class="btn btn-primary">Guardar</button>
             <a class="btn btn-secondary" href="{% url 'roles_list' %}">Cancelar</a>
         </div>
     </form>
 </div>
+
+<style>
+.permiso-card input[type="checkbox"] {
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: var(--azul);
+    cursor: pointer;
+}
+.permiso-card:hover {
+    border-color: var(--azul) !important;
+    box-shadow: var(--sombra-md) !important;
+}
+.permiso-card.activo {
+    border-color: var(--azul) !important;
+    background: rgba(59, 130, 246, 0.04) !important;
+}
+</style>
+
+<script>
+function actualizarEstadoCard(input) {
+    const card = input.closest('.permiso-card');
+    if (card) {
+        if (input.checked) {
+            card.classList.add('activo');
+        } else {
+            card.classList.remove('activo');
+        }
+    }
+}
+
+function marcarTodosPermisos(marcar) {
+    const checkboxes = document.querySelectorAll('input[name="permisos"]');
+    checkboxes.forEach(cb => {
+        cb.checked = marcar;
+        actualizarEstadoCard(cb);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('input[name="permisos"]');
+    checkboxes.forEach(cb => {
+        actualizarEstadoCard(cb);
+        cb.addEventListener('change', function() {
+            actualizarEstadoCard(this);
+        });
+    });
+});
+</script>
 {% endblock %}

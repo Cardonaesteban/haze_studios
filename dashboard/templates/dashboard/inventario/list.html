@@ -19,9 +19,9 @@
             <td>{{ i.producto.nombre }} <small style="color:var(--gris-400)">(ID {{ i.producto.pk }})</small></td>
             <td>{{ i.stock }}</td>
             <td>{{ i.fecha_actualizacion|date:"d/m/Y" }}</td>
-            <td class="botones">
-                <a class="btn-editar" href="{% url 'inventario_editar' i.pk %}">Editar</a>
-                <a class="btn-eliminar" href="{% url 'inventario_eliminar' i.pk %}">Eliminar</a>
+            <td>
+                <a class="btn btn-sm btn-secondary" href="{% url 'inventario_editar' i.pk %}">Editar</a>
+                <a class="btn btn-sm btn-danger" href="{% url 'inventario_eliminar' i.pk %}">Eliminar</a>
             </td>
         </tr>
         {% empty %}

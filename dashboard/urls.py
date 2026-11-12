@@ -63,6 +63,7 @@ urlpatterns = [
     # Permisos (solo admin)
     path('permisos/', views.permisos_list, name='permisos_list'),
     path('permisos/crear/', views.permisos_crear, name='permisos_crear'),
+    path('permisos/<int:pk>/detalle/', views.permisos_detalle, name='permisos_detalle'),
     path('permisos/<int:pk>/editar/', views.permisos_editar, name='permisos_editar'),
     path('permisos/<int:pk>/eliminar/', views.permisos_eliminar, name='permisos_eliminar'),
 

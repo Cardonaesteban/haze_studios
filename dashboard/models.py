@@ -38,7 +38,7 @@ class Rol(models.Model):
     ]
 
     nombre = models.CharField(
-        max_length=20, choices=ROL_CHOICES, unique=True
+        max_length=50, unique=True
     )
     descripcion = models.TextField(blank=True, default='')
     estado = models.CharField(
@@ -78,10 +78,12 @@ class PerfilUsuario(models.Model):
         return f'{self.user.username} — {self.rol}'
 
     def es_admin(self):
-        return self.tiene_permiso('acceso_dashboard')
+        if getattr(self.user, 'is_superuser', False):
+            return True
+        return self.tiene_permiso('administrador')
 
     def tiene_permiso(self, codigo):
-        if not self.rol:
+        if not self.rol or self.rol.estado != 'activo':
             return False
         return self.rol.permisos.filter(codigo=codigo).exists()
 

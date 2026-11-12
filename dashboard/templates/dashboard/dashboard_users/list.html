@@ -50,11 +50,11 @@
                     <span class="badge badge-inactivo">Inactivo</span>
                 {% endif %}
             </td>
-            <td class="botones">
-                <a class="btn-editar" href="{% url 'dashboard_users_editar' u.pk %}">Editar</a>
-                <a class="btn-estado" href="{% url 'dashboard_users_rol' u.pk %}">Rol</a>
+            <td>
+                <a class="btn btn-sm btn-secondary" href="{% url 'dashboard_users_editar' u.pk %}">Editar</a>
+                <a class="btn btn-sm btn-secondary" href="{% url 'dashboard_users_rol' u.pk %}">Rol</a>
                 {% if u != request.user %}
-                <a class="btn-eliminar" href="{% url 'dashboard_users_eliminar' u.pk %}">Eliminar</a>
+                <a class="btn btn-sm btn-danger" href="{% url 'dashboard_users_eliminar' u.pk %}">Eliminar</a>
                 {% endif %}
             </td>
         </tr>

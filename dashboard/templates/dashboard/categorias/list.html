@@ -36,9 +36,9 @@
             <td>{{ c.pk }}</td>
             <td>{{ c.nombre }}</td>
             <td>{{ c.descripcion|truncatechars:60 }}</td>
-            <td class="botones">
-                <a class="btn-editar" href="{% url 'categorias_editar' c.pk %}"> Editar</a>
-                <a class="btn-eliminar" href="{% url 'categorias_eliminar' c.pk %}"> Eliminar</a>
+            <td>
+                <a class="btn btn-sm btn-secondary" href="{% url 'categorias_editar' c.pk %}">Editar</a>
+                <a class="btn btn-sm btn-danger" href="{% url 'categorias_eliminar' c.pk %}">Eliminar</a>
             </td>
         </tr>
         {% empty %}

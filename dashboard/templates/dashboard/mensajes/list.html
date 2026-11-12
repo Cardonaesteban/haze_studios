@@ -72,13 +72,11 @@
                 <span class="badge badge-{{ m.estado }}">{{ m.get_estado_display }}</span>
             </td>
             <td>
-                <div style="display: flex; gap: 0.4rem; align-items: center;">
-                    <button type="button" class="btn btn-sm btn-secondary" 
-                            onclick="abrirModalMensaje('{{ m.pk }}', '{{ m.destinatario.nombre|escapejs }} {{ m.destinatario.apellido|escapejs }}', '{{ m.destinatario.correo|escapejs }}', '{{ m.remitente|escapejs }}', '{{ m.get_tipo_display|escapejs }}', '{{ m.get_estado_display|escapejs }}', '{{ m.fecha_envio|date:"d/m/Y H:i" }}', '{{ m.contenido|escapejs }}', '{% if m.pedido %}#{{ m.pedido.pk }}{% endif %}', '{% url 'mensajes_detalle' m.pk %}')">
-                        Ver
-                    </button>
-                    <a class="btn btn-sm btn-danger" href="{% url 'mensajes_eliminar' m.pk %}">Eliminar</a>
-                </div>
+                <button type="button" class="btn btn-sm btn-secondary" 
+                        onclick="abrirModalMensaje('{{ m.pk }}', '{{ m.destinatario.nombre|escapejs }} {{ m.destinatario.apellido|escapejs }}', '{{ m.destinatario.correo|escapejs }}', '{{ m.remitente|escapejs }}', '{{ m.get_tipo_display|escapejs }}', '{{ m.get_estado_display|escapejs }}', '{{ m.fecha_envio|date:"d/m/Y H:i" }}', '{{ m.contenido|escapejs }}', '{% if m.pedido %}#{{ m.pedido.pk }}{% endif %}', '{% url 'mensajes_detalle' m.pk %}')">
+                    Ver
+                </button>
+                <a class="btn btn-sm btn-danger" href="{% url 'mensajes_eliminar' m.pk %}">Eliminar</a>
             </td>
         </tr>
         {% empty %}
