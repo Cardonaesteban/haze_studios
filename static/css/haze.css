@@ -64,11 +64,35 @@ body::before {
     box-shadow: var(--sombra-sm);
 }
 
+.navbar-brand-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
 .navbar-brand {
     font-size: 0.9rem; font-weight: 700; letter-spacing: 0.08em;
     background: var(--gradiente-principal);
     -webkit-background-clip: text; background-clip: text; color: transparent;
     text-decoration: none;
+}
+
+.navbar-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--border-radius-md);
+    background: var(--gris-100);
+    border: 1px solid var(--gris-300);
+    color: var(--gris-800);
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.2s, color 0.2s;
+}
+.navbar-toggle:hover {
+    background: var(--gris-200);
 }
 
 .navbar-nav { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
@@ -160,6 +184,9 @@ h1 {
     background: var(--blanco); border-radius: var(--border-radius-xl);
     box-shadow: var(--sombra-xl);
     animation: fadeIn 0.4s ease-out;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .table-wrap table {
@@ -363,19 +390,123 @@ tbody tr:hover { background: var(--gris-100); transition: background 0.15s; }
     to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── RESPONSIVE ──────────────────────────── */
+/* ── HELPER CLASSES RESPONSIVAS ──────────── */
+.form-row-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+@media (max-width: 640px) {
+    .form-row-2col {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+}
+
+.custom-studio-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 1.75rem;
+    align-items: start;
+}
+.custom-studio-preview-card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 1.5rem;
+    border: 1.5px solid #E2E8F0;
+    box-shadow: 0 12px 30px rgba(15,23,42,0.08);
+    position: sticky;
+    top: 90px;
+}
+@media (max-width: 900px) {
+    .custom-studio-grid {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+    .custom-studio-preview-card {
+        position: static;
+    }
+}
+
+.payment-tabs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+@media (max-width: 540px) {
+    .payment-tabs-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+}
+
+.grid-cards-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+@media (max-width: 640px) {
+    .grid-cards-2col {
+        grid-template-columns: 1fr;
+    }
+    .grid-cards-2col > div[style*="grid-column: span 2"] {
+        grid-column: span 1 !important;
+    }
+}
+
+/* ── RESPONSIVE BASE & DASHBOARD ─────────── */
+@media (max-width: 850px) {
+    .navbar {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        padding: 0.75rem 1rem;
+    }
+    .navbar-brand-wrap {
+        width: 100%;
+    }
+    .navbar-toggle {
+        display: inline-flex;
+    }
+    .navbar-nav {
+        display: none;
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        gap: 0.35rem;
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--gris-200);
+    }
+    .navbar-nav.nav-open {
+        display: flex !important;
+        animation: fadeIn 0.2s ease-out;
+    }
+    .navbar-nav .nav-link {
+        padding: 0.55rem 0.75rem;
+        font-size: 0.88rem;
+    }
+    .nav-dropdown-menu {
+        position: static;
+        box-shadow: none;
+        border: 1px solid var(--gris-200);
+        margin-top: 0.25rem;
+    }
+}
+
 @media (max-width: 768px) {
-    .navbar { padding: 0.6rem 1rem; }
-    .navbar-nav { gap: 0.25rem; }
-    .page-wrap { padding: 1rem; }
+    .page-wrap { padding: 1rem 0.85rem 2.5rem; }
     h1 { font-size: 1.5rem; }
     table { font-size: 0.8rem; }
+    .table-wrap table { min-width: 620px; }
     th, td { padding: 0.6rem 0.5rem; }
     .botones { flex-direction: column; gap: 0.25rem; }
 }
+
 @media (max-width: 480px) {
-    .table-wrap { overflow-x: auto; }
-    table { min-width: 600px; }
+    .page-wrap { padding: 0.85rem 0.65rem 2rem; }
+    .table-wrap table { min-width: 580px; }
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -1219,6 +1350,9 @@ small.help, p.help { color:#6c757d; font-size:.82rem; display:block; margin-top:
     font-size: 0.65rem; padding: 0 0.3rem;
 }
 .tienda-auth-btn { padding: 0.45rem 1rem !important; }
+.tienda-mobile-toggle { display: none; }
+.desktop-only-auth { display: flex; align-items: center; gap: 0.5rem; }
+.mobile-only-auth { display: none; }
 
 .user-dropdown { position: relative; }
 .user-dropdown-menu {
@@ -1496,17 +1630,71 @@ a.pill-compact-btn { text-decoration: none; }
 
 @media (max-width: 900px) {
     .tienda-navbar {
-        grid-template-columns: auto 1fr;
-        grid-template-rows: auto auto;
-        gap: 0.65rem;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
         padding: 0.75rem 1rem;
     }
-    .tienda-brand { grid-column: 1; }
-    .tienda-nav-actions { grid-column: 2; justify-self: end; }
+    .tienda-brand {
+        flex: 1;
+        justify-self: auto;
+    }
+    .tienda-nav-actions {
+        justify-self: auto;
+        gap: 0.5rem;
+    }
+    .desktop-only-auth {
+        display: none !important;
+    }
+    .tienda-mobile-toggle {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: var(--border-radius-lg);
+        background: var(--gris-100);
+        border: 1.5px solid var(--gris-200);
+        color: var(--gris-700);
+        cursor: pointer;
+        padding: 0;
+        transition: all 0.2s ease;
+    }
+    .tienda-mobile-toggle:hover {
+        background: var(--blanco);
+        border-color: #A855F7;
+        color: var(--gris-900);
+    }
     .tienda-nav-center {
-        grid-column: 1 / -1;
-        justify-self: center;
+        display: none;
+        width: 100%;
         margin-left: 0;
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--gris-200);
+        flex-direction: column;
+        gap: 0.35rem;
+        align-items: stretch;
+    }
+    .tienda-nav-center.mobile-open {
+        display: flex !important;
+        animation: fadeIn 0.2s ease-out;
+    }
+    .tienda-nav-center .nav-link {
+        padding: 0.65rem 0.85rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        border-radius: var(--border-radius-md);
+        display: block;
+    }
+    .mobile-only-auth {
+        display: flex !important;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px dashed var(--gris-200);
     }
     .collection-banner {
         grid-template-columns: 1fr;
@@ -1515,6 +1703,24 @@ a.pill-compact-btn { text-decoration: none; }
     .collection-banner-title { font-size: 1.65rem; }
     .collection-banner-visual { order: -1; }
     .collection-banner-image-wrap { max-height: 280px; aspect-ratio: 16/10; }
+}
+
+@media (max-width: 768px) {
+    .catalog-toolbar-compact {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+    .toolbar-left-group {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .search-input-compact-wrap {
+        max-width: 100%;
+        min-width: 0;
+        width: 100%;
+    }
 }
 
 /* ── TIENDA ALERTAS Y VALIDACIONES ────────── */

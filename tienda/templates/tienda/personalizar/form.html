@@ -21,7 +21,7 @@
 
 {% include "tienda/includes/tienda_form_errors.html" %}
 
-<div x-data="customStudio()" x-init="initCanvas()" style="display:grid;grid-template-columns:1.1fr 1fr;gap:1.75rem;align-items:start;">
+<div x-data="customStudio()" x-init="initCanvas()" class="custom-studio-grid">
     <!-- FORMULARIO DE PERSONALIZACIÓN -->
     <div class="tienda-card" style="padding:1.75rem;">
         <h2 style="font-size:1.15rem;font-weight:900;color:var(--gris-900);margin-bottom:0.35rem;">
@@ -53,7 +53,7 @@
                 {% for e in form.producto.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-row-2col">
                 <div class="form-group{% if form.nombre_personalizacion.errors %} has-error{% endif %}">
                     <label for="id_nombre_personalizacion">Nombre de la Personalización *</label>
                     <input type="text" name="nombre_personalizacion" id="id_nombre_personalizacion"
@@ -72,7 +72,7 @@
                 </div>
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-row-2col">
                 <div class="form-group{% if form.color.errors %} has-error{% endif %}">
                     <label for="id_color">Color Base *</label>
                     <select name="color" id="id_color" x-model="color" @change="marcarPendiente()">
@@ -94,7 +94,7 @@
                 </div>
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-row-2col">
                 <div class="form-group{% if form.estampado.errors %} has-error{% endif %}">
                     <label for="id_estampado">Estampado Oficial Haze Studios *</label>
                     <select name="estampado" id="id_estampado" x-model="estampado" @change="marcarPendiente()">
@@ -155,7 +155,7 @@
     </div>
 
     <!-- LIENZO DE VISTA PREVIA EN FONDO BLANCO + FICHA DE ESPECIFICACIONES -->
-    <div style="background:#FFFFFF;border-radius:16px;padding:1.5rem;border:1.5px solid #E2E8F0;box-shadow:0 12px 30px rgba(15,23,42,0.08);position:sticky;top:90px;">
+    <div class="custom-studio-preview-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.85rem;flex-wrap:wrap;gap:0.5rem;">
             <span style="background:#0F172A;color:#F8FAFC;font-size:0.72rem;font-weight:800;padding:0.3rem 0.75rem;border-radius:999px;letter-spacing:0.05em;text-transform:uppercase;">
                 2. Vista Previa de la Personalización

@@ -34,7 +34,7 @@
                 Elige tu Método de Pago:
             </label>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="payment-tabs-grid">
                 <!-- Botón Tab PayPal y Tarjetas -->
                 <button type="button" 
                         @click="metodo = 'paypal'; $nextTick(() => montarPayPal())"

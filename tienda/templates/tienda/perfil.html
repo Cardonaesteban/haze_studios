@@ -45,7 +45,7 @@
  <form method="post" novalidate>
  {% csrf_token %}
 
- <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+ <div class="form-row-2col">
  <div class="form-group{% if form.nombre.errors %} has-error{% endif %}">
  <label for="{{ form.nombre.id_for_label }}">Nombre *</label>
  {{ form.nombre }}

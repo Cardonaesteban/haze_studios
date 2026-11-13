@@ -42,36 +42,46 @@
 <body>
 
 {% if user.is_authenticated %}
-<nav class="navbar">
- <a class="navbar-brand" href="{% url 'dashboard' %}">HAZE STUDIOS</a>
- <div class="navbar-nav">
- <a class="nav-link" href="{% url 'usuarios_list' %}">Usuarios</a>
- <a class="nav-link" href="{% url 'productos_list' %}">Productos</a>
- <a class="nav-link" href="{% url 'stock_list' %}">Stock</a>
- <a class="nav-link" href="{% url 'categorias_list' %}">Categorías</a>
- <a class="nav-link" href="{% url 'pedidos_list' %}">Pedidos</a>
- <a class="nav-link" href="{% url 'proveedores_list' %}">Proveedores</a>
- <a class="nav-link" href="{% url 'disenadores_list' %}">Diseñadores</a>
- <a class="nav-link" href="{% url 'mensajes_list' %}">Mensajes</a>
- <a class="nav-link" href="{% url 'comunidad_admin_list' %}">Comunidad</a>
- {% if user_es_admin %}
- <div class="nav-dropdown">
- <button class="nav-dropdown-btn"> Admin ▾</button>
- <div class="nav-dropdown-menu">
- <a href="{% url 'roles_list' %}"> Roles</a>
- <a href="{% url 'permisos_list' %}"> Permisos</a>
- <hr>
- <a href="{% url 'dashboard_users_list' %}"> Equipo</a>
- </div>
- </div>
- {% endif %}
- <form method="post" action="{% url 'logout' %}" style="display:inline;">
- {% csrf_token %}
- <button type="submit" class="nav-logout" style="background:none;border:none;cursor:pointer;padding:0;">
- Cerrar sesión
- </button>
-</form>
- </div>
+<nav class="navbar" x-data="{ navOpen: false }">
+    <div class="navbar-brand-wrap">
+        <a class="navbar-brand" href="{% url 'dashboard' %}">HAZE STUDIOS</a>
+        <button type="button" class="navbar-toggle" @click="navOpen = !navOpen" aria-label="Menú de navegación">
+            <svg x-show="!navOpen" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <svg x-show="navOpen" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;" x-cloak>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
+    <div class="navbar-nav" :class="{ 'nav-open': navOpen }">
+        <a class="nav-link" href="{% url 'usuarios_list' %}">Usuarios</a>
+        <a class="nav-link" href="{% url 'productos_list' %}">Productos</a>
+        <a class="nav-link" href="{% url 'stock_list' %}">Stock</a>
+        <a class="nav-link" href="{% url 'categorias_list' %}">Categorías</a>
+        <a class="nav-link" href="{% url 'pedidos_list' %}">Pedidos</a>
+        <a class="nav-link" href="{% url 'proveedores_list' %}">Proveedores</a>
+        <a class="nav-link" href="{% url 'disenadores_list' %}">Diseñadores</a>
+        <a class="nav-link" href="{% url 'mensajes_list' %}">Mensajes</a>
+        <a class="nav-link" href="{% url 'comunidad_admin_list' %}">Comunidad</a>
+        {% if user_es_admin %}
+        <div class="nav-dropdown">
+            <button class="nav-dropdown-btn"> Admin ▾</button>
+            <div class="nav-dropdown-menu">
+                <a href="{% url 'roles_list' %}"> Roles</a>
+                <a href="{% url 'permisos_list' %}"> Permisos</a>
+                <hr>
+                <a href="{% url 'dashboard_users_list' %}"> Equipo</a>
+            </div>
+        </div>
+        {% endif %}
+        <form method="post" action="{% url 'logout' %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="nav-logout" style="background:none;border:none;cursor:pointer;padding:0.4rem 0.75rem;">
+                Cerrar sesión
+            </button>
+        </form>
+    </div>
 </nav>
 {% endif %}
 

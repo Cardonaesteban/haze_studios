@@ -24,64 +24,82 @@
 </div>
 
 <!-- NAVBAR TIENDA -->
-<nav class="tienda-navbar">
- <a class="tienda-brand" href="{% url 'tienda_inicio' %}">
- <img src="{% static 'img/haze_logo.svg' %}" alt="Haze Studios" class="tienda-brand-logo">
- <span class="tienda-brand-text">
- HAZE <span class="tienda-brand-accent">STUDIOS</span>
- </span>
- </a>
+<nav class="tienda-navbar" x-data="{ mobileMenuOpen: false }">
+    <a class="tienda-brand" href="{% url 'tienda_inicio' %}">
+        <img src="{% static 'img/haze_logo.svg' %}" alt="Haze Studios" class="tienda-brand-logo">
+        <span class="tienda-brand-text">
+            HAZE <span class="tienda-brand-accent">STUDIOS</span>
+        </span>
+    </a>
 
- <div class="tienda-nav-center">
- <a class="nav-link {% if request.resolver_match.url_name == 'tienda_inicio' %}active{% endif %}" href="{% url 'tienda_inicio' %}">Inicio</a>
- <a class="nav-link {% if request.resolver_match.url_name == 'tienda_productos' %}active{% endif %}" href="{% url 'tienda_productos' %}">Colección</a>
- <a class="nav-link {% if request.resolver_match.url_name == 'tienda_personalizar' or request.resolver_match.url_name == 'tienda_mis_personalizaciones' %}active{% endif %}" href="{% url 'tienda_personalizar' %}">
- Personalizar
- </a>
- <a class="nav-link {% if 'comunidad' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'tienda_comunidad_lista' %}">
- Comunidad
- </a>
- <a class="nav-link {% if request.resolver_match.url_name == 'tienda_favoritos' %}active{% endif %}" href="{% url 'tienda_favoritos' %}">
- ❤️ Favoritos
- </a>
- </div>
+    <div class="tienda-nav-center" :class="{ 'mobile-open': mobileMenuOpen }">
+        <a class="nav-link {% if request.resolver_match.url_name == 'tienda_inicio' %}active{% endif %}" href="{% url 'tienda_inicio' %}">Inicio</a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'tienda_productos' %}active{% endif %}" href="{% url 'tienda_productos' %}">Colección</a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'tienda_personalizar' or request.resolver_match.url_name == 'tienda_mis_personalizaciones' %}active{% endif %}" href="{% url 'tienda_personalizar' %}">
+            Personalizar
+        </a>
+        <a class="nav-link {% if 'comunidad' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'tienda_comunidad_lista' %}">
+            Comunidad
+        </a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'tienda_favoritos' %}active{% endif %}" href="{% url 'tienda_favoritos' %}">
+            ❤️ Favoritos
+        </a>
 
- <div class="tienda-nav-actions">
- <a class="nav-icon-btn nav-cart-btn" href="{% url 'tienda_carrito' %}" title="Carrito">
- <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
- <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
- </svg>
- {% if carrito_conteo > 0 %}
- <span class="nav-cart-badge">{{ carrito_conteo }}</span>
- {% endif %}
- </a>
+        {% if not cliente_autenticado %}
+        <div class="mobile-only-auth">
+            <a href="{% url 'tienda_login' %}" class="btn btn-secondary btn-sm" style="width:100%;text-align:center;">Iniciar Sesión</a>
+            <a href="{% url 'tienda_registro' %}" class="btn btn-primary btn-sm" style="width:100%;text-align:center;">Registrarse</a>
+        </div>
+        {% endif %}
+    </div>
 
- {% if cliente_autenticado %}
- <div class="user-dropdown">
- <button class="nav-icon-btn user-profile-btn" title="Mi cuenta" aria-label="Mi cuenta">
- <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
- <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
- </svg>
- </button>
- <div class="user-dropdown-menu">
- <div class="user-dropdown-header">
- <span class="user-dropdown-name">{{ cliente_autenticado.nombre }}</span>
- <span class="user-dropdown-email">{{ cliente_autenticado.correo }}</span>
- </div>
- <a href="{% url 'tienda_perfil' %}">Mi Perfil</a>
- <a href="{% url 'tienda_mis_pedidos' %}">Mis Pedidos</a>
- <a href="{% url 'tienda_mis_personalizaciones' %}"> Mis Personalizaciones</a>
- <a href="{% url 'tienda_comunidad_lista' %}"> Comunidad Haze</a>
- <a href="{% url 'tienda_favoritos' %}">❤️ Mis Favoritos</a>
- <hr>
- <a href="{% url 'tienda_logout' %}" class="logout-link">Cerrar Sesión</a>
- </div>
- </div>
- {% else %}
- <a href="{% url 'tienda_login' %}" class="btn btn-secondary btn-sm tienda-auth-btn">Iniciar Sesión</a>
- <a href="{% url 'tienda_registro' %}" class="btn btn-primary btn-sm tienda-auth-btn">Registrarse</a>
- {% endif %}
- </div>
+    <div class="tienda-nav-actions">
+        <a class="nav-icon-btn nav-cart-btn" href="{% url 'tienda_carrito' %}" title="Carrito">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+            {% if carrito_conteo > 0 %}
+            <span class="nav-cart-badge">{{ carrito_conteo }}</span>
+            {% endif %}
+        </a>
+
+        {% if cliente_autenticado %}
+        <div class="user-dropdown">
+            <button class="nav-icon-btn user-profile-btn" title="Mi cuenta" aria-label="Mi cuenta">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+            </button>
+            <div class="user-dropdown-menu">
+                <div class="user-dropdown-header">
+                    <span class="user-dropdown-name">{{ cliente_autenticado.nombre }}</span>
+                    <span class="user-dropdown-email">{{ cliente_autenticado.correo }}</span>
+                </div>
+                <a href="{% url 'tienda_perfil' %}">Mi Perfil</a>
+                <a href="{% url 'tienda_mis_pedidos' %}">Mis Pedidos</a>
+                <a href="{% url 'tienda_mis_personalizaciones' %}"> Mis Personalizaciones</a>
+                <a href="{% url 'tienda_comunidad_lista' %}"> Comunidad Haze</a>
+                <a href="{% url 'tienda_favoritos' %}">❤️ Mis Favoritos</a>
+                <hr>
+                <a href="{% url 'tienda_logout' %}" class="logout-link">Cerrar Sesión</a>
+            </div>
+        </div>
+        {% else %}
+        <div class="desktop-only-auth">
+            <a href="{% url 'tienda_login' %}" class="btn btn-secondary btn-sm tienda-auth-btn">Iniciar Sesión</a>
+            <a href="{% url 'tienda_registro' %}" class="btn btn-primary btn-sm tienda-auth-btn">Registrarse</a>
+        </div>
+        {% endif %}
+
+        <button type="button" class="tienda-mobile-toggle" @click="mobileMenuOpen = !mobileMenuOpen" aria-label="Menú principal">
+            <svg x-show="!mobileMenuOpen" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <svg x-show="mobileMenuOpen" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;" x-cloak>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
 </nav>
 
 <div class="page-wrap">
