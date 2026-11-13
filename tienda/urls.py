@@ -10,6 +10,7 @@ urlpatterns = [
     # Favoritos
     path('favoritos/', views.mis_favoritos, name='tienda_favoritos'),
     path('favoritos/toggle-api/<int:producto_id>/', views.favoritos_toggle_api, name='tienda_favoritos_toggle_api'),
+    path('favoritos/comunidad/toggle-api/<int:prenda_id>/', views.favoritos_comunidad_toggle_api, name='tienda_favoritos_comunidad_toggle_api'),
 
     # Carrito de Compras
     path('carrito/', views.carrito, name='tienda_carrito'),
@@ -40,4 +41,20 @@ urlpatterns = [
     path('recuperar-password/', views.recuperar_password_cliente, name='tienda_recuperar_password'),
     path('recuperar-password/enviado/', views.recuperar_password_enviado, name='tienda_recuperar_password_enviado'),
     path('recuperar-password/confirmar/<uuid:token>/', views.recuperar_password_confirmar_cliente, name='tienda_recuperar_password_confirmar'),
+
+    # Personalización de Prendas
+    path('personalizar/', views.personalizar_producto, name='tienda_personalizar'),
+    path('mis-personalizaciones/', views.mis_personalizaciones, name='tienda_mis_personalizaciones'),
+    path('personalizar/<int:pk>/eliminar/', views.personalizacion_eliminar, name='tienda_personalizacion_eliminar'),
+
+    # Comunidad de Prendas Personalizadas
+    path('comunidad/', views.comunidad_lista, name='tienda_comunidad_lista'),
+    path('comunidad/publicar/', views.comunidad_publicar, name='tienda_comunidad_publicar'),
+    path('comunidad/<int:pk>/', views.comunidad_detalle, name='tienda_comunidad_detalle'),
+    path('comunidad/<int:pk>/editar/', views.comunidad_editar, name='tienda_comunidad_editar'),
+    path('comunidad/<int:pk>/eliminar/', views.comunidad_eliminar, name='tienda_comunidad_eliminar'),
+    path('comunidad/<int:pk>/reaccionar/', views.comunidad_reaccionar_api, name='tienda_comunidad_reaccionar_api'),
+    path('comunidad/<int:pk>/comentar/', views.comunidad_comentar, name='tienda_comunidad_comentar'),
+    path('comunidad/comentario/<int:comentario_id>/editar/', views.comunidad_comentario_editar, name='tienda_comunidad_comentario_editar'),
+    path('comunidad/comentario/<int:comentario_id>/eliminar/', views.comunidad_comentario_eliminar, name='tienda_comunidad_comentario_eliminar'),
 ]

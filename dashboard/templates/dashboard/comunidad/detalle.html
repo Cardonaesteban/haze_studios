@@ -1,0 +1,71 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Detalle de Personalización y Publicación | Haze Studios{% endblock %}
+
+{% block content %}
+<div class="page-header">
+ <h1>Detalle de Prenda Publicada y Personalización</h1>
+ <div style="display:flex;gap:0.5rem;">
+ <a class="btn btn-secondary" href="{% url 'comunidad_admin_editar' prenda.pk %}">Editar</a>
+ <a class="btn btn-secondary" href="{% url 'comunidad_admin_estado' prenda.pk %}">Cambiar Estado</a>
+ <a class="btn btn-danger" href="{% url 'comunidad_admin_eliminar' prenda.pk %}">Eliminar</a>
+ <a class="btn btn-secondary" href="{% url 'comunidad_admin_list' %}">← Volver al listado</a>
+ </div>
+</div>
+
+<div style="display:grid;grid-template-columns:300px 1fr;gap:1.5rem;align-items:start;">
+ <div class="form-card" style="padding:1.25rem;text-align:center;">
+ <img src="{{ prenda.get_imagen_url }}" alt="{{ prenda.nombre }}"
+ style="width:100%;height:260px;object-fit:cover;border-radius:10px;border:1px solid var(--gris-200);margin-bottom:0.85rem;">
+ <span class="badge badge-{{ prenda.estado }}" style="font-size:0.85rem;">
+ Estado en Comunidad: {{ prenda.get_estado_display }}
+ </span>
+ <div style="margin-top:0.85rem;font-size:0.84rem;color:var(--gris-600);">
+ {{ total_reacciones }} reacciones · {{ comentarios.count }} comentarios
+ </div>
+ </div>
+
+ <div>
+ <div class="form-card" style="margin-bottom:1.25rem;">
+ <h2 style="font-size:1.1rem;margin-top:0;margin-bottom:1rem;">Datos de la Publicación en Comunidad</h2>
+ <table class="table">
+ <tbody>
+ <tr><th style="width:220px;">Nombre de la prenda</th><td><strong>{{ prenda.nombre }}</strong></td></tr>
+ <tr><th>Autor</th><td>{{ prenda.autor.nombre }} {{ prenda.autor.apellido }} ({{ prenda.autor.correo }})</td></tr>
+ <tr><th>Descripción</th><td>{{ prenda.descripcion }}</td></tr>
+ <tr><th>Color</th><td>{{ prenda.color }}</td></tr>
+ <tr><th>Talla</th><td>{{ prenda.talla }}</td></tr>
+ <tr><th>Estampado usado</th><td><strong>{{ prenda.estampado }}</strong></td></tr>
+ <tr><th>Tipografía usada</th><td><strong>{{ prenda.tipografia }}</strong></td></tr>
+ <tr><th>Fecha de publicación</th><td>{{ prenda.fecha_publicacion|date:"d/m/Y H:i" }}</td></tr>
+ {% if prenda.motivo_inactivacion %}
+ <tr><th>Motivo de inactivación</th><td><span class="badge badge-salida">{{ prenda.motivo_inactivacion }}</span></td></tr>
+ {% endif %}
+ </tbody>
+ </table>
+ </div>
+
+ <div class="form-card">
+ <h2 style="font-size:1.1rem;margin-top:0;margin-bottom:1rem;">Información Completa de la Personalización Asociada</h2>
+ {% if prenda.personalizacion %}
+ <table class="table">
+ <tbody>
+ <tr><th style="width:220px;">ID Personalización</th><td>#{{ prenda.personalizacion.pk }}</td></tr>
+ <tr><th>Producto Base</th><td>{{ prenda.personalizacion.producto.nombre }}</td></tr>
+ <tr><th>Nombre de Personalización</th><td>{{ prenda.personalizacion.nombre_personalizacion }}</td></tr>
+ <tr><th>Tipo / Silueta</th><td>{{ prenda.personalizacion.tipo }}</td></tr>
+ <tr><th>Talla</th><td>{{ prenda.personalizacion.talla }}</td></tr>
+ <tr><th>Color</th><td>{{ prenda.personalizacion.color }}</td></tr>
+ <tr><th>Estampado</th><td>{{ prenda.personalizacion.estampado }}</td></tr>
+ <tr><th>Tipografía</th><td>{{ prenda.personalizacion.tipografia }}</td></tr>
+ <tr><th>Detalle de Personalización</th><td>{{ prenda.personalizacion.detalle }}</td></tr>
+ <tr><th>Estado de Personalización</th><td><span class="badge badge-activo">{{ prenda.personalizacion.get_estado_display }}</span></td></tr>
+ <tr><th>Fecha de creación</th><td>{{ prenda.personalizacion.fecha_creacion|date:"d/m/Y H:i" }}</td></tr>
+ </tbody>
+ </table>
+ {% else %}
+ <p style="color:var(--gris-500);margin:0;">Publicación sin registro de personalización adicional vinculado.</p>
+ {% endif %}
+ </div>
+ </div>
+</div>
+{% endblock %}

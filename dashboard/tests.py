@@ -215,7 +215,7 @@ class MensajesModuloTests(TestCase):
             remitente='Haze Studios',
             tipo='soporte',
             contenido='Contenido detallado para soporte técnico sobre talla y material.',
-            estado='leido',
+            estado='entregado',
             pedido=self.pedido
         )
 
@@ -230,7 +230,7 @@ class MensajesModuloTests(TestCase):
         self.assertContains(response, 'carlos@example.com')
         self.assertContains(response, 'Haze Studios')
         self.assertContains(response, 'Soporte')
-        self.assertContains(response, 'Leído')
+        self.assertContains(response, 'Entregado')
         self.assertContains(response, 'Contenido detallado para soporte técnico sobre talla y material.')
         self.assertContains(response, f'Pedido #{self.pedido.pk}')
 

@@ -4,83 +4,220 @@
 {% block title %}Mis Favoritos | Haze Studios{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <div>
-        <h1 class="tienda-page-title">❤️ Mis Favoritos</h1>
-        <p class="tienda-page-subtitle">Tus prendas guardadas para comprar después.</p>
-    </div>
+<div class="page-header" style="margin-bottom:1.5rem;">
+  <div>
+    <h1 class="tienda-page-title">❤️ Mis Favoritos</h1>
+    <p class="tienda-page-subtitle">Tus prendas guardadas organizadas por catálogo regular y diseños personalizados de la comunidad.</p>
+  </div>
 </div>
 
-{% if favoritos %}
-<div class="product-grid">
-    {% for favorito in favoritos %}
-    <div class="product-card">
+{% if total_favoritos > 0 %}
+<div x-data="{ tab: 'todas' }">
+  <!-- BARRA DE PESTAÑAS PARA DIVIDIR PRENDAS NORMALES Y PERSONALIZADAS -->
+  <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:2rem;border-bottom:1px solid var(--gris-200);padding-bottom:0.75rem;">
+    <button type="button"
+            @click="tab = 'todas'"
+            class="btn btn-sm"
+            :style="tab === 'todas' ? 'background:var(--gris-900);color:#FFF;border-color:var(--gris-900);' : 'background:#FFF;color:var(--gris-700);border:1.5px solid var(--gris-200);'"
+            style="border-radius:999px;font-weight:700;padding:0.45rem 1.1rem;">
+      Todas las prendas ({{ total_favoritos }})
+    </button>
+    <button type="button"
+            @click="tab = 'normales'"
+            class="btn btn-sm"
+            :style="tab === 'normales' ? 'background:var(--gris-900);color:#FFF;border-color:var(--gris-900);' : 'background:#FFF;color:var(--gris-700);border:1.5px solid var(--gris-200);'"
+            style="border-radius:999px;font-weight:700;padding:0.45rem 1.1rem;">
+      Prendas del Catálogo ({{ total_normales }})
+    </button>
+    <button type="button"
+            @click="tab = 'personalizadas'"
+            class="btn btn-sm"
+            :style="tab === 'personalizadas' ? 'background:#8B5CF6;color:#FFF;border-color:#8B5CF6;' : 'background:#FFF;color:var(--gris-700);border:1.5px solid var(--gris-200);'"
+            style="border-radius:999px;font-weight:700;padding:0.45rem 1.1rem;">
+      Prendas Personalizadas ({{ total_comunidad }})
+    </button>
+  </div>
+
+  <!-- SECCIÓN 1: PRENDAS NORMALES DEL CATÁLOGO -->
+  <div x-show="tab === 'todas' || tab === 'normales'" style="margin-bottom:2.75rem;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+      <h2 style="font-size:1.2rem;font-weight:900;color:var(--gris-900);margin:0;">
+        Prendas del Catálogo
+        <span style="font-size:0.85rem;font-weight:700;color:var(--gris-500);margin-left:0.4rem;">({{ total_normales }})</span>
+      </h2>
+      {% if total_normales > 0 %}
+      <a href="{% url 'tienda_productos' %}" style="font-size:0.82rem;font-weight:700;color:var(--gris-600);text-decoration:none;">
+        Ver todo el catálogo →
+      </a>
+      {% endif %}
+    </div>
+
+    {% if total_normales > 0 %}
+    <div class="product-grid">
+      {% for fav in favoritos_normales %}
+      <div class="product-card">
         <div class="product-card-img" style="height:220px;position:relative;">
-            <span class="badge-oversize">CORTE OVERSIZE</span>
-            <img src="{{ favorito.producto.get_imagen_url }}" alt="{{ favorito.producto.nombre }}" class="product-card-real-img" loading="lazy">
-            
-            <!-- Botón quitar favoritos con Alpine -->
-            <button type="button"
-                    x-data="{ esFavorito: true }"
-                    @click="
-                        esFavorito = false;
-                        fetch(`/tienda/favoritos/toggle-api/{{ favorito.producto.pk }}/`, {
-                            method: 'POST',
-                            headers: {
-                                'X-CSRFToken': '{{ csrf_token }}',
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ accion: 'quitar' })
-                        }).then(() => {
-                            window.location.reload();
-                        }).catch(() => {
-                            esFavorito = true;
-                        });
-                    "
-                    style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.9);border:none;border-radius:50%;width:36px;height:36px;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.15);transition:all 0.2s;"
-                    @mouseenter="this.style.transform='scale(1.1)'"
-                    @mouseleave="this.style.transform='scale(1)'">
-                <span x-text="esFavorito ? '❤️' : '🤍'"></span>
-            </button>
+          <span class="badge-oversize">CORTE OVERSIZE</span>
+          <img src="{{ fav.producto.get_imagen_url }}" alt="{{ fav.producto.nombre }}" class="product-card-real-img" loading="lazy">
+
+          <!-- Botón quitar de favoritos -->
+          <button type="button"
+                  x-data="{ cargando: false }"
+                  @click="
+                    cargando = true;
+                    fetch(`/tienda/favoritos/toggle-api/{{ fav.producto.pk }}/`, {
+                      method: 'POST',
+                      headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({ accion: 'quitar' })
+                    }).then(() => {
+                      window.location.reload();
+                    }).catch(() => {
+                      cargando = false;
+                    });
+                  "
+                  title="Quitar de favoritos"
+                  style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.95);border:none;border-radius:50%;width:34px;height:34px;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+            <span>❤️</span>
+          </button>
         </div>
         <div class="product-card-body">
-            <a href="{% url 'tienda_producto_detalle' favorito.producto.pk %}" class="product-title">{{ favorito.producto.nombre }}</a>
-            <div style="font-size:0.75rem;color:var(--gris-500);font-weight:600;margin:0.25rem 0 0.5rem;">
-                Agregado el {{ favorito.fecha_agregado|date:"d/m/Y" }}
-            </div>
-            <div class="product-price">${{ favorito.producto.precio }}</div>
-            <div class="product-card-actions">
-                <a href="{% url 'tienda_producto_detalle' favorito.producto.pk %}" class="btn btn-primary btn-sm" style="width:100%;padding:0.65rem;">
-                    Ver Prenda
-                </a>
-            </div>
+          <a href="{% url 'tienda_producto_detalle' fav.producto.pk %}" class="product-title">{{ fav.producto.nombre }}</a>
+          <div style="font-size:0.75rem;color:var(--gris-500);font-weight:600;margin:0.25rem 0 0.5rem;">
+            Agregado el {{ fav.fecha_agregado|date:"d/m/Y" }}
+          </div>
+          <div class="product-price">${{ fav.producto.precio }}</div>
+          <div class="product-card-actions">
+            <a href="{% url 'tienda_producto_detalle' fav.producto.pk %}" class="btn btn-primary btn-sm" style="width:100%;padding:0.65rem;">
+              Ver Prenda
+            </a>
+          </div>
         </div>
+      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
+    {% else %}
+    <div style="background:#F8FAFC;border:1px dashed var(--gris-300);border-radius:12px;padding:2rem;text-align:center;">
+      <p style="color:var(--gris-500);margin-bottom:0.75rem;font-size:0.9rem;">No tienes prendas del catálogo guardadas en favoritos.</p>
+      <a href="{% url 'tienda_productos' %}" class="btn btn-outline btn-sm">Explorar catálogo</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- SECCIÓN 2: PRENDAS PERSONALIZADAS DE LA COMUNIDAD -->
+  <div x-show="tab === 'todas' || tab === 'personalizadas'" style="margin-bottom:2.75rem;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+      <h2 style="font-size:1.2rem;font-weight:900;color:var(--gris-900);margin:0;">
+        Prendas Personalizadas (Comunidad)
+        <span style="font-size:0.85rem;font-weight:700;color:var(--gris-500);margin-left:0.4rem;">({{ total_comunidad }})</span>
+      </h2>
+      {% if total_comunidad > 0 %}
+      <a href="{% url 'tienda_comunidad_lista' %}" style="font-size:0.82rem;font-weight:700;color:#8B5CF6;text-decoration:none;">
+        Explorar la comunidad →
+      </a>
+      {% endif %}
+    </div>
+
+    {% if total_comunidad > 0 %}
+    <div class="product-grid">
+      {% for fav in favoritos_comunidad %}
+      <div class="product-card" style="border:1.5px solid rgba(139,92,246,0.25);">
+        <div class="product-card-img" style="height:220px;position:relative;">
+          <span class="badge-oversize" style="background:linear-gradient(135deg, #111827, #8B5CF6);">DISEÑO PERSONALIZADO</span>
+          <img src="{{ fav.prenda_comunidad.get_imagen_url }}" alt="{{ fav.prenda_comunidad.nombre }}" class="product-card-real-img" loading="lazy">
+
+          <!-- Botón quitar de favoritos -->
+          <button type="button"
+                  x-data="{ cargando: false }"
+                  @click="
+                    cargando = true;
+                    fetch(`/tienda/favoritos/comunidad/toggle-api/{{ fav.prenda_comunidad.pk }}/`, {
+                      method: 'POST',
+                      headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({ accion: 'quitar' })
+                    }).then(() => {
+                      window.location.reload();
+                    }).catch(() => {
+                      cargando = false;
+                    });
+                  "
+                  title="Quitar de favoritos"
+                  style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.95);border:none;border-radius:50%;width:34px;height:34px;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+            <span>❤️</span>
+          </button>
+        </div>
+        <div class="product-card-body">
+          <div style="font-size:0.75rem;color:#8B5CF6;font-weight:800;text-transform:uppercase;margin-bottom:0.2rem;">
+            Por {{ fav.prenda_comunidad.autor.nombre }}
+          </div>
+          <a href="{% url 'tienda_comunidad_detalle' fav.prenda_comunidad.pk %}" class="product-title">{{ fav.prenda_comunidad.nombre }}</a>
+
+          <div style="display:flex;gap:0.35rem;flex-wrap:wrap;margin:0.4rem 0 0.6rem;">
+            <span style="font-size:0.72rem;background:#F1F5F9;padding:0.15rem 0.45rem;border-radius:4px;color:var(--gris-700);font-weight:600;">
+              Talla: {{ fav.prenda_comunidad.talla }}
+            </span>
+            <span style="font-size:0.72rem;background:#F1F5F9;padding:0.15rem 0.45rem;border-radius:4px;color:var(--gris-700);font-weight:600;">
+              {{ fav.prenda_comunidad.color }}
+            </span>
+          </div>
+
+          <div style="font-size:0.82rem;color:var(--gris-500);font-weight:600;margin-bottom:0.85rem;">
+            Diseño de Comunidad (Exhibición)
+          </div>
+
+          <div class="product-card-actions">
+            <a href="{% url 'tienda_comunidad_detalle' fav.prenda_comunidad.pk %}" class="btn btn-outline btn-sm" style="width:100%;padding:0.65rem;border-color:#8B5CF6;color:#7C3AED;">
+              Ver en Comunidad
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="background:#F8FAFC;border:1px dashed var(--gris-300);border-radius:12px;padding:2rem;text-align:center;">
+      <p style="color:var(--gris-500);margin-bottom:0.75rem;font-size:0.9rem;">No tienes prendas de la comunidad guardadas en favoritos.</p>
+      <a href="{% url 'tienda_comunidad_lista' %}" class="btn btn-outline btn-sm">Explorar la comunidad</a>
+    </div>
+    {% endif %}
+  </div>
 </div>
 
-<div style="margin-top:1.5rem;text-align:center;font-size:0.9rem;color:var(--gris-500);">
-    Tienes <strong style="color:var(--gris-900);">{{ favoritos|length }}</strong> prenda(s) en favoritos
+<div style="margin-top:1rem;text-align:center;font-size:0.9rem;color:var(--gris-500);">
+  Tienes <strong style="color:var(--gris-900);">{{ total_favoritos }}</strong> prenda(s) en total en tus favoritos
 </div>
 
 {% else %}
 <div style="text-align:center;padding:4rem 2rem;background:#FAFAFA;border-radius:var(--border-radius-lg);">
-    <div style="font-size:4rem;margin-bottom:1rem;">🤍</div>
-    <h3 style="font-size:1.5rem;font-weight:700;color:var(--gris-700);margin-bottom:0.5rem;">
-        No tienes favoritos aún
-    </h3>
-    <p style="color:var(--gris-500);margin-bottom:1.5rem;">
-        Explora nuestra colección y guarda tus prendas favoritas.
-    </p>
-    <a href="{% url 'tienda_productos' %}" class="btn btn-primary" style="padding:0.75rem 2rem;">
-        Ver Colección
+  <div style="font-size:4rem;margin-bottom:1rem;">🤍</div>
+  <h3 style="font-size:1.5rem;font-weight:700;color:var(--gris-700);margin-bottom:0.5rem;">
+    No tienes favoritos aún
+  </h3>
+  <p style="color:var(--gris-500);margin-bottom:1.5rem;">
+    Explora nuestra colección o los diseños creados por la comunidad y guarda tus favoritos.
+  </p>
+  <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;">
+    <a href="{% url 'tienda_productos' %}" class="btn btn-primary" style="padding:0.75rem 1.75rem;">
+      Ver Catálogo
     </a>
+    <a href="{% url 'tienda_comunidad_lista' %}" class="btn btn-secondary" style="padding:0.75rem 1.75rem;">
+      Explorar Comunidad
+    </a>
+  </div>
 </div>
 {% endif %}
 
-<div style="margin-top:2rem;text-align:center;">
-    <a href="{% url 'tienda_productos' %}" class="btn btn-outline" style="padding:0.75rem 2rem;">
-        ← Seguir explorando
-    </a>
+<div style="margin-top:2rem;text-align:center;display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+  <a href="{% url 'tienda_productos' %}" class="btn btn-outline" style="padding:0.65rem 1.5rem;">
+    ← Explorar Catálogo
+  </a>
+  <a href="{% url 'tienda_comunidad_lista' %}" class="btn btn-outline" style="padding:0.65rem 1.5rem;">
+    Ver Comunidad →
+  </a>
 </div>
 {% endblock %}

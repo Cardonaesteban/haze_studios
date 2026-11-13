@@ -79,4 +79,11 @@ urlpatterns = [
     path('mensajes/crear/', views.mensajes_crear, name='mensajes_crear'),
     path('mensajes/<int:pk>/', views.mensajes_detalle, name='mensajes_detalle'),
     path('mensajes/<int:pk>/eliminar/', views.mensajes_eliminar, name='mensajes_eliminar'),
+
+    # Comunidad (Moderación Administrativa)
+    path('comunidad/', views.comunidad_admin_list, name='comunidad_admin_list'),
+    path('comunidad/<int:pk>/', views.comunidad_admin_detalle, name='comunidad_admin_detalle'),
+    path('comunidad/<int:pk>/editar/', views.comunidad_admin_editar, name='comunidad_admin_editar'),
+    path('comunidad/<int:pk>/estado/', views.comunidad_admin_toggle_estado, name='comunidad_admin_estado'),
+    path('comunidad/<int:pk>/eliminar/', views.comunidad_admin_eliminar, name='comunidad_admin_eliminar'),
 ]

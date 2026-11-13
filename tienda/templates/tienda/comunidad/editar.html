@@ -1,0 +1,82 @@
+{% extends "tienda/base_tienda.html" %}
+{% load static %}
+
+{% block title %}Editar Publicación — {{ prenda.nombre }} | Haze Studios{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom:1.25rem;">
+ <div>
+ <h1 class="tienda-page-title"> Editar mi Prenda Publicada</h1>
+ <p class="tienda-page-subtitle">Modifica la información, especificaciones o el estado (Activo / Inactivo) de tu publicación en la comunidad.</p>
+ </div>
+ <a href="{% url 'tienda_comunidad_detalle' prenda.pk %}" class="btn btn-outline btn-sm">
+ ← Volver a la Publicación
+ </a>
+</div>
+
+{% include "tienda/includes/tienda_form_errors.html" %}
+
+<div class="tienda-card" style="max-width:760px;margin:0 auto;padding:1.85rem;">
+ <form method="post" enctype="multipart/form-data" novalidate>
+ {% csrf_token %}
+
+ <div style="display:grid;grid-template-columns:2fr 1fr;gap:1rem;">
+ <div class="form-group{% if form.nombre.errors %} has-error{% endif %}">
+ <label for="{{ form.nombre.id_for_label }}">Nombre de la prenda *</label>
+ {{ form.nombre }}
+ {% for e in form.nombre.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+ </div>
+
+ <div class="form-group{% if form.estado.errors %} has-error{% endif %}">
+ <label for="{{ form.estado.id_for_label }}">Estado de la publicación *</label>
+ {{ form.estado }}
+ <small class="help">Inactivo la oculta del feed público.</small>
+ {% for e in form.estado.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+ </div>
+ </div>
+
+ <div class="form-group{% if form.descripcion.errors %} has-error{% endif %}">
+ <label for="{{ form.descripcion.id_for_label }}">Descripción *</label>
+ {{ form.descripcion }}
+ {% for e in form.descripcion.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+ </div>
+
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+ <div class="form-group{% if form.color.errors %} has-error{% endif %}">
+ <label for="{{ form.color.id_for_label }}">Color *</label>
+ {{ form.color }}
+ {% for e in form.color.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+ </div>
+
+ <div class="form-group{% if form.talla.errors %} has-error{% endif %}">
+ <label for="{{ form.talla.id_for_label }}">Talla *</label>
+ {{ form.talla }}
+ {% for e in form.talla.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+ </div>
+ </div>
+
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+ <div class="form-group{% if form.estampado.errors %} has-error{% endif %}">
+ <label for="{{ form.estampado.id_for_label }}">Estampado usado *</label>
+ {{ form.estampado }}
+ {% for e in form.estampado.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+ </div>
+
+ <div class="form-group{% if form.tipografia.errors %} has-error{% endif %}">
+ <label for="{{ form.tipografia.id_for_label }}">Tipografía usada *</label>
+ {{ form.tipografia }}
+ {% for e in form.tipografia.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+ </div>
+ </div>
+
+ <div style="margin-top:1.5rem;display:flex;gap:0.85rem;">
+ <button type="submit" class="btn btn-primary" style="padding:0.8rem 1.75rem;">
+ Guardar Cambios
+ </button>
+ <a href="{% url 'tienda_comunidad_detalle' prenda.pk %}" class="btn btn-secondary">
+ Cancelar
+ </a>
+ </div>
+ </form>
+</div>
+{% endblock %}

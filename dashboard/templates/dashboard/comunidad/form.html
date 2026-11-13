@@ -1,0 +1,27 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ titulo }} | Haze Studios{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ titulo }}</h1>
+    <a class="btn btn-secondary" href="{% url 'comunidad_admin_list' %}">← Volver</a>
+</div>
+
+<div class="form-card">
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group {% if field.errors %}has-error{% endif %}">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<small class="help">{{ field.help_text }}</small>{% endif %}
+            {% for error in field.errors %}<span class="error-msg">{{ error }}</span>{% endfor %}
+        </div>
+        {% endfor %}
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            <a class="btn btn-secondary" href="{% url 'comunidad_admin_list' %}">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

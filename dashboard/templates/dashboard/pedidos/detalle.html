@@ -3,123 +3,123 @@
 {% block content %}
 
 <div class="page-header">
-    <h1>🛒 Pedido #{{ pedido.pk }}</h1>
-    <div style="display:flex;gap:0.5rem;">
-        <a class="btn btn-secondary" href="{% url 'pedidos_editar' pedido.pk %}">✏️ Editar</a>
-        <a class="btn btn-secondary" href="{% url 'pedidos_list' %}">← Volver</a>
-    </div>
+ <h1> Pedido #{{ pedido.pk }}</h1>
+ <div style="display:flex;gap:0.5rem;">
+ <a class="btn btn-secondary" href="{% url 'pedidos_editar' pedido.pk %}"> Editar</a>
+ <a class="btn btn-secondary" href="{% url 'pedidos_list' %}">← Volver</a>
+ </div>
 </div>
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
-    <div class="form-wrap" style="margin:0;padding:1.25rem 1.5rem;">
-        <p style="font-size:0.78rem;color:var(--gris-500);margin-bottom:0.25rem;">CLIENTE</p>
-        <p style="font-weight:600;">{{ pedido.cliente }}</p>
-    </div>
-    <div class="form-wrap" style="margin:0;padding:1.25rem 1.5rem;">
-        <p style="font-size:0.78rem;color:var(--gris-500);margin-bottom:0.25rem;">FECHA</p>
-        <p style="font-weight:600;">{{ pedido.fecha_pedido|date:"d/m/Y" }}</p>
-    </div>
-    <div class="form-wrap" style="margin:0;padding:1.25rem 1.5rem;">
-        <p style="font-size:0.78rem;color:var(--gris-500);margin-bottom:0.25rem;">ESTADO</p>
-        <span class="badge badge-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span>
-        <a class="btn btn-sm btn-secondary" style="margin-left:0.5rem;" href="{% url 'pedidos_estado' pedido.pk %}">Cambiar</a>
-    </div>
-    <div class="form-wrap" style="margin:0;padding:1.25rem 1.5rem;">
-        <p style="font-size:0.78rem;color:var(--gris-500);margin-bottom:0.25rem;">TOTAL</p>
-        <p style="font-weight:700;font-size:1.25rem;">${{ pedido.total }}</p>
-    </div>
-    {% if pedido.metodo_pago %}
-    <div class="form-wrap" style="margin:0;padding:1.25rem 1.5rem;grid-column: span 2;">
-        <p style="font-size:0.78rem;color:var(--gris-500);margin-bottom:0.25rem;">MÉTODO DE PAGO Y AUDITORÍA</p>
-        <p style="font-weight:700;color:var(--azul);margin:0;">
-            {{ pedido.get_metodo_pago_display }}
-            {% if pedido.monto_usd %}(${{ pedido.monto_usd }} USD){% endif %}
-        </p>
-        {% if pedido.transaccion_id %}
-        <p style="font-size:0.8rem;color:var(--gris-600);margin:0.25rem 0 0;font-family:monospace;">
-            ID Transacción: {{ pedido.transaccion_id }}
-        </p>
-        {% endif %}
-        {% if pedido.fecha_pago %}
-        <p style="font-size:0.75rem;color:var(--gris-500);margin:0.2rem 0 0;">
-            Confirmado el: {{ pedido.fecha_pago|date:"d/m/Y H:i:s" }}
-        </p>
-        {% endif %}
-    </div>
-    {% endif %}
+ <div class="form-wrap" style="margin:0;padding:1.25rem 1.5rem;">
+ <p style="font-size:0.78rem;color:var(--gris-500);margin-bottom:0.25rem;">CLIENTE</p>
+ <p style="font-weight:600;">{{ pedido.cliente }}</p>
+ </div>
+ <div class="form-wrap" style="margin:0;padding:1.25rem 1.5rem;">
+ <p style="font-size:0.78rem;color:var(--gris-500);margin-bottom:0.25rem;">FECHA</p>
+ <p style="font-weight:600;">{{ pedido.fecha_pedido|date:"d/m/Y" }}</p>
+ </div>
+ <div class="form-wrap" style="margin:0;padding:1.25rem 1.5rem;">
+ <p style="font-size:0.78rem;color:var(--gris-500);margin-bottom:0.25rem;">ESTADO</p>
+ <span class="badge badge-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span>
+ <a class="btn btn-sm btn-secondary" style="margin-left:0.5rem;" href="{% url 'pedidos_estado' pedido.pk %}">Cambiar</a>
+ </div>
+ <div class="form-wrap" style="margin:0;padding:1.25rem 1.5rem;">
+ <p style="font-size:0.78rem;color:var(--gris-500);margin-bottom:0.25rem;">TOTAL</p>
+ <p style="font-weight:700;font-size:1.25rem;">${{ pedido.total }}</p>
+ </div>
+ {% if pedido.metodo_pago %}
+ <div class="form-wrap" style="margin:0;padding:1.25rem 1.5rem;grid-column: span 2;">
+ <p style="font-size:0.78rem;color:var(--gris-500);margin-bottom:0.25rem;">MÉTODO DE PAGO Y AUDITORÍA</p>
+ <p style="font-weight:700;color:var(--azul);margin:0;">
+ {{ pedido.get_metodo_pago_display }}
+ {% if pedido.monto_usd %}(${{ pedido.monto_usd }} USD){% endif %}
+ </p>
+ {% if pedido.transaccion_id %}
+ <p style="font-size:0.8rem;color:var(--gris-600);margin:0.25rem 0 0;font-family:monospace;">
+ ID Transacción: {{ pedido.transaccion_id }}
+ </p>
+ {% endif %}
+ {% if pedido.fecha_pago %}
+ <p style="font-size:0.75rem;color:var(--gris-500);margin:0.2rem 0 0;">
+ Confirmado el: {{ pedido.fecha_pago|date:"d/m/Y H:i:s" }}
+ </p>
+ {% endif %}
+ </div>
+ {% endif %}
 </div>
 
 {% if pedido.notas %}
 <div class="form-wrap" style="margin:0 0 1.75rem 0;padding:1.5rem;background:#F8FAFC;border:1px solid var(--gris-200);border-radius:var(--border-radius-lg);">
-    <div style="font-size:1rem;font-weight:800;color:var(--gris-900);margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
-        <span>📝</span> Información de Entrega y Notas
-    </div>
+ <div style="font-size:1rem;font-weight:800;color:var(--gris-900);margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+ <span></span> Información de Entrega y Notas
+ </div>
 
-    {% if notas_info.es_estructurado %}
-    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:1rem;">
-        {% if notas_info.telefono %}
-        <div style="background:#fff;padding:0.85rem 1rem;border-radius:8px;border:1px solid var(--gris-200);">
-            <div style="font-size:0.75rem;color:var(--gris-500);font-weight:700;text-transform:uppercase;">📞 Teléfono de Contacto</div>
-            <div style="font-weight:700;color:var(--gris-900);margin-top:0.35rem;font-size:0.95rem;">{{ notas_info.telefono }}</div>
-        </div>
-        {% endif %}
-        {% if notas_info.direccion %}
-        <div style="background:#fff;padding:0.85rem 1rem;border-radius:8px;border:1px solid var(--gris-200);">
-            <div style="font-size:0.75rem;color:var(--gris-500);font-weight:700;text-transform:uppercase;">📍 Dirección de Entrega</div>
-            <div style="font-weight:700;color:var(--gris-900);margin-top:0.35rem;font-size:0.95rem;">{{ notas_info.direccion }}</div>
-        </div>
-        {% endif %}
-    </div>
+ {% if notas_info.es_estructurado %}
+ <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:1rem;">
+ {% if notas_info.telefono %}
+ <div style="background:#fff;padding:0.85rem 1rem;border-radius:8px;border:1px solid var(--gris-200);">
+ <div style="font-size:0.75rem;color:var(--gris-500);font-weight:700;text-transform:uppercase;">Teléfono de Contacto</div>
+ <div style="font-weight:700;color:var(--gris-900);margin-top:0.35rem;font-size:0.95rem;">{{ notas_info.telefono }}</div>
+ </div>
+ {% endif %}
+ {% if notas_info.direccion %}
+ <div style="background:#fff;padding:0.85rem 1rem;border-radius:8px;border:1px solid var(--gris-200);">
+ <div style="font-size:0.75rem;color:var(--gris-500);font-weight:700;text-transform:uppercase;">Dirección de Entrega</div>
+ <div style="font-weight:700;color:var(--gris-900);margin-top:0.35rem;font-size:0.95rem;">{{ notas_info.direccion }}</div>
+ </div>
+ {% endif %}
+ </div>
 
-    {% if notas_info.instrucciones %}
-    <div style="background:#fff;padding:0.85rem 1rem;border-radius:8px;border:1px solid var(--gris-200);margin-top:0.85rem;">
-        <div style="font-size:0.75rem;color:var(--gris-500);font-weight:700;text-transform:uppercase;">💬 Instrucciones del Cliente</div>
-        <div style="color:var(--gris-800);margin-top:0.35rem;font-size:0.92rem;line-height:1.5;">{{ notas_info.instrucciones }}</div>
-    </div>
-    {% endif %}
+ {% if notas_info.instrucciones %}
+ <div style="background:#fff;padding:0.85rem 1rem;border-radius:8px;border:1px solid var(--gris-200);margin-top:0.85rem;">
+ <div style="font-size:0.75rem;color:var(--gris-500);font-weight:700;text-transform:uppercase;"> Instrucciones del Cliente</div>
+ <div style="color:var(--gris-800);margin-top:0.35rem;font-size:0.92rem;line-height:1.5;">{{ notas_info.instrucciones }}</div>
+ </div>
+ {% endif %}
 
-    {% if notas_info.otros %}
-    <div style="background:#fff;padding:0.85rem 1rem;border-radius:8px;border:1px solid var(--gris-200);margin-top:0.85rem;">
-        <div style="font-size:0.75rem;color:var(--gris-500);font-weight:700;text-transform:uppercase;">Observaciones Adicionales</div>
-        <div style="color:var(--gris-800);margin-top:0.35rem;white-space:pre-line;font-size:0.92rem;">{{ notas_info.otros }}</div>
-    </div>
-    {% endif %}
+ {% if notas_info.otros %}
+ <div style="background:#fff;padding:0.85rem 1rem;border-radius:8px;border:1px solid var(--gris-200);margin-top:0.85rem;">
+ <div style="font-size:0.75rem;color:var(--gris-500);font-weight:700;text-transform:uppercase;">Observaciones Adicionales</div>
+ <div style="color:var(--gris-800);margin-top:0.35rem;white-space:pre-line;font-size:0.92rem;">{{ notas_info.otros }}</div>
+ </div>
+ {% endif %}
 
-    {% else %}
-    <div style="white-space:pre-line;color:var(--gris-800);font-size:0.92rem;line-height:1.6;background:#fff;padding:1rem;border-radius:8px;border:1px solid var(--gris-200);">
-        {{ pedido.notas }}
-    </div>
-    {% endif %}
+ {% else %}
+ <div style="white-space:pre-line;color:var(--gris-800);font-size:0.92rem;line-height:1.6;background:#fff;padding:1rem;border-radius:8px;border:1px solid var(--gris-200);">
+ {{ pedido.notas }}
+ </div>
+ {% endif %}
 </div>
 {% endif %}
 
 <p class="section-title">Productos del pedido</p>
 <div class="table-wrap">
-    <table>
-        <thead><tr><th>Producto</th><th>Cantidad</th><th>Precio unitario</th><th>Subtotal</th></tr></thead>
-        <tbody>
-        {% for d in detalles %}
-        <tr>
-            <td>
-                {{ d.producto.nombre }}
-                {% if d.talla %}
-                    <span class="badge" style="background:#F1F5F9;color:#334155;border:1px solid #CBD5E1;font-size:0.75rem;margin-left:0.35rem;font-weight:700;">
-                        {{ d.talla }}
-                    </span>
-                {% endif %}
-            </td>
-            <td>{{ d.cantidad }}</td>
-            <td>${{ d.precio_unitario }}</td>
-            <td><strong>${{ d.subtotal }}</strong></td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="4" style="text-align:center;padding:1.5rem;color:var(--gris-500)">Sin productos.</td></tr>
-        {% endfor %}
-        <tr style="background:var(--gris-100);">
-            <td colspan="3" style="text-align:right;font-weight:600;">Total</td>
-            <td><strong>${{ pedido.total }}</strong></td>
-        </tr>
-        </tbody>
-    </table>
+ <table>
+ <thead><tr><th>Producto</th><th>Cantidad</th><th>Precio unitario</th><th>Subtotal</th></tr></thead>
+ <tbody>
+ {% for d in detalles %}
+ <tr>
+ <td>
+ {{ d.producto.nombre }}
+ {% if d.talla %}
+ <span class="badge" style="background:#F1F5F9;color:#334155;border:1px solid #CBD5E1;font-size:0.75rem;margin-left:0.35rem;font-weight:700;">
+ {{ d.talla }}
+ </span>
+ {% endif %}
+ </td>
+ <td>{{ d.cantidad }}</td>
+ <td>${{ d.precio_unitario }}</td>
+ <td><strong>${{ d.subtotal }}</strong></td>
+ </tr>
+ {% empty %}
+ <tr><td colspan="4" style="text-align:center;padding:1.5rem;color:var(--gris-500)">Sin productos.</td></tr>
+ {% endfor %}
+ <tr style="background:var(--gris-100);">
+ <td colspan="3" style="text-align:right;font-weight:600;">Total</td>
+ <td><strong>${{ pedido.total }}</strong></td>
+ </tr>
+ </tbody>
+ </table>
 </div>
 {% endblock %}

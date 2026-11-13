@@ -5,84 +5,187 @@
 
 {% block content %}
 <div class="page-header">
-    <div>
-        <h1 class="tienda-page-title">Mi Perfil</h1>
-        <p class="tienda-page-subtitle">Gestiona tu información personal y datos de entrega para tus pedidos.</p>
-    </div>
-    <div class="tienda-action-bar">
-        <a href="{% url 'tienda_cambiar_password' %}" class="btn btn-secondary btn-sm">
-            Cambiar Contraseña
-        </a>
-        <a href="{% url 'tienda_mis_pedidos' %}" class="btn btn-primary btn-sm">
-            Mis Pedidos
-        </a>
-    </div>
+ <div>
+ <h1 class="tienda-page-title">Mi Perfil</h1>
+ <p class="tienda-page-subtitle">Gestiona tu información personal y datos de entrega para tus pedidos.</p>
+ </div>
+ <div class="tienda-action-bar">
+ <a href="{% url 'tienda_mis_personalizaciones' %}" class="btn btn-secondary btn-sm">
+ Mis Personalizaciones ({{ total_personalizaciones|default:0 }})
+ </a>
+ <a href="{% url 'tienda_cambiar_password' %}" class="btn btn-secondary btn-sm">
+ Cambiar Contraseña
+ </a>
+ <a href="{% url 'tienda_mis_pedidos' %}" class="btn btn-primary btn-sm">
+ Mis Pedidos
+ </a>
+ </div>
 </div>
 
 <div class="tienda-profile-layout">
-    <div class="tienda-card tienda-profile-card">
-        <div class="tienda-profile-header">
-            <div class="tienda-profile-avatar">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                </svg>
-            </div>
-            <div>
-                <div class="tienda-profile-name">{{ cliente.nombre }} {{ cliente.apellido }}</div>
-                <div class="tienda-profile-email">{{ cliente.correo }}</div>
-            </div>
-        </div>
+ <div class="tienda-card tienda-profile-card">
+ <div class="tienda-profile-header">
+ <div class="tienda-profile-avatar">
+ <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+ <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+ </svg>
+ </div>
+ <div>
+ <div class="tienda-profile-name">{{ cliente.nombre }} {{ cliente.apellido }}</div>
+ <div class="tienda-profile-email">{{ cliente.correo }}</div>
+ </div>
+ </div>
 
-        <h2 style="font-size:1.15rem;font-weight:900;color:var(--gris-900);margin-bottom:1.25rem;">
-            Información Personal
-        </h2>
+ <h2 style="font-size:1.15rem;font-weight:900;color:var(--gris-900);margin-bottom:1.25rem;">
+ Información Personal
+ </h2>
 
-        {% include "tienda/includes/tienda_form_errors.html" %}
+ {% include "tienda/includes/tienda_form_errors.html" %}
 
-        <form method="post" novalidate>
-            {% csrf_token %}
+ <form method="post" novalidate>
+ {% csrf_token %}
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-                <div class="form-group{% if form.nombre.errors %} has-error{% endif %}">
-                    <label for="{{ form.nombre.id_for_label }}">Nombre *</label>
-                    {{ form.nombre }}
-                    {% for e in form.nombre.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
-                </div>
-                <div class="form-group{% if form.apellido.errors %} has-error{% endif %}">
-                    <label for="{{ form.apellido.id_for_label }}">Apellido *</label>
-                    {{ form.apellido }}
-                    {% for e in form.apellido.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
-                </div>
-            </div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+ <div class="form-group{% if form.nombre.errors %} has-error{% endif %}">
+ <label for="{{ form.nombre.id_for_label }}">Nombre *</label>
+ {{ form.nombre }}
+ {% for e in form.nombre.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+ </div>
+ <div class="form-group{% if form.apellido.errors %} has-error{% endif %}">
+ <label for="{{ form.apellido.id_for_label }}">Apellido *</label>
+ {{ form.apellido }}
+ {% for e in form.apellido.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+ </div>
+ </div>
 
-            <div class="form-group">
-                <label for="{{ form.correo.id_for_label }}">Correo electrónico (No editable)</label>
-                {{ form.correo }}
-                <small class="help">El correo electrónico es el identificador único de tu cuenta.</small>
-            </div>
+ <div class="form-group">
+ <label for="{{ form.correo.id_for_label }}">Correo electrónico (No editable)</label>
+ {{ form.correo }}
+ <small class="help">El correo electrónico es el identificador único de tu cuenta.</small>
+ </div>
 
-            <div class="form-group{% if form.telefono.errors %} has-error{% endif %}">
-                <label for="{{ form.telefono.id_for_label }}">Teléfono de contacto</label>
-                {{ form.telefono }}
-                {% for e in form.telefono.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
-            </div>
+ <div class="form-group{% if form.telefono.errors %} has-error{% endif %}">
+ <label for="{{ form.telefono.id_for_label }}">Teléfono de contacto</label>
+ {{ form.telefono }}
+ {% for e in form.telefono.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+ </div>
 
-            <div class="form-group{% if form.direccion.errors %} has-error{% endif %}">
-                <label for="{{ form.direccion.id_for_label }}">Dirección de entrega predeterminada</label>
-                {{ form.direccion }}
-                <small class="help">Esta dirección se utilizará automáticamente en tus compras.</small>
-                {% for e in form.direccion.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
-            </div>
+ <div class="form-group{% if form.direccion.errors %} has-error{% endif %}">
+ <label for="{{ form.direccion.id_for_label }}">Dirección de entrega predeterminada</label>
+ {{ form.direccion }}
+ <small class="help">Esta dirección se utilizará automáticamente en tus compras.</small>
+ {% for e in form.direccion.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+ </div>
 
-            <div class="form-actions" style="margin-top:2rem;display:flex;gap:1rem;align-items:center;">
-                <button type="submit" class="btn btn-primary" style="padding:0.85rem 2.25rem;font-size:0.95rem;">
-                    Guardar Cambios
-                </button>
-                <a href="{% url 'tienda_inicio' %}" class="btn btn-outline btn-sm" style="padding:0.85rem 1.25rem;">
-                    Cancelar
-                </a>
-            </div>
-        </form>
-    </div>
+ <div class="form-actions" style="margin-top:2rem;display:flex;gap:1rem;align-items:center;">
+ <button type="submit" class="btn btn-primary" style="padding:0.85rem 2.25rem;font-size:0.95rem;">
+ Guardar Cambios
+ </button>
+ <a href="{% url 'tienda_inicio' %}" class="btn btn-outline btn-sm" style="padding:0.85rem 1.25rem;">
+ Cancelar
+ </a>
+ </div>
+ </form>
+ </div>
+</div>
+
+<!-- SECCIÓN DE PERSONALIZACIONES Y PUBLICACIONES EN COMUNIDAD DESDE EL PERFIL -->
+<div class="tienda-card" style="margin-top:2rem;padding:1.75rem;">
+ <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--gris-200);">
+ <div>
+ <h2 style="font-size:1.25rem;font-weight:900;color:var(--gris-900);margin:0;">
+ Mis Personalizaciones y Comunidad
+ </h2>
+ <p style="font-size:0.85rem;color:var(--gris-500);margin:0.25rem 0 0;">
+ Gestiona tus diseños en proceso ({{ total_personalizaciones|default:0 }}) y tus prendas publicadas en la comunidad ({{ total_publicaciones|default:0 }}).
+ </p>
+ </div>
+ <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+ <a href="{% url 'tienda_personalizar' %}" class="btn btn-primary btn-sm">
+ + Nueva Personalización
+ </a>
+ <a href="{% url 'tienda_comunidad_publicar' %}" class="btn btn-secondary btn-sm">
+ Publicar en Comunidad
+ </a>
+ <a href="{% url 'tienda_mis_personalizaciones' %}" class="btn btn-outline btn-sm">
+ Ver Panel Completo →
+ </a>
+ </div>
+ </div>
+
+ <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:1.5rem;">
+ <!-- Personalizaciones recientes -->
+ <div>
+ <h3 style="font-size:0.95rem;font-weight:800;color:var(--gris-800);margin-bottom:0.85rem;">
+ Mis Personalizaciones Recientes
+ </h3>
+ {% if mis_personalizaciones %}
+ <div style="display:flex;flex-direction:column;gap:0.75rem;">
+ {% for pers in mis_personalizaciones %}
+ <div style="border:1px solid var(--gris-200);border-radius:10px;padding:0.85rem 1rem;display:flex;justify-content:space-between;align-items:center;gap:0.75rem;background:#F8FAFC;">
+ <div>
+ <div style="font-weight:800;font-size:0.9rem;color:var(--gris-900);">{{ pers.nombre_personalizacion }}</div>
+ <div style="font-size:0.78rem;color:var(--gris-500);">
+ Base: {{ pers.producto.nombre }} · {{ pers.color }} · {{ pers.talla }}
+ </div>
+ <div style="font-size:0.74rem;color:var(--gris-500);margin-top:0.15rem;">
+ Estampado: <strong>{{ pers.estampado }}</strong> | Tipografía: <strong>{{ pers.tipografia }}</strong>
+ </div>
+ </div>
+ <div style="text-align:right;flex-shrink:0;">
+ {% if pers.estado == 'publicada' %}
+ <span class="badge badge-entrada" style="display:inline-block;margin-bottom:0.35rem;">Publicada</span>
+ {% else %}
+ <span class="badge badge-pendiente" style="display:inline-block;margin-bottom:0.35rem;">En proceso</span>
+ <div>
+ <a href="{% url 'tienda_comunidad_publicar' %}?personalizacion={{ pers.pk }}" style="font-size:0.75rem;font-weight:800;color:#2563EB;text-decoration:none;">
+ Publicar →
+ </a>
+ </div>
+ {% endif %}
+ </div>
+ </div>
+ {% endfor %}
+ </div>
+ {% else %}
+ <p style="font-size:0.85rem;color:var(--gris-500);">Aún no has creado personalizaciones.</p>
+ {% endif %}
+ </div>
+
+ <!-- Publicaciones en comunidad -->
+ <div>
+ <h3 style="font-size:0.95rem;font-weight:800;color:var(--gris-800);margin-bottom:0.85rem;">
+ Mis Publicaciones en Comunidad
+ </h3>
+ {% if mis_publicaciones %}
+ <div style="display:flex;flex-direction:column;gap:0.75rem;">
+ {% for pub in mis_publicaciones %}
+ <div style="border:1px solid var(--gris-200);border-radius:10px;padding:0.85rem 1rem;display:flex;justify-content:space-between;align-items:center;gap:0.75rem;background:#F8FAFC;">
+ <div>
+ <a href="{% url 'tienda_comunidad_detalle' pub.pk %}" style="font-weight:800;font-size:0.9rem;color:var(--gris-900);text-decoration:none;">
+ {{ pub.nombre }}
+ </a>
+ <div style="font-size:0.78rem;color:var(--gris-500);">
+ {{ pub.color }} · {{ pub.talla }} · {{ pub.total_reacciones }} · {{ pub.total_comentarios }}
+ </div>
+ </div>
+ <div style="display:flex;align-items:center;gap:0.45rem;flex-shrink:0;">
+ {% if pub.estado == 'activo' %}
+ <span class="badge badge-entrada">Activo</span>
+ {% else %}
+ <span class="badge badge-salida">Inactivo</span>
+ {% endif %}
+ <a href="{% url 'tienda_comunidad_editar' pub.pk %}" class="btn btn-secondary btn-sm" style="padding:0.3rem 0.6rem;font-size:0.75rem;">
+ Editar
+ </a>
+ </div>
+ </div>
+ {% endfor %}
+ </div>
+ {% else %}
+ <p style="font-size:0.85rem;color:var(--gris-500);">Aún no has publicado prendas en la comunidad.</p>
+ {% endif %}
+ </div>
+ </div>
 </div>
 {% endblock %}

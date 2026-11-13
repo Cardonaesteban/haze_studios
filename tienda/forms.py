@@ -1,7 +1,8 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth.hashers import check_password, make_password
-from dashboard.models import Cliente
+from dashboard.models import Cliente, Producto
+from .models import Personalizacion, PrendaComunidad, ComentarioComunidad
 
 
 class LoginClienteForm(forms.Form):
@@ -130,12 +131,18 @@ class PerfilClienteForm(forms.ModelForm):
 
     def clean_telefono(self):
         telefono = self.cleaned_data.get('telefono', '').strip()
-        if telefono:
-            digitos = ''.join(c for c in telefono if c.isdigit())
-            if len(digitos) < 7:
-                raise ValidationError('Ingresa un teléfono válido (mínimo 7 dígitos).')
-            if len(digitos) > 15:
-                raise ValidationError('El teléfono no puede tener más de 15 dígitos.')
+        if not telefono:
+            raise ValidationError('El teléfono es obligatorio.')
+        if ' ' in telefono:
+            raise ValidationError('El teléfono no puede contener espacios.')
+        if '.' in telefono:
+            raise ValidationError('El teléfono no puede contener puntos.')
+        if not telefono.isdigit():
+            raise ValidationError('El teléfono debe contener solo números.')
+        if len(telefono) < 7:
+            raise ValidationError('Ingresa un teléfono válido (mínimo 7 dígitos).')
+        if len(telefono) > 15:
+            raise ValidationError('El teléfono no puede tener más de 15 dígitos.')
         return telefono
 
 
@@ -274,3 +281,242 @@ class CheckoutForm(forms.Form):
         if '.' in telefono:
             raise ValidationError('El teléfono no puede contener puntos.')
         return telefono
+
+
+# ──────────────────────────────────────────────
+# PERSONALIZACIÓN Y COMUNIDAD
+# ──────────────────────────────────────────────
+
+class PersonalizacionForm(forms.ModelForm):
+    class Meta:
+        model = Personalizacion
+        fields = [
+            'producto', 'nombre_personalizacion', 'tipo', 'talla',
+            'color', 'estampado', 'tipografia', 'detalle'
+        ]
+        widgets = {
+            'nombre_personalizacion': forms.TextInput(attrs={
+                'placeholder': 'Ej. Hoodie Cyber Acid V1'
+            }),
+            'detalle': forms.Textarea(attrs={
+                'rows': 3,
+                'maxlength': '500',
+                'placeholder': 'Describe el concepto, ubicación del estampado o detalles de tu diseño personalizado...'
+            }),
+        }
+        labels = {
+            'producto': 'Producto base disponible',
+            'nombre_personalizacion': 'Nombre de la personalización',
+            'tipo': 'Tipo de corte / silueta',
+            'talla': 'Talla',
+            'color': 'Color base',
+            'estampado': 'Estampado oficial Haze Studios',
+            'tipografia': 'Tipografía oficial Haze Studios',
+            'detalle': 'Detalle de la personalización',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['producto'].queryset = Producto.objects.all().order_by(
+            '-estado', '-stock', 'nombre'
+        )
+        self.fields['producto'].empty_label = 'Selecciona una prenda base del catálogo'
+
+    def clean_producto(self):
+        producto = self.cleaned_data.get('producto')
+        if not producto:
+            raise ValidationError('Debes seleccionar un producto base.')
+        if producto.estado != 'activo' or producto.stock <= 0:
+            raise ValidationError(
+                'No se permite solicitar ni realizar personalizaciones para productos no disponibles o agotados.'
+            )
+        return producto
+
+    def clean_nombre_personalizacion(self):
+        nombre = (self.cleaned_data.get('nombre_personalizacion') or '').strip()
+        if len(nombre) < 3:
+            raise ValidationError('El nombre de la personalización debe tener al menos 3 caracteres.')
+        return nombre
+
+    def clean_detalle(self):
+        detalle = (self.cleaned_data.get('detalle') or '').strip()
+        if len(detalle) < 10:
+            raise ValidationError('Ingresa un detalle descriptivo de al menos 10 caracteres.')
+        return detalle
+
+
+class PrendaComunidadPublicarForm(forms.ModelForm):
+    personalizacion = forms.ModelChoiceField(
+        queryset=Personalizacion.objects.none(),
+        required=True,
+        label='Personalización a publicar',
+        empty_label='— Selecciona una de tus personalizaciones —'
+    )
+
+    class Meta:
+        model = PrendaComunidad
+        fields = [
+            'personalizacion', 'nombre', 'descripcion',
+            'color', 'talla', 'estampado', 'tipografia'
+        ]
+        widgets = {
+            'nombre': forms.TextInput(attrs={'placeholder': 'Nombre de la prenda personalizada'}),
+            'descripcion': forms.Textarea(attrs={
+                'rows': 3,
+                'maxlength': '600',
+                'placeholder': 'Cuéntale a la comunidad la inspiración y detalles de tu prenda...'
+            }),
+        }
+        labels = {
+            'nombre': 'Nombre de la prenda',
+            'descripcion': 'Descripción',
+            'color': 'Color',
+            'talla': 'Talla',
+            'estampado': 'Estampado usado',
+            'tipografia': 'Tipografía usada',
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.cliente = kwargs.pop('cliente', None)
+        super().__init__(*args, **kwargs)
+        if self.cliente:
+            self.fields['personalizacion'].queryset = Personalizacion.objects.filter(
+                cliente=self.cliente
+            ).select_related('producto').order_by('-fecha_creacion')
+            self.fields['personalizacion'].label_from_instance = (
+                lambda obj: f"{obj.nombre_personalizacion} — {obj.producto.nombre} ({obj.color} · {obj.talla})"
+            )
+
+    def clean_nombre(self):
+        nombre = (self.cleaned_data.get('nombre') or '').strip()
+        if len(nombre) < 3:
+            raise ValidationError('El nombre de la prenda debe tener al menos 3 caracteres.')
+        return nombre
+
+    def clean_descripcion(self):
+        descripcion = (self.cleaned_data.get('descripcion') or '').strip()
+        if len(descripcion) < 10:
+            raise ValidationError('La descripción debe tener al menos 10 caracteres.')
+        return descripcion
+
+    def clean_personalizacion(self):
+        pers = self.cleaned_data.get('personalizacion')
+        if not pers:
+            raise ValidationError('Debes seleccionar una personalización para publicar en la comunidad.')
+        if self.cliente and pers.cliente_id != self.cliente.pk:
+            raise ValidationError('No puedes publicar una personalización que no te pertenece.')
+        if hasattr(pers, 'publicacion_comunidad') and pers.publicacion_comunidad is not None:
+            raise ValidationError(
+                'Esta personalización ya se encuentra publicada en la comunidad. Puedes editarla desde tu perfil o en la comunidad.'
+            )
+        return pers
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if self.cliente:
+            nombre = (cleaned_data.get('nombre') or '').strip()
+            color = (cleaned_data.get('color') or '').strip()
+            talla = (cleaned_data.get('talla') or '').strip()
+            estampado = (cleaned_data.get('estampado') or '').strip()
+            tipografia = (cleaned_data.get('tipografia') or '').strip()
+
+            if nombre and color and talla and estampado and tipografia:
+                duplicado = PrendaComunidad.objects.filter(
+                    autor=self.cliente,
+                    estado='activo',
+                    nombre__iexact=nombre,
+                    color__iexact=color,
+                    talla__iexact=talla,
+                    estampado__iexact=estampado,
+                    tipografia__iexact=tipografia,
+                ).exists()
+                if duplicado:
+                    raise ValidationError(
+                        'No es posible crear esta publicación: ya tienes una publicación activa con las mismas especificaciones (nombre, color, talla, estampado y tipografía).'
+                    )
+        return cleaned_data
+
+
+class PrendaComunidadEditarForm(forms.ModelForm):
+    class Meta:
+        model = PrendaComunidad
+        fields = [
+            'nombre', 'descripcion', 'color',
+            'talla', 'estampado', 'tipografia', 'estado'
+        ]
+        widgets = {
+            'nombre': forms.TextInput(attrs={'placeholder': 'Nombre de la prenda personalizada'}),
+            'descripcion': forms.Textarea(attrs={'rows': 3, 'maxlength': '600'}),
+        }
+        labels = {
+            'nombre': 'Nombre de la prenda',
+            'descripcion': 'Descripción',
+            'color': 'Color',
+            'talla': 'Talla',
+            'estampado': 'Estampado usado',
+            'tipografia': 'Tipografía usada',
+            'estado': 'Estado de la publicación',
+        }
+
+    def clean_nombre(self):
+        nombre = (self.cleaned_data.get('nombre') or '').strip()
+        if len(nombre) < 3:
+            raise ValidationError('El nombre de la prenda debe tener al menos 3 caracteres.')
+        return nombre
+
+    def clean_descripcion(self):
+        descripcion = (self.cleaned_data.get('descripcion') or '').strip()
+        if len(descripcion) < 10:
+            raise ValidationError('La descripción debe tener al menos 10 caracteres.')
+        return descripcion
+
+    def clean(self):
+        cleaned_data = super().clean()
+        autor = getattr(self.instance, 'autor', None)
+        estado = cleaned_data.get('estado', 'activo')
+        if autor and estado == 'activo':
+            nombre = (cleaned_data.get('nombre') or '').strip()
+            color = (cleaned_data.get('color') or '').strip()
+            talla = (cleaned_data.get('talla') or '').strip()
+            estampado = (cleaned_data.get('estampado') or '').strip()
+            tipografia = (cleaned_data.get('tipografia') or '').strip()
+
+            if nombre and color and talla and estampado and tipografia:
+                qs = PrendaComunidad.objects.filter(
+                    autor=autor,
+                    estado='activo',
+                    nombre__iexact=nombre,
+                    color__iexact=color,
+                    talla__iexact=talla,
+                    estampado__iexact=estampado,
+                    tipografia__iexact=tipografia,
+                )
+                if self.instance and self.instance.pk:
+                    qs = qs.exclude(pk=self.instance.pk)
+                if qs.exists():
+                    raise ValidationError(
+                        'Ya tienes otra publicación activa con estas mismas especificaciones exactas.'
+                    )
+        return cleaned_data
+
+
+class ComentarioComunidadForm(forms.ModelForm):
+    class Meta:
+        model = ComentarioComunidad
+        fields = ['contenido']
+        widgets = {
+            'contenido': forms.Textarea(attrs={
+                'rows': 2,
+                'maxlength': '400',
+                'placeholder': 'Escribe un comentario sobre este diseño...'
+            })
+        }
+
+    def clean_contenido(self):
+        contenido = (self.cleaned_data.get('contenido') or '').strip()
+        if not contenido:
+            raise ValidationError('El comentario no puede estar vacío.')
+        if len(contenido) > 400:
+            raise ValidationError('El comentario no puede superar los 400 caracteres.')
+        return contenido
+

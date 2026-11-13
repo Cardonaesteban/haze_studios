@@ -1,0 +1,348 @@
+{% extends "tienda/base_tienda.html" %}
+{% load static %}
+
+{% block title %}{{ prenda.nombre }} — Comunidad | Haze Studios{% endblock %}
+
+{% block content %}
+<div x-data="{ modalEliminarPrenda: false, modalEliminarComentario: false, comentarioEliminarId: null }">
+ <!-- BREADCRUMB -->
+ <div style="margin-bottom:1.25rem;font-size:0.85rem;color:var(--gris-500);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+ <div>
+ <a href="{% url 'tienda_inicio' %}" style="color:var(--gris-600);text-decoration:none;font-weight:600;">Inicio</a> /
+ <a href="{% url 'tienda_comunidad_lista' %}" style="color:var(--gris-600);text-decoration:none;font-weight:600;">Comunidad</a> /
+ <span style="color:var(--gris-900);font-weight:800;">{{ prenda.nombre }}</span>
+ </div>
+ <a href="{% url 'tienda_comunidad_lista' %}" class="btn btn-outline btn-sm">← Volver al Feed de Comunidad</a>
+ </div>
+
+ {% if prenda.estado == 'inactivo' and es_autor %}
+ <div style="background:#FEF2F2;border:1px solid #FCA5A5;color:#991B1B;padding:1rem 1.25rem;border-radius:10px;margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+ <div>
+ <div style="font-weight:800;font-size:0.95rem;margin-bottom:0.25rem;">Prenda actualmente inactiva</div>
+ <div style="font-size:0.875rem;color:#7F1D1D;">
+ Esta prenda solo es visible para ti como autor. No aparecerá en el catálogo ni en el feed de la comunidad.
+ {% if prenda.motivo_inactivacion %}
+ <br><strong>Motivo indicado por administración:</strong> {{ prenda.motivo_inactivacion }}
+ {% endif %}
+ </div>
+ </div>
+ <a href="{% url 'tienda_comunidad_editar' prenda.pk %}" class="btn btn-sm btn-outline" style="border-color:#DC2626;color:#DC2626;background:#FFF;">
+ Editar publicación
+ </a>
+ </div>
+ {% endif %}
+
+ <div class="detail-grid" style="align-items:start;">
+ <!-- IMAGEN DE LA PRENDA PERSONALIZADA -->
+ <div class="detail-preview" style="position:relative;">
+ <span class="badge-oversize" style="top:18px;left:18px;">DISEÑO DE COMUNIDAD</span>
+ {% if prenda.estado == 'activo' %}
+ <span class="badge-stock-pill badge-entrada" style="top:18px;right:18px;">Activo</span>
+ {% else %}
+ <span class="badge-stock-pill badge-salida" style="top:18px;right:18px;">Inactivo</span>
+ {% endif %}
+ <img src="{{ prenda.get_imagen_url }}" alt="{{ prenda.nombre }}" class="detail-real-img">
+ </div>
+
+ <!-- FICHA DE ESPECIFICACIONES E INTERACCIÓN -->
+ <div class="tienda-card" style="padding:1.75rem;">
+ <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.5rem;">
+ <span style="background:#EFF6FF;color:#1D4ED8;font-size:0.75rem;font-weight:800;padding:0.3rem 0.8rem;border-radius:999px;">
+ Publicado por {{ prenda.autor.nombre }} {{ prenda.autor.apellido }}
+ </span>
+ <span style="font-size:0.78rem;color:var(--gris-500);font-weight:600;">
+ {{ prenda.fecha_publicacion|date:"d/m/Y H:i" }}
+ </span>
+ </div>
+
+ <h1 style="font-size:1.85rem;font-weight:900;color:var(--gris-900);margin:0.4rem 0 0.75rem;">
+ {{ prenda.nombre }}
+ </h1>
+
+ <p style="font-size:0.95rem;color:var(--gris-700);line-height:1.6;margin-bottom:1.35rem;">
+ {{ prenda.descripcion }}
+ </p>
+
+ <!-- ESPECIFICACIONES COMPLETAS DE LA PERSONALIZACIÓN Y PRENDA -->
+ <div style="background:linear-gradient(145deg, #0B0F19, #111827);color:#F8FAFC;border-radius:12px;padding:1.25rem;margin-bottom:1.35rem;border:1px solid rgba(139,92,246,0.3);">
+ <div style="font-size:0.74rem;font-weight:800;color:#C4B5FD;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;">
+ Especificaciones de la Prenda Personalizada
+ </div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;font-size:0.84rem;">
+ <div>
+ <span style="color:#94A3B8;display:block;font-size:0.72rem;">Color</span>
+ <strong>{{ prenda.color }}</strong>
+ </div>
+ <div>
+ <span style="color:#94A3B8;display:block;font-size:0.72rem;">Talla</span>
+ <strong>{{ prenda.talla }}</strong>
+ </div>
+ <div>
+ <span style="color:#94A3B8;display:block;font-size:0.72rem;">Estampado Oficial Usado</span>
+ <strong style="color:#C4B5FD;">{{ prenda.estampado }}</strong>
+ </div>
+ <div>
+ <span style="color:#94A3B8;display:block;font-size:0.72rem;">Tipografía Oficial Usada</span>
+ <strong style="color:#93C5FD;">{{ prenda.tipografia }}</strong>
+ </div>
+ {% if prenda.personalizacion %}
+ <div>
+ <span style="color:#94A3B8;display:block;font-size:0.72rem;">Tipo / Silueta</span>
+ <strong>{{ prenda.personalizacion.tipo }}</strong>
+ </div>
+ {% endif %}
+ {% if prenda.producto_base %}
+ <div>
+ <span style="color:#94A3B8;display:block;font-size:0.72rem;">Prenda Base del Catálogo</span>
+ <a href="{% url 'tienda_producto_detalle' prenda.producto_base.pk %}" style="color:#60A5FA;font-weight:800;text-decoration:none;">
+ {{ prenda.producto_base.nombre }} →
+ </a>
+ </div>
+ {% endif %}
+ </div>
+ </div>
+
+ <!-- BARRA DE REACCIONES Y ACCIONES DEL AUTOR -->
+ <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.85rem;padding-top:1rem;border-top:1px solid var(--gris-200);">
+ <div style="display:flex;align-items:center;gap:0.65rem;flex-wrap:wrap;">
+ {% if cliente %}
+ <!-- BOTÓN ME GUSTA CON CORAZÓN -->
+ <div x-data="reaccionDetalle({{ usuario_reacciono|yesno:'true,false' }}, {{ total_reacciones }}, {{ prenda.pk }})">
+ <button type="button" @click="toggle()"
+ class="btn btn-sm"
+ style="border-radius:999px;padding:0.55rem 1.15rem;display:inline-flex;align-items:center;gap:0.45rem;font-weight:800;"
+ :style="activo ? 'background:#FEF2F2;border:1.5px solid #EF4444;color:#DC2626;' : 'background:#F8FAFC;border:1.5px solid #CBD5E1;color:#1E293B;'">
+ <span x-text="activo ? '❤️' : '🤍'"></span>
+ <span>Me gusta</span>
+ <span style="background:rgba(0,0,0,0.07);padding:0.1rem 0.5rem;border-radius:999px;" x-text="total"></span>
+ </button>
+ </div>
+
+ <!-- BOTÓN FAVORITOS PARA COMUNIDAD -->
+ <div x-data="favoritoComunidadHandler({{ es_favorito|yesno:'true,false' }}, {{ prenda.pk }})">
+ <button type="button" @click="toggle()"
+ :disabled="cargando"
+ class="btn btn-sm btn-outline"
+ style="border-radius:999px;padding:0.55rem 1.1rem;display:inline-flex;align-items:center;gap:0.45rem;font-weight:700;"
+ :style="esFav ? 'border-color:#EF4444;color:#DC2626;background:#FFF5F5;' : ''">
+ <span x-text="esFav ? '❤️' : '🤍'"></span>
+ <span x-text="esFav ? 'En tus favoritos' : 'Agregar a favoritos'"></span>
+ </button>
+ </div>
+ {% else %}
+ <a href="{% url 'tienda_login' %}?next={% url 'tienda_comunidad_detalle' prenda.pk %}" class="btn btn-outline btn-sm" style="border-radius:999px;">
+ 🤍 Me gusta ({{ total_reacciones }})
+ </a>
+ <a href="{% url 'tienda_login' %}?next={% url 'tienda_comunidad_detalle' prenda.pk %}" class="btn btn-outline btn-sm" style="border-radius:999px;">
+ 🤍 Inicia sesión para guardar en Favoritos
+ </a>
+ {% endif %}
+ </div>
+
+ {% if es_autor %}
+ <div style="display:flex;gap:0.5rem;">
+ <a href="{% url 'tienda_comunidad_editar' prenda.pk %}" class="btn btn-secondary btn-sm">
+ Editar Publicación
+ </a>
+ <button type="button" @click="modalEliminarPrenda = true" class="btn btn-danger btn-sm">
+ Eliminar
+ </button>
+ </div>
+ {% endif %}
+ </div>
+ </div>
+ </div>
+
+ <!-- SECCIÓN DE COMENTARIOS -->
+ <div id="comentarios" class="tienda-card" style="margin-top:2.25rem;padding:1.75rem;">
+ <h2 style="font-size:1.2rem;font-weight:900;color:var(--gris-900);margin:0 0 1.25rem;">
+ Comentarios de la Comunidad ({{ comentarios.count }})
+ </h2>
+
+ {% if cliente %}
+ <form method="post" action="{% url 'tienda_comunidad_comentar' prenda.pk %}" style="margin-bottom:1.75rem;">
+ {% csrf_token %}
+ <div class="form-group" style="margin-bottom:0.65rem;">
+ {{ comentario_form.contenido }}
+ </div>
+ <div style="display:flex;justify-content:flex-end;">
+ <button type="submit" class="btn btn-primary btn-sm" style="padding:0.55rem 1.35rem;">
+ Publicar Comentario
+ </button>
+ </div>
+ </form>
+ {% else %}
+ <div style="background:#F8FAFC;border:1px solid var(--gris-200);border-radius:10px;padding:1rem;margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.75rem;">
+ <span style="font-size:0.88rem;color:var(--gris-600);">Solo los usuarios que han iniciado sesión pueden comentar las prendas.</span>
+ <a href="{% url 'tienda_login' %}?next={% url 'tienda_comunidad_detalle' prenda.pk %}" class="btn btn-primary btn-sm">Iniciar Sesión</a>
+ </div>
+ {% endif %}
+
+ {% if comentarios %}
+ <div style="display:flex;flex-direction:column;gap:0.9rem;">
+ {% for com in comentarios %}
+ <div id="comentario-{{ com.pk }}" x-data="{ editando: false, texto: '{{ com.contenido|escapejs }}' }"
+ style="border:1px solid var(--gris-200);border-radius:10px;padding:1rem 1.15rem;background:#F8FAFC;">
+ <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.4rem;">
+ <div>
+ <strong style="font-size:0.9rem;color:var(--gris-900);">
+ {{ com.autor.nombre }} {{ com.autor.apellido }}
+ </strong>
+ {% if com.autor_id == prenda.autor_id %}
+ <span style="background:#DBEAFE;color:#1E40AF;font-size:0.68rem;font-weight:800;padding:0.15rem 0.5rem;border-radius:999px;margin-left:0.35rem;">
+ Autor de la prenda
+ </span>
+ {% endif %}
+ <span style="font-size:0.76rem;color:var(--gris-500);margin-left:0.4rem;">
+ · {{ com.fecha_publicacion|date:"d/m/Y H:i" }}
+ {% if com.editado %}<em style="color:var(--gris-400);">(editado)</em>{% endif %}
+ </span>
+ </div>
+
+ {% if cliente and com.autor_id == cliente.pk %}
+ <div style="display:flex;gap:0.4rem;">
+ <button type="button" @click="editando = !editando" class="btn btn-secondary btn-sm" style="padding:0.25rem 0.65rem;font-size:0.74rem;">
+ <span x-text="editando ? 'Cancelar' : 'Editar'"></span>
+ </button>
+ <button type="button"
+ @click="comentarioEliminarId = '{{ com.pk }}'; modalEliminarComentario = true;"
+ class="btn btn-danger btn-sm" style="padding:0.25rem 0.65rem;font-size:0.74rem;">
+ Eliminar
+ </button>
+ </div>
+ {% endif %}
+ </div>
+
+ <!-- Contenido normal -->
+ <p x-show="!editando" style="font-size:0.88rem;color:var(--gris-800);margin:0;line-height:1.5;">
+ {{ com.contenido }}
+ </p>
+
+ <!-- Formulario de edición inline exclusivo para el autor del comentario -->
+ {% if cliente and com.autor_id == cliente.pk %}
+ <form x-show="editando" x-cloak method="post" action="{% url 'tienda_comunidad_comentario_editar' com.pk %}" style="margin-top:0.5rem;">
+ {% csrf_token %}
+ <textarea name="contenido" rows="2" maxlength="400" x-model="texto" required style="margin-bottom:0.5rem;"></textarea>
+ <div style="display:flex;justify-content:flex-end;gap:0.5rem;">
+ <button type="button" @click="editando = false" class="btn btn-secondary btn-sm">Cancelar</button>
+ <button type="submit" class="btn btn-primary btn-sm">Guardar comentario</button>
+ </div>
+ </form>
+ {% endif %}
+ </div>
+ {% endfor %}
+ </div>
+ {% else %}
+ <p style="color:var(--gris-500);font-size:0.88rem;margin:0;">Aún no hay comentarios en esta prenda. ¡Sé el primero en comentar!</p>
+ {% endif %}
+ </div>
+
+ <!-- MODAL DE CONFIRMACIÓN PARA ELIMINAR PRENDA (ESTILO OSCURO HAZE STUDIOS) -->
+ {% if es_autor %}
+ <div x-show="modalEliminarPrenda" x-cloak
+ style="position:fixed;inset:0;z-index:9999;background:rgba(11,15,25,0.78);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1rem;">
+ <div @click.away="modalEliminarPrenda = false"
+ style="background:linear-gradient(160deg, #111827 0%, #0B0F19 100%);border:1px solid rgba(255,255,255,0.12);border-radius:16px;max-width:440px;width:100%;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.5);color:#F8FAFC;">
+ <div style="height:4px;background:linear-gradient(90deg, #3B82F6, #8B5CF6, #EF4444);"></div>
+ <div style="padding:1.75rem;">
+ <h3 style="font-size:1.15rem;font-weight:900;margin:0 0 0.5rem;color:#F8FAFC;">Confirmar eliminación de prenda publicada</h3>
+ <p style="font-size:0.88rem;color:#94A3B8;line-height:1.5;margin-bottom:1.5rem;">
+ ¿Estás seguro de que deseas eliminar tu publicación <strong style="color:#F8FAFC;">"{{ prenda.nombre }}"</strong>? Esta acción no se podrá deshacer.
+ </p>
+ <div style="display:flex;justify-content:flex-end;gap:0.75rem;">
+ <button type="button" @click="modalEliminarPrenda = false" class="btn btn-secondary btn-sm">Cancelar</button>
+ <form method="post" action="{% url 'tienda_comunidad_eliminar' prenda.pk %}" style="margin:0;">
+ {% csrf_token %}
+ <button type="submit" class="btn btn-danger btn-sm">Confirmar eliminación</button>
+ </form>
+ </div>
+ </div>
+ </div>
+ </div>
+ {% endif %}
+
+ <!-- MODAL DE CONFIRMACIÓN PARA ELIMINAR COMENTARIO PROPIO -->
+ <div x-show="modalEliminarComentario" x-cloak
+ style="position:fixed;inset:0;z-index:9999;background:rgba(11,15,25,0.78);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1rem;">
+ <div @click.away="modalEliminarComentario = false"
+ style="background:linear-gradient(160deg, #111827 0%, #0B0F19 100%);border:1px solid rgba(255,255,255,0.12);border-radius:16px;max-width:420px;width:100%;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.5);color:#F8FAFC;">
+ <div style="height:4px;background:linear-gradient(90deg, #3B82F6, #8B5CF6, #EF4444);"></div>
+ <div style="padding:1.65rem;">
+ <h3 style="font-size:1.1rem;font-weight:900;margin:0 0 0.5rem;color:#F8FAFC;">¿Eliminar tu comentario?</h3>
+ <p style="font-size:0.86rem;color:#94A3B8;line-height:1.5;margin-bottom:1.35rem;">
+ Esta acción eliminará tu comentario de forma permanente.
+ </p>
+ <div style="display:flex;justify-content:flex-end;gap:0.75rem;">
+ <button type="button" @click="modalEliminarComentario = false" class="btn btn-secondary btn-sm">Cancelar</button>
+ <form method="post" :action="`/tienda/comunidad/comentario/${comentarioEliminarId}/eliminar/`" style="margin:0;">
+ {% csrf_token %}
+ <button type="submit" class="btn btn-danger btn-sm">Sí, eliminar</button>
+ </form>
+ </div>
+ </div>
+ </div>
+ </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+ Alpine.data('reaccionDetalle', (estadoInicial, totalInicial, prendaId) => ({
+ activo: estadoInicial,
+ total: totalInicial,
+ cargando: false,
+ async toggle() {
+ if (this.cargando) return;
+ this.cargando = true;
+ try {
+ const resp = await fetch(`/tienda/comunidad/${prendaId}/reaccionar/`, {
+ method: 'POST',
+ headers: {
+ 'X-CSRFToken': '{{ csrf_token }}',
+ 'X-Requested-With': 'XMLHttpRequest',
+ }
+ });
+ const data = await resp.json();
+ if (data.success) {
+ this.activo = data.reaccionado;
+ this.total = data.total;
+ }
+ } catch (e) {
+ console.error(e);
+ } finally {
+ this.cargando = false;
+ }
+ }
+ }));
+
+ Alpine.data('favoritoComunidadHandler', (estadoInicial, prendaId) => ({
+ esFav: estadoInicial,
+ cargando: false,
+ async toggle() {
+ if (this.cargando) return;
+ const nuevo = !this.esFav;
+ this.esFav = nuevo;
+ this.cargando = true;
+ try {
+ const resp = await fetch(`/tienda/favoritos/comunidad/toggle-api/${prendaId}/`, {
+ method: 'POST',
+ headers: {
+ 'X-CSRFToken': '{{ csrf_token }}',
+ 'Content-Type': 'application/json',
+ 'X-Requested-With': 'XMLHttpRequest',
+ },
+ body: JSON.stringify({ accion: nuevo ? 'agregar' : 'quitar' })
+ });
+ const data = await resp.json();
+ if (!data.success) {
+ this.esFav = !nuevo;
+ }
+ } catch (e) {
+ this.esFav = !nuevo;
+ } finally {
+ this.cargando = false;
+ }
+ }
+ }));
+});
+</script>
+{% endblock %}

@@ -422,9 +422,9 @@ def estructurar_notas_pedido(notas):
     otras = []
 
     for linea in lineas:
-        m_tel = re.match(r'^(?:📞\s*)?(?:Contacto|Teléfono|Telefono):\s*(.+)$', linea, re.IGNORECASE)
-        m_dir = re.match(r'^(?:📍\s*)?(?:Entrega|Dirección de Entrega|Direccion de Entrega|Dirección|Direccion):\s*(.+)$', linea, re.IGNORECASE)
-        m_inst = re.match(r'^(?:💬\s*)?(?:Notas|Instrucciones|Notas del cliente|Instrucciones del cliente|Notas cliente):\s*(.+)$', linea, re.IGNORECASE)
+        m_tel = re.match(r'^(?:Contacto|Teléfono|Telefono):\s*(.+)$', linea, re.IGNORECASE)
+        m_dir = re.match(r'^(?:Entrega|Dirección de Entrega|Direccion de Entrega|Dirección|Direccion):\s*(.+)$', linea, re.IGNORECASE)
+        m_inst = re.match(r'^(?:Notas|Instrucciones|Notas del cliente|Instrucciones del cliente|Notas cliente):\s*(.+)$', linea, re.IGNORECASE)
 
         if m_tel:
             info['telefono'] = m_tel.group(1).strip()
@@ -847,4 +847,46 @@ class MensajeForm(forms.ModelForm):
         if len(contenido) > 500:
             raise ValidationError('El contenido del mensaje no podrá superar los 500 caracteres.')
         return contenido
+
+
+# ──────────────────────────────────────────────
+# COMUNIDAD (MODERACIÓN ADMINISTRATIVA)
+# ──────────────────────────────────────────────
+
+class PrendaComunidadAdminForm(forms.ModelForm):
+    class Meta:
+        from tienda.models import PrendaComunidad
+        model = PrendaComunidad
+        fields = [
+            'nombre', 'descripcion', 'color',
+            'talla', 'estampado', 'tipografia', 'estado', 'motivo_inactivacion'
+        ]
+        widgets = {
+            'nombre': forms.TextInput(attrs={'placeholder': 'Nombre de la prenda'}),
+            'descripcion': forms.Textarea(attrs={'rows': 3, 'maxlength': '600'}),
+            'motivo_inactivacion': forms.TextInput(attrs={'placeholder': 'Ej. Incumplimiento de normas comunitarias'}),
+        }
+        labels = {
+            'nombre': 'Nombre de la prenda',
+            'descripcion': 'Descripción',
+            'color': 'Color',
+            'talla': 'Talla',
+            'estampado': 'Estampado usado',
+            'tipografia': 'Tipografía usada',
+            'estado': 'Estado de la publicación',
+            'motivo_inactivacion': 'Motivo de inactivación (Opcional)',
+        }
+
+    def clean_nombre(self):
+        nombre = (self.cleaned_data.get('nombre') or '').strip()
+        if not nombre or len(nombre) < 3:
+            raise ValidationError('El nombre de la prenda debe tener al menos 3 caracteres.')
+        return nombre
+
+    def clean_descripcion(self):
+        descripcion = (self.cleaned_data.get('descripcion') or '').strip()
+        if not descripcion or len(descripcion) < 10:
+            raise ValidationError('La descripción debe tener al menos 10 caracteres.')
+        return descripcion
+
 

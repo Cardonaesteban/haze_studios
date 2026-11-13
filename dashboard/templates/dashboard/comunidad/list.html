@@ -1,0 +1,81 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Comunidad (Publicaciones) | Haze Studios{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1> Comunidad — Prendas Publicadas</h1>
+    <a class="btn btn-secondary" href="{% url 'tienda_comunidad_lista' %}" target="_blank">Ver en Tienda →</a>
+</div>
+
+<div class="page-actions" style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <form method="get" style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+        <input type="text" name="q" value="{{ q }}" placeholder="Buscar por nombre de prenda..."
+               class="form-control" style="width: auto; min-width: 220px; padding: 0.4rem 0.65rem; border-radius: var(--border-radius-md); border: 1px solid var(--gris-300);">
+        <select name="estado" class="form-control" style="width: auto; min-width: 170px; padding: 0.4rem 0.6rem; border-radius: var(--border-radius-md); border: 1px solid var(--gris-300);" onchange="this.form.submit()">
+            <option value="">Todos los estados</option>
+            <option value="activo" {% if estado_seleccionado == 'activo' %}selected{% endif %}>Activo</option>
+            <option value="inactivo" {% if estado_seleccionado == 'inactivo' %}selected{% endif %}>Inactivo</option>
+        </select>
+        <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
+        {% if estado_seleccionado or q %}
+        <a href="{% url 'comunidad_admin_list' %}" class="btn btn-sm btn-secondary">Limpiar</a>
+        {% endif %}
+    </form>
+    <span style="font-size: 0.88rem; font-weight: 600; color: var(--gris-700);">
+        {{ total_prendas }} prenda(s) publicada(s) en comunidad
+    </span>
+</div>
+
+<div class="table-wrap">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Imagen</th>
+                <th>Nombre de la Prenda</th>
+                <th>Descripción</th>
+                <th>Color</th>
+                <th>Talla</th>
+                <th>Estampado Usado</th>
+                <th>Tipografía Usada</th>
+                <th>Autor</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for p in prendas %}
+        <tr>
+            <td>
+                <img src="{{ p.get_imagen_url }}" alt="{{ p.nombre }}"
+                     style="width: 48px; height: 48px; object-fit: cover; border-radius: 6px; border: 1px solid var(--gris-200);">
+            </td>
+            <td><strong>{{ p.nombre }}</strong></td>
+            <td style="max-width: 190px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--gris-600); font-size: 0.82rem;" title="{{ p.descripcion }}">
+                {{ p.descripcion|default:"—" }}
+            </td>
+            <td>{{ p.color }}</td>
+            <td>{{ p.talla }}</td>
+            <td>{{ p.estampado }}</td>
+            <td>{{ p.tipografia }}</td>
+            <td>{{ p.autor.nombre }} {{ p.autor.apellido }}</td>
+            <td>
+                <span class="badge badge-{{ p.estado }}">{{ p.get_estado_display }}</span>
+            </td>
+            <td style="white-space: nowrap;">
+                <a class="btn btn-sm btn-secondary" href="{% url 'comunidad_admin_detalle' p.pk %}">Ver Personalización</a>
+                <a class="btn btn-sm btn-secondary" href="{% url 'comunidad_admin_editar' p.pk %}">Editar</a>
+                <a class="btn btn-sm btn-secondary" href="{% url 'comunidad_admin_estado' p.pk %}">Estado</a>
+                <a class="btn btn-sm btn-danger" href="{% url 'comunidad_admin_eliminar' p.pk %}">Eliminar</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="10" style="text-align:center;padding:2rem;color:var(--gris-500);">
+                No hay prendas publicadas en la comunidad en este momento.
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

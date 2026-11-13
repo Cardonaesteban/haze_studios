@@ -1,0 +1,170 @@
+{% extends "tienda/base_tienda.html" %}
+{% load static %}
+
+{% block title %}Publicar Prenda en Comunidad | Haze Studios{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom:1.25rem;">
+ <div>
+ <h1 class="tienda-page-title"> Publicar Prenda Personalizada en Comunidad</h1>
+ <p class="tienda-page-subtitle">Selecciona una de tus personalizaciones realizadas para autocompletar sus especificaciones y compartirla con otros usuarios.</p>
+ </div>
+ <div style="display:flex;gap:0.6rem;">
+ <a href="{% url 'tienda_personalizar' %}" class="btn btn-secondary btn-sm">
+ + Crear Otra Personalización
+ </a>
+ <a href="{% url 'tienda_comunidad_lista' %}" class="btn btn-outline btn-sm">
+ ← Volver a Comunidad
+ </a>
+ </div>
+</div>
+
+{% include "tienda/includes/tienda_form_errors.html" %}
+
+<div x-data="publicarComunidadHandler()" style="display:grid;grid-template-columns:1.2fr 0.85fr;gap:1.75rem;align-items:start;">
+ <div class="tienda-card" style="padding:1.75rem;">
+ <form method="post" enctype="multipart/form-data" novalidate>
+ {% csrf_token %}
+
+ <div class="form-group{% if form.personalizacion.errors %} has-error{% endif %}" style="background:#F8FAFC;padding:1rem;border-radius:10px;border:1.5px solid #CBD5E1;margin-bottom:1.25rem;">
+ <label for="id_personalizacion" style="font-weight:900;color:var(--gris-900);">
+ 1. Selecciona tu Personalización (Autocompleta especificaciones) *
+ </label>
+ <select name="personalizacion" id="id_personalizacion" x-model="persId" @change="cargarDesdePersonalizacion()" required>
+ <option value="">— Selecciona una de tus personalizaciones —</option>
+ {% for p in personalizaciones_usuario %}
+ <option value="{{ p.pk }}" {% if form.personalizacion.value|stringformat:"s" == p.pk|stringformat:"s" %}selected{% endif %}>
+ {{ p.nombre_personalizacion }} — {{ p.producto.nombre }} ({{ p.color }} · {{ p.talla }}) {% if p.publicacion_comunidad %}[Ya publicada]{% else %}[En proceso]{% endif %}
+ </option>
+ {% endfor %}
+ </select>
+ <small class="help">Al elegir una personalización se llenan automáticamente sus campos de nombre, descripción, color, talla, estampado y tipografía.</small>
+ {% for e in form.personalizacion.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+ </div>
+
+ <div class="form-group{% if form.nombre.errors %} has-error{% endif %}">
+ <label for="id_nombre">Nombre de la prenda *</label>
+ <input type="text" name="nombre" id="id_nombre" x-model="nombre" maxlength="150" required>
+ {% for e in form.nombre.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+ </div>
+
+ <div class="form-group{% if form.descripcion.errors %} has-error{% endif %}">
+ <label for="id_descripcion">Descripción *</label>
+ <textarea name="descripcion" id="id_descripcion" rows="3" maxlength="600" x-model="descripcion" required></textarea>
+ {% for e in form.descripcion.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+ </div>
+
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+ <div class="form-group{% if form.color.errors %} has-error{% endif %}">
+ <label for="id_color">Color *</label>
+ <select name="color" id="id_color" x-model="color">
+ {% for val, label in form.fields.color.choices %}
+ <option value="{{ val }}">{{ label }}</option>
+ {% endfor %}
+ </select>
+ {% for e in form.color.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+ </div>
+
+ <div class="form-group{% if form.talla.errors %} has-error{% endif %}">
+ <label for="id_talla">Talla *</label>
+ <select name="talla" id="id_talla" x-model="talla">
+ {% for val, label in form.fields.talla.choices %}
+ <option value="{{ val }}">{{ label }}</option>
+ {% endfor %}
+ </select>
+ {% for e in form.talla.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+ </div>
+ </div>
+
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+ <div class="form-group{% if form.estampado.errors %} has-error{% endif %}">
+ <label for="id_estampado">Estampado usado *</label>
+ <select name="estampado" id="id_estampado" x-model="estampado">
+ {% for val, label in form.fields.estampado.choices %}
+ <option value="{{ val }}">{{ label }}</option>
+ {% endfor %}
+ </select>
+ {% for e in form.estampado.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+ </div>
+
+ <div class="form-group{% if form.tipografia.errors %} has-error{% endif %}">
+ <label for="id_tipografia">Tipografía usada *</label>
+ <select name="tipografia" id="id_tipografia" x-model="tipografia">
+ {% for val, label in form.fields.tipografia.choices %}
+ <option value="{{ val }}">{{ label }}</option>
+ {% endfor %}
+ </select>
+ {% for e in form.tipografia.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+ </div>
+ </div>
+
+ <div style="margin-top:1.5rem;display:flex;gap:0.85rem;align-items:center;">
+ <button type="submit" class="btn btn-primary" style="background:linear-gradient(135deg, #3B82F6, #8B5CF6);border:none;padding:0.8rem 1.75rem;">
+ Publicar en Comunidad
+ </button>
+ <a href="{% url 'tienda_comunidad_lista' %}" class="btn btn-secondary">
+ Cancelar
+ </a>
+ </div>
+ </form>
+ </div>
+
+ <!-- RESUMEN DE LA PERSONALIZACIÓN SELECCIONADA -->
+ <div style="background:linear-gradient(160deg, #0B0F19 0%, #111827 100%);border-radius:16px;padding:1.6rem;color:#F8FAFC;border:1px solid rgba(59,130,246,0.3);">
+ <span style="display:inline-block;background:rgba(59,130,246,0.2);color:#93C5FD;font-size:0.72rem;font-weight:800;padding:0.25rem 0.7rem;border-radius:999px;margin-bottom:0.85rem;text-transform:uppercase;">
+ Vista Previa de Publicación
+ </span>
+
+ <div style="height:260px;border-radius:12px;overflow:hidden;background:#FFFFFF;margin-bottom:1rem;border:1px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;">
+ <img :src="imagenUrl || '{% static 'img/products/hoodie_black.jpg' %}'" alt="Preview" style="width:100%;height:100%;object-fit:contain;background:#FFFFFF;">
+ </div>
+
+ <div style="font-size:0.75rem;color:#94A3B8;font-weight:700;" x-text="'Autor: {{ cliente.nombre }} {{ cliente.apellido }}'"></div>
+ <h3 style="font-size:1.15rem;font-weight:900;color:#F8FAFC;margin:0.2rem 0 0.5rem;" x-text="nombre || 'Nombre de la prenda'"></h3>
+ <p style="font-size:0.82rem;color:#CBD5E1;line-height:1.45;margin-bottom:1rem;" x-text="descripcion || 'Descripción de la prenda...'"></p>
+
+ <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:0.85rem;font-size:0.8rem;display:grid;gap:0.4rem;">
+ <div><strong style="color:#94A3B8;">Prenda Base:</strong> <span x-text="productoNombre"></span> (<span x-text="tipo"></span>)</div>
+ <div><strong style="color:#94A3B8;">Color:</strong> <span x-text="color"></span></div>
+ <div><strong style="color:#94A3B8;">Talla:</strong> <span x-text="talla"></span></div>
+ <div><strong style="color:#C4B5FD;">Estampado:</strong> <span x-text="estampado"></span></div>
+ <div><strong style="color:#93C5FD;">Tipografía:</strong> <span x-text="tipografia"></span></div>
+ </div>
+ </div>
+</div>
+
+<script>
+const PERSONALIZACIONES_USUARIO = {{ personalizaciones_json|safe }};
+
+function publicarComunidadHandler() {
+ const initId = '{{ form.personalizacion.value|default:pers_inicial_id }}';
+ const initObj = PERSONALIZACIONES_USUARIO[initId] || {};
+ return {
+ persId: initId,
+ nombre: `{{ form.nombre.value|default:""|escapejs }}` || initObj.nombre || '',
+ descripcion: `{{ form.descripcion.value|default:""|escapejs }}` || initObj.descripcion || '',
+ color: `{{ form.color.value|default:""|escapejs }}` || initObj.color || 'Negro Obsidiana',
+ talla: `{{ form.talla.value|default:""|escapejs }}` || initObj.talla || 'L (Oversize)',
+ estampado: `{{ form.estampado.value|default:""|escapejs }}` || initObj.estampado || 'Acid Butterfly',
+ tipografia: `{{ form.tipografia.value|default:""|escapejs }}` || initObj.tipografia || 'Brutalism Bold Sans',
+ productoNombre: initObj.producto_nombre || 'Prenda Haze',
+ tipo: initObj.tipo || 'Oversize',
+ imagenUrl: initObj.imagen_url || '',
+ cargarDesdePersonalizacion() {
+ const p = PERSONALIZACIONES_USUARIO[this.persId];
+ if (p) {
+ this.nombre = p.nombre;
+ this.descripcion = p.descripcion;
+ this.color = p.color;
+ this.talla = p.talla;
+ this.estampado = p.estampado;
+ this.tipografia = p.tipografia;
+ this.productoNombre = p.producto_nombre;
+ this.tipo = p.tipo;
+ this.imagenUrl = p.imagen_url;
+ }
+ }
+ };
+}
+</script>
+{% endblock %}

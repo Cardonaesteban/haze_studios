@@ -15,11 +15,13 @@ from .forms import (
     ProveedorForm, DisenadorForm, PedidoForm, DetallePedidoFormSet,
     MovimientoStockForm, estructurar_notas_pedido,
     RolForm, PermisoForm, AsignarRolForm, UsuarioDashboardForm,
-    MensajeForm
+    MensajeForm, PrendaComunidadAdminForm
 )
+from tienda.models import PrendaComunidad
 from .emails import enviar_notificacion_estado_pedido
-from django.db.models import ProtectedError
+from django.db.models import ProtectedError, F
 from django.core.mail import send_mail
+from django.template.loader import render_to_string
 from django.conf import settings
 import logging
 
@@ -64,8 +66,9 @@ def dashboard(request):
         'total_disenadores': Disenador.objects.count(),
         'total_roles':       Rol.objects.count(),
         'total_permisos':    Permiso.objects.count(),
+        'total_comunidad':   PrendaComunidad.objects.count(),
         'ultimos_movimientos': MovimientoStock.objects.select_related('producto', 'usuario').order_by('-fecha')[:5],
-        'productos_bajo_stock': Producto.objects.filter(estado='activo').extra(where=['stock <= stock_minimo'])[:5],
+        'productos_bajo_stock': Producto.objects.filter(estado='activo', stock__lte=F('stock_minimo'))[:5],
         'pedidos_pendientes': Pedido.objects.filter(estado='pendiente').count(),
     }
     return render(request, 'dashboard/index.html', context)
@@ -112,8 +115,19 @@ def usuarios_editar(request, pk):
 def usuarios_eliminar(request, pk):
     cliente = get_object_or_404(Cliente, pk=pk)
     if request.method == 'POST':
+        # Validar si tiene pedidos o publicaciones asociadas antes de eliminar
+        tiene_pedidos = cliente.pedidos.exists()
+        tiene_prendas = hasattr(cliente, 'prendas_comunidad') and cliente.prendas_comunidad.exists()
+        if tiene_pedidos or tiene_prendas:
+            motivo = 'pedidos registrados' if tiene_pedidos else 'prendas publicadas en comunidad'
+            messages.error(
+                request,
+                f'No se puede eliminar al usuario {cliente.nombre} {cliente.apellido} porque tiene {motivo}. En su lugar, puedes cambiar su estado a Inactivo.'
+            )
+            return redirect('usuarios_list')
+
         cliente.delete()
-        messages.success(request, 'Usuario eliminado.')
+        messages.success(request, 'Usuario eliminado exitosamente.')
         return redirect('usuarios_list')
     return render(request, 'dashboard/confirmar_eliminar.html', {'objeto': cliente, 'tipo': 'usuario'})
 
@@ -239,74 +253,64 @@ def stock_list(request):
         'total_movimientos': movimientos.count(),
     })
 
-@admin_required
-def stock_entrada(request):
+def _registrar_movimiento_stock(request, tipo, titulo, help_text=None):
+    """Procesa y registra un movimiento de stock (entrada, salida o ajuste) de forma segura y atómica."""
     form = MovimientoStockForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         with transaction.atomic():
             mov = form.save(commit=False)
-            mov.tipo = 'entrada'
+            mov.tipo = tipo
             producto = mov.producto
+
+            if tipo == 'salida' and mov.cantidad > producto.stock:
+                messages.error(request, f'Stock insuficiente. Disponible: {producto.stock}')
+                return render(request, 'dashboard/stock/form.html', {
+                    'form': form, 'titulo': titulo, 'tipo': tipo
+                })
+
             mov.stock_anterior = producto.stock
-            producto.stock += mov.cantidad
+            if tipo == 'entrada':
+                producto.stock += mov.cantidad
+            elif tipo == 'salida':
+                producto.stock -= mov.cantidad
+            elif tipo == 'ajuste':
+                producto.stock = mov.cantidad
+
             producto.save(update_fields=['stock'])
             mov.stock_posterior = producto.stock
             mov.usuario = request.user
             mov.fecha = timezone.now()
             mov.save()
-        messages.success(request, f'Entrada de {mov.cantidad} unidades registrada para "{mov.producto.nombre}".')
+
+        if tipo == 'ajuste':
+            messages.success(request, f'Stock ajustado a {mov.cantidad} unidades para "{mov.producto.nombre}".')
+        else:
+            tipo_label = 'Entrada' if tipo == 'entrada' else 'Salida'
+            messages.success(request, f'{tipo_label} de {mov.cantidad} unidades registrada para "{mov.producto.nombre}".')
         return redirect('stock_list')
-    return render(request, 'dashboard/stock/form.html', {
-        'form': form, 'titulo': 'Registrar Entrada de Stock', 'tipo': 'entrada'
-    })
+
+    context = {'form': form, 'titulo': titulo, 'tipo': tipo}
+    if help_text:
+        context['help_text'] = help_text
+    return render(request, 'dashboard/stock/form.html', context)
+
+
+@admin_required
+def stock_entrada(request):
+    return _registrar_movimiento_stock(request, 'entrada', 'Registrar Entrada de Stock')
+
 
 @admin_required
 def stock_salida(request):
-    form = MovimientoStockForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        with transaction.atomic():
-            mov = form.save(commit=False)
-            mov.tipo = 'salida'
-            producto = mov.producto
-            if mov.cantidad > producto.stock:
-                messages.error(request, f'Stock insuficiente. Disponible: {producto.stock}')
-                return render(request, 'dashboard/stock/form.html', {
-                    'form': form, 'titulo': 'Registrar Salida de Stock', 'tipo': 'salida'
-                })
-            mov.stock_anterior = producto.stock
-            producto.stock -= mov.cantidad
-            producto.save(update_fields=['stock'])
-            mov.stock_posterior = producto.stock
-            mov.usuario = request.user
-            mov.fecha = timezone.now()
-            mov.save()
-        messages.success(request, f'Salida de {mov.cantidad} unidades registrada para "{mov.producto.nombre}".')
-        return redirect('stock_list')
-    return render(request, 'dashboard/stock/form.html', {
-        'form': form, 'titulo': 'Registrar Salida de Stock', 'tipo': 'salida'
-    })
+    return _registrar_movimiento_stock(request, 'salida', 'Registrar Salida de Stock')
+
 
 @admin_required
 def stock_ajuste(request):
-    form = MovimientoStockForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        with transaction.atomic():
-            mov = form.save(commit=False)
-            mov.tipo = 'ajuste'
-            producto = mov.producto
-            mov.stock_anterior = producto.stock
-            producto.stock = mov.cantidad
-            producto.save(update_fields=['stock'])
-            mov.stock_posterior = producto.stock
-            mov.usuario = request.user
-            mov.fecha = timezone.now()
-            mov.save()
-        messages.success(request, f'Stock ajustado a {mov.cantidad} unidades para "{mov.producto.nombre}".')
-        return redirect('stock_list')
-    return render(request, 'dashboard/stock/form.html', {
-        'form': form, 'titulo': 'Ajuste de Stock', 'tipo': 'ajuste',
-        'help_text': 'El stock del producto se establecerá exactamente al valor ingresado.'
-    })
+    return _registrar_movimiento_stock(
+        request, 'ajuste', 'Ajuste de Stock',
+        help_text='El stock del producto se establecerá exactamente al valor ingresado.'
+    )
 
 
 # ──────────────────────────────────────────────
@@ -906,48 +910,12 @@ def mensajes_crear(request):
         contenido = form.cleaned_data['contenido']
         remitente = form.cleaned_data.get('remitente') or 'Haze Studios'
 
-        # Versión HTML  con el branding de Haze Studios
-        contenido_html_formateado = contenido.replace('\n', '<br>')
-        html_message = f"""
-        <!DOCTYPE html>
-        <html lang="es">
-        <head>
-            <meta charset="UTF-8">
-            <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #0f172a; }}
-                .container {{ max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }}
-                .header {{ background: #0f172a; color: #ffffff; padding: 28px 32px; text-align: center; }}
-                .header h1 {{ margin: 0; font-size: 20px; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; }}
-                .content {{ padding: 32px; }}
-                .type-badge {{ display: inline-block; background: #f1f5f9; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 9999px; margin-bottom: 16px; border: 1px solid #e2e8f0; }}
-                .message-box {{ background: #f8fafc; border-left: 4px solid #0f172a; padding: 18px 22px; border-radius: 6px; margin: 18px 0; font-size: 15px; line-height: 1.6; color: #1e293b; }}
-                .footer {{ background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px 32px; text-align: center; font-size: 13px; color: #64748b; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>HAZE STUDIOS</h1>
-                </div>
-                <div class="content">
-                    <span class="type-badge">{tipo_display}</span>
-                    <p style="font-size: 16px; margin-top: 0;">Hola <strong>{destinatario.nombre}</strong>,</p>
-                    <div class="message-box">
-                        {contenido_html_formateado}
-                    </div>
-                    <p style="font-size: 14px; color: #64748b; margin-bottom: 0;">
-                        Atentamente,<br>
-                        <strong>{remitente}</strong>
-                    </p>
-                </div>
-                <div class="footer">
-                    Haze Studios — Moda urbana contemporánea.<br>
-                    Si tienes dudas o preguntas, contáctanos a nuestro equipo de atención.
-                </div>
-            </div>
-        </body>
-        </html>
-        """
+        html_message = render_to_string('dashboard/emails/mensaje_cliente.html', {
+            'tipo_display': tipo_display,
+            'destinatario': destinatario,
+            'contenido': contenido,
+            'remitente': remitente,
+        })
 
         try:
             send_mail(
@@ -980,3 +948,123 @@ def mensajes_eliminar(request, pk):
         messages.success(request, 'Mensaje eliminado.')
         return redirect('mensajes_list')
     return render(request, 'dashboard/confirmar_eliminar.html', {'objeto': mensaje, 'tipo': 'mensaje'})
+
+
+# ──────────────────────────────────────────────
+# COMUNIDAD (MODERACIÓN Y CRUD ADMINISTRATIVO)
+# ──────────────────────────────────────────────
+
+@admin_required
+def comunidad_admin_list(request):
+    """
+    Permite exclusivamente al administrador consultar y moderar las prendas publicadas en la comunidad.
+    Solo muestra las prendas publicadas (no aparecen personalizaciones en proceso sin publicar).
+    """
+    estado = request.GET.get('estado', '').strip()
+    q = request.GET.get('q', '').strip()
+
+    prendas = PrendaComunidad.objects.select_related(
+        'autor', 'personalizacion', 'personalizacion__producto', 'producto_base'
+    ).all().order_by('-fecha_publicacion')
+
+    if estado in ('activo', 'inactivo'):
+        prendas = prendas.filter(estado=estado)
+    if q:
+        prendas = prendas.filter(nombre__icontains=q)
+
+    return render(request, 'dashboard/comunidad/list.html', {
+        'prendas': prendas,
+        'estado_seleccionado': estado,
+        'q': q,
+        'total_prendas': prendas.count(),
+    })
+
+
+@admin_required
+def comunidad_admin_detalle(request, pk):
+    """
+    Muestra al administrador toda la información de la publicación y toda la personalización asociada.
+    """
+    prenda = get_object_or_404(
+        PrendaComunidad.objects.select_related(
+            'autor', 'personalizacion', 'personalizacion__producto', 'producto_base'
+        ),
+        pk=pk
+    )
+    comentarios = prenda.comentarios.select_related('autor').order_by('-fecha_publicacion')
+    return render(request, 'dashboard/comunidad/detalle.html', {
+        'prenda': prenda,
+        'comentarios': comentarios,
+        'total_reacciones': prenda.reacciones.count(),
+    })
+
+
+@admin_required
+def comunidad_admin_editar(request, pk):
+    """Permite al administrador editar una prenda publicada en la comunidad."""
+    prenda = get_object_or_404(PrendaComunidad, pk=pk)
+    form = PrendaComunidadAdminForm(request.POST or None, request.FILES or None, instance=prenda)
+    if request.method == 'POST' and form.is_valid():
+        prenda_actualizada = form.save()
+        if prenda_actualizada.personalizacion:
+            pers = prenda_actualizada.personalizacion
+            pers.nombre_personalizacion = prenda_actualizada.nombre
+            pers.color = prenda_actualizada.color
+            pers.talla = prenda_actualizada.talla
+            pers.estampado = prenda_actualizada.estampado
+            pers.tipografia = prenda_actualizada.tipografia
+            pers.detalle = prenda_actualizada.descripcion
+            # Sincronizar estado de la personalización si se inactiva
+            if prenda_actualizada.estado == 'inactivo':
+                pers.estado = 'en_proceso'
+            else:
+                pers.estado = 'publicada'
+            pers.save()
+        messages.success(request, f'Publicación "{prenda.nombre}" actualizada correctamente.')
+        return redirect('comunidad_admin_list')
+    return render(request, 'dashboard/comunidad/form.html', {
+        'form': form,
+        'prenda': prenda,
+        'titulo': f'Editar publicación: {prenda.nombre}',
+    })
+
+
+@admin_required
+def comunidad_admin_toggle_estado(request, pk):
+    """Permite al administrador cambiar el estado (Activo / Inactivo) de una publicación en comunidad."""
+    prenda = get_object_or_404(PrendaComunidad, pk=pk)
+    motivo = (request.POST.get('motivo_inactivacion') or request.GET.get('motivo_inactivacion') or '').strip()
+    prenda.toggle_estado()
+    if prenda.estado == 'inactivo' and motivo:
+        prenda.motivo_inactivacion = motivo
+        prenda.save(update_fields=['motivo_inactivacion'])
+    elif prenda.estado == 'activo':
+        prenda.motivo_inactivacion = ''
+        prenda.save(update_fields=['motivo_inactivacion'])
+
+    # Sincronizar estado en personalización
+    if prenda.personalizacion:
+        prenda.personalizacion.estado = 'publicada' if prenda.estado == 'activo' else 'en_proceso'
+        prenda.personalizacion.save(update_fields=['estado'])
+
+    messages.info(request, f'Estado de "{prenda.nombre}" cambiado a {prenda.get_estado_display()}.')
+    return redirect('comunidad_admin_list')
+
+
+@admin_required
+def comunidad_admin_eliminar(request, pk):
+    """Permite al administrador eliminar una prenda publicada en la comunidad previa confirmación."""
+    prenda = get_object_or_404(PrendaComunidad, pk=pk)
+    if request.method == 'POST':
+        nombre = prenda.nombre
+        if prenda.personalizacion:
+            pers = prenda.personalizacion
+            pers.estado = 'en_proceso'
+            pers.save(update_fields=['estado'])
+        prenda.delete()
+        messages.success(request, f'La publicación "{nombre}" fue eliminada de la comunidad.')
+        return redirect('comunidad_admin_list')
+    return render(request, 'dashboard/confirmar_eliminar.html', {
+        'objeto': prenda,
+        'tipo': 'publicación de comunidad',
+    })

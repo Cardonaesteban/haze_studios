@@ -1,0 +1,716 @@
+{% extends "tienda/base_tienda.html" %}
+{% load static %}
+
+{% block title %}Estudio de Personalización | Haze Studios{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom:1.25rem;">
+    <div>
+        <h1 class="tienda-page-title">Estudio de Personalización Haze</h1>
+        <p class="tienda-page-subtitle">Diseña tu prenda oversize, visualiza el resultado sobre el lienzo blanco y aplica la personalización para compartirla en la comunidad.</p>
+    </div>
+    <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+        <a href="{% url 'tienda_mis_personalizaciones' %}" class="btn btn-secondary btn-sm">
+            Mis Personalizaciones
+        </a>
+        <a href="{% url 'tienda_comunidad_lista' %}" class="btn btn-outline btn-sm">
+            Ver Comunidad
+        </a>
+    </div>
+</div>
+
+{% include "tienda/includes/tienda_form_errors.html" %}
+
+<div x-data="customStudio()" x-init="initCanvas()" style="display:grid;grid-template-columns:1.1fr 1fr;gap:1.75rem;align-items:start;">
+    <!-- FORMULARIO DE PERSONALIZACIÓN -->
+    <div class="tienda-card" style="padding:1.75rem;">
+        <h2 style="font-size:1.15rem;font-weight:900;color:var(--gris-900);margin-bottom:0.35rem;">
+            1. Configura tu Prenda Personalizada
+        </h2>
+        <p style="font-size:0.83rem;color:var(--gris-500);margin-bottom:1.35rem;">
+            Selecciona un producto disponible, elige tus especificaciones y pulsa <strong>Aplicar Personalización a la Prenda</strong> para fijar el diseño en la vista previa.
+        </p>
+
+        <form method="post" @submit="prepararEnvio($event)" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="imagen_preview_b64" x-model="imagenPreviewB64">
+
+            <div class="form-group{% if form.producto.errors %} has-error{% endif %}">
+                <label for="id_producto">Producto Base *</label>
+                <select name="producto" id="id_producto" x-model="productoId" @change="alCambiarProducto()" required>
+                    <option value="">Selecciona una prenda base del catálogo</option>
+                    {% for prod in productos_disponibles %}
+                    <option value="{{ prod.pk }}" {% if form.producto.value|stringformat:"s" == prod.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ prod.nombre }} ({% if prod.estado == 'activo' and prod.stock > 0 %}Disponible — {{ prod.stock }} uds.{% else %}No disponible — Agotado{% endif %})
+                    </option>
+                    {% endfor %}
+                </select>
+                <template x-if="productoSeleccionadoNoDisponible">
+                    <div class="tienda-field-error" style="margin-top:0.4rem;padding:0.5rem 0.75rem;background:#FEF2F2;border:1px solid #FECACA;border-radius:6px;color:#DC2626;font-weight:700;">
+                        No se permite solicitar personalizaciones para productos no disponibles o agotados. Selecciona un producto disponible.
+                    </div>
+                </template>
+                {% for e in form.producto.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                <div class="form-group{% if form.nombre_personalizacion.errors %} has-error{% endif %}">
+                    <label for="id_nombre_personalizacion">Nombre de la Personalización *</label>
+                    <input type="text" name="nombre_personalizacion" id="id_nombre_personalizacion"
+                           x-model="nombre" @input="marcarPendiente()" maxlength="150" placeholder="Ej. Hoodie Cyber Acid V1" required>
+                    {% for e in form.nombre_personalizacion.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+                </div>
+
+                <div class="form-group{% if form.tipo.errors %} has-error{% endif %}">
+                    <label for="id_tipo">Tipo / Silueta *</label>
+                    <select name="tipo" id="id_tipo" x-model="tipo" @change="marcarPendiente()">
+                        {% for val, label in form.fields.tipo.choices %}
+                        <option value="{{ val }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    {% for e in form.tipo.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                <div class="form-group{% if form.color.errors %} has-error{% endif %}">
+                    <label for="id_color">Color Base *</label>
+                    <select name="color" id="id_color" x-model="color" @change="marcarPendiente()">
+                        {% for val, label in form.fields.color.choices %}
+                        <option value="{{ val }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    {% for e in form.color.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+                </div>
+
+                <div class="form-group{% if form.talla.errors %} has-error{% endif %}">
+                    <label for="id_talla">Talla Oversize *</label>
+                    <select name="talla" id="id_talla" x-model="talla" @change="marcarPendiente()">
+                        {% for val, label in form.fields.talla.choices %}
+                        <option value="{{ val }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    {% for e in form.talla.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                <div class="form-group{% if form.estampado.errors %} has-error{% endif %}">
+                    <label for="id_estampado">Estampado Oficial Haze Studios *</label>
+                    <select name="estampado" id="id_estampado" x-model="estampado" @change="marcarPendiente()">
+                        {% for val, label in form.fields.estampado.choices %}
+                        <option value="{{ val }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="help">Catálogo exclusivo de artes gráficos de Haze Studios.</small>
+                    {% for e in form.estampado.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+                </div>
+
+                <div class="form-group{% if form.tipografia.errors %} has-error{% endif %}">
+                    <label for="id_tipografia">Tipografía Oficial Haze Studios *</label>
+                    <select name="tipografia" id="id_tipografia" x-model="tipografia" @change="marcarPendiente()">
+                        {% for val, label in form.fields.tipografia.choices %}
+                        <option value="{{ val }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="help">Estilos tipográficos oficiales del estudio.</small>
+                    {% for e in form.tipografia.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+                </div>
+            </div>
+
+            <div class="form-group{% if form.detalle.errors %} has-error{% endif %}">
+                <label for="id_detalle">Detalle de la Personalización *</label>
+                <textarea name="detalle" id="id_detalle" rows="3" maxlength="500" x-model="detalle"
+                          placeholder="Describe el concepto, disposición del estampado y detalles de tu prenda personalizada..."></textarea>
+                {% for e in form.detalle.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- BOTÓN DE APLICAR VISTA PREVIA ANTES DE GUARDAR -->
+            <div style="background:#F8FAFC;border:1.5px solid #CBD5E1;border-radius:10px;padding:1rem;margin-top:1.15rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+                <div>
+                    <div style="font-size:0.86rem;font-weight:900;color:var(--gris-900);">
+                        Paso previo: Previsualizar y Aplicar Diseño
+                    </div>
+                    <div style="font-size:0.78rem;color:var(--gris-600);" x-text="disenoAplicado ? 'El diseño actual ya está aplicado en el lienzo blanco.' : 'Pulsa el botón para aplicar los cambios seleccionados sobre la prenda en el lienzo blanco.'"></div>
+                </div>
+                <button type="button" @click="aplicarPersonalizacion()" class="btn btn-primary btn-sm"
+                        style="background:#0F172A;border-color:#0F172A;color:#FFFFFF;padding:0.6rem 1.2rem;font-weight:800;">
+                    Aplicar Personalización a la Prenda
+                </button>
+            </div>
+
+            <div style="display:flex;gap:0.85rem;flex-wrap:wrap;margin-top:1.35rem;padding-top:1rem;border-top:1px solid var(--gris-200);">
+                <button type="submit" name="accion" value="guardar_y_publicar"
+                        :disabled="productoSeleccionadoNoDisponible"
+                        class="btn btn-primary" style="background:linear-gradient(135deg, #3B82F6, #8B5CF6);border:none;padding:0.8rem 1.5rem;">
+                    Guardar y Publicar en Comunidad
+                </button>
+                <button type="submit" name="accion" value="guardar"
+                        :disabled="productoSeleccionadoNoDisponible"
+                        class="btn btn-secondary" style="padding:0.8rem 1.35rem;">
+                    Guardar en Proceso
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- LIENZO DE VISTA PREVIA EN FONDO BLANCO + FICHA DE ESPECIFICACIONES -->
+    <div style="background:#FFFFFF;border-radius:16px;padding:1.5rem;border:1.5px solid #E2E8F0;box-shadow:0 12px 30px rgba(15,23,42,0.08);position:sticky;top:90px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.85rem;flex-wrap:wrap;gap:0.5rem;">
+            <span style="background:#0F172A;color:#F8FAFC;font-size:0.72rem;font-weight:800;padding:0.3rem 0.75rem;border-radius:999px;letter-spacing:0.05em;text-transform:uppercase;">
+                2. Vista Previa de la Personalización
+            </span>
+            <span style="font-size:0.74rem;font-weight:800;padding:0.25rem 0.7rem;border-radius:999px;"
+                  :style="disenoAplicado ? 'background:#DCFCE7;color:#166534;' : 'background:#FEF3C7;color:#92400E;'"
+                  x-text="disenoAplicado ? 'Diseño Aplicado' : 'Pendiente por aplicar'">
+            </span>
+        </div>
+
+        <!-- LIENZO BLANCO INTERACTIVO (HTML5 CANVAS) -->
+        <div style="background:#FFFFFF;border:2px solid #E2E8F0;border-radius:14px;overflow:hidden;position:relative;margin-bottom:1rem;display:flex;align-items:center;justify-content:center;">
+            <canvas id="hazeCustomCanvas" width="700" height="700" style="width:100%;max-width:420px;height:auto;display:block;background:#FFFFFF;"></canvas>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;gap:0.5rem;">
+            <span style="font-size:0.76rem;color:var(--gris-500);font-weight:600;">
+                Lienzo de estudio sobre fondo blanco (#FFFFFF)
+            </span>
+            <button type="button" @click="aplicarPersonalizacion()" class="btn btn-secondary btn-sm" style="padding:0.35rem 0.85rem;font-size:0.76rem;">
+                Actualizar / Aplicar Vista Previa
+            </button>
+        </div>
+
+        <!-- FICHA TÉCNICA DE ESPECIFICACIONES APLICADAS -->
+        <div style="background:#0F172A;border-radius:12px;padding:1.15rem;color:#F8FAFC;">
+            <div style="font-size:0.74rem;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.65rem;">
+                Especificaciones Aplicadas
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.55rem;font-size:0.8rem;margin-bottom:0.65rem;">
+                <div style="background:rgba(255,255,255,0.05);padding:0.5rem 0.65rem;border-radius:6px;">
+                    <span style="font-size:0.68rem;color:#94A3B8;display:block;">Prenda Base</span>
+                    <strong x-text="aplicado.productoNombre || 'Sin seleccionar'"></strong>
+                </div>
+                <div style="background:rgba(255,255,255,0.05);padding:0.5rem 0.65rem;border-radius:6px;">
+                    <span style="font-size:0.68rem;color:#94A3B8;display:block;">Tipo / Corte</span>
+                    <strong x-text="aplicado.tipo"></strong>
+                </div>
+                <div style="background:rgba(255,255,255,0.05);padding:0.5rem 0.65rem;border-radius:6px;">
+                    <span style="font-size:0.68rem;color:#94A3B8;display:block;">Color Base</span>
+                    <strong style="color:#60A5FA;" x-text="aplicado.color"></strong>
+                </div>
+                <div style="background:rgba(255,255,255,0.05);padding:0.5rem 0.65rem;border-radius:6px;">
+                    <span style="font-size:0.68rem;color:#94A3B8;display:block;">Talla</span>
+                    <strong x-text="aplicado.talla"></strong>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.55rem;font-size:0.8rem;">
+                <div style="background:rgba(139,92,246,0.15);padding:0.5rem 0.65rem;border-radius:6px;border:1px solid rgba(139,92,246,0.3);">
+                    <span style="font-size:0.68rem;color:#C4B5FD;display:block;">Estampado Oficial</span>
+                    <strong x-text="aplicado.estampado"></strong>
+                </div>
+                <div style="background:rgba(59,130,246,0.15);padding:0.5rem 0.65rem;border-radius:6px;border:1px solid rgba(59,130,246,0.3);">
+                    <span style="font-size:0.68rem;color:#93C5FD;display:block;">Tipografía Oficial</span>
+                    <strong x-text="aplicado.tipografia"></strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const PRODUCTOS_CATALOGO = {{ productos_json|safe }};
+
+const PALETA_COLORES = {
+    'Negro Obsidiana':   { fill: '#161922', stroke: '#2D3343',neck: '#0D0F14', textPrimary: '#F8FAFC', accent: '#A855F7', secondary: '#38BDF8' },
+    'Blanco Hueso':      { fill: '#F5F2EB', stroke: '#D0C9BC', neck: '#E5E0D5', textPrimary: '#0F172A', accent: '#7C3AED', secondary: '#2563EB' },
+    'Gris Carbón':       { fill: '#374151', stroke: '#4B5563', neck: '#1F2937', textPrimary: '#F8FAFC', accent: '#C084FC', secondary: '#60A5FA' },
+    'Azul Cobalto Haze': { fill: '#1E40AF', stroke: '#3B82F6', neck: '#172554', textPrimary: '#F8FAFC', accent: '#38BDF8', secondary: '#E0F2FE' },
+    'Púrpura Nocturno':  { fill: '#4C1D95', stroke: '#7C3AED', neck: '#2E1065', textPrimary: '#F8FAFC', accent: '#F472B6', secondary: '#C4B5FD' }
+};
+
+function customStudio() {
+    const initProd = '{{ form.producto.value|default:"" }}';
+    const prodObj = PRODUCTOS_CATALOGO[initProd] || null;
+    const initNombre = `{{ form.nombre_personalizacion.value|default:""|escapejs }}` || (prodObj ? prodObj.nombre + ' Custom' : 'Haze Custom V1');
+    const initTipo = `{{ form.tipo.value|default:"Hoodie Oversize"|escapejs }}`;
+    const initColor = `{{ form.color.value|default:"Negro Obsidiana"|escapejs }}`;
+    const initTalla = `{{ form.talla.value|default:"L (Oversize)"|escapejs }}`;
+    const initEstampado = `{{ form.estampado.value|default:"Acid Butterfly"|escapejs }}`;
+    const initTipografia = `{{ form.tipografia.value|default:"Brutalism Bold Sans"|escapejs }}`;
+
+    return {
+        productoId: initProd,
+        productoNombre: prodObj ? prodObj.nombre : '',
+        productoSeleccionadoNoDisponible: prodObj ? !prodObj.disponible : false,
+        nombre: initNombre,
+        tipo: initTipo,
+        color: initColor,
+        talla: initTalla,
+        estampado: initEstampado,
+        tipografia: initTipografia,
+        detalle: `{{ form.detalle.value|default:""|escapejs }}`,
+        disenoAplicado: true,
+        imagenPreviewB64: '',
+
+        aplicado: {
+            productoNombre: prodObj ? prodObj.nombre : 'Prenda Base Haze',
+            nombre: initNombre,
+            tipo: initTipo,
+            color: initColor,
+            talla: initTalla,
+            estampado: initEstampado,
+            tipografia: initTipografia,
+        },
+
+        initCanvas() {
+            this.$nextTick(() => {
+                this.aplicarPersonalizacion();
+            });
+        },
+
+        alCambiarProducto() {
+            const p = PRODUCTOS_CATALOGO[this.productoId];
+            if (p) {
+                this.productoNombre = p.nombre;
+                this.productoSeleccionadoNoDisponible = !p.disponible;
+                if (!this.nombre || this.nombre.endsWith(' Custom')) {
+                    this.nombre = p.nombre + ' Custom';
+                }
+            } else {
+                this.productoNombre = '';
+                this.productoSeleccionadoNoDisponible = false;
+            }
+            this.marcarPendiente();
+        },
+
+        marcarPendiente() {
+            this.disenoAplicado = false;
+        },
+
+        aplicarPersonalizacion() {
+            const p = PRODUCTOS_CATALOGO[this.productoId];
+            this.aplicado = {
+                productoNombre: p ? p.nombre : 'Prenda Base Haze',
+                nombre: (this.nombre || 'HAZE CUSTOM').trim(),
+                tipo: this.tipo,
+                color: this.color,
+                talla: this.talla,
+                estampado: this.estampado,
+                tipografia: this.tipografia,
+            };
+            this.dibujarLienzoBlanco();
+            this.disenoAplicado = true;
+        },
+
+        prepararEnvio(e) {
+            if (this.productoSeleccionadoNoDisponible) {
+                e.preventDefault();
+                return;
+            }
+            this.aplicarPersonalizacion();
+        },
+
+        dibujarLienzoBlanco() {
+            const canvas = document.getElementById('hazeCustomCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width;
+            const H = canvas.height;
+
+            // 1. FONDO BLANCO DE ESTUDIO (#FFFFFF)
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, W, H);
+
+            // Marco sutil de estudio
+            ctx.strokeStyle = '#F1F5F9';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(18, 18, W - 36, H - 36);
+
+            // Encabezado superior del lienzo
+            ctx.fillStyle = '#94A3B8';
+            ctx.font = '700 13px Inter, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('HAZE STUDIOS // CUSTOM LAB MOCKUP', 36, 46);
+
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#64748B';
+            ctx.fillText(`${this.aplicado.tipo.toUpperCase()} · ${this.aplicado.talla}`, W - 36, 46);
+
+            // Sombra de piso bajo la prenda
+            ctx.save();
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.07)';
+            ctx.beginPath();
+            ctx.ellipse(W / 2, 625, 175, 18, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            const pal = PALETA_COLORES[this.aplicado.color] || PALETA_COLORES['Negro Obsidiana'];
+
+            // 2. DIBUJAR SILUETA DE LA PRENDA SEGÚN EL TIPO
+            this.dibujarSiluetaPrenda(ctx, W, H, this.aplicado.tipo, pal);
+
+            // 3. DIBUJAR EL ESTAMPADO OFICIAL EN LA PRENDA
+            const centerY = this.aplicado.tipo === 'Cargo Pants' ? 330 : 315;
+            const centerX = this.aplicado.tipo === 'Cargo Pants' ? 275 : W / 2;
+            this.dibujarEstampadoOficial(ctx, centerX, centerY, this.aplicado.estampado, pal);
+
+            // 4. DIBUJAR EL TEXTO CON LA TIPOGRAFÍA OFICIAL
+            const textY = this.aplicado.tipo === 'Cargo Pants' ? 430 : 445;
+            this.dibujarTipografiaOficial(ctx, centerX, textY, this.aplicado.nombre, this.aplicado.tipografia, pal);
+
+            // 5. ETIQUETA INFERIOR DE ESPECIFICACIONES EN EL LIENZO
+            ctx.fillStyle = '#0F172A';
+            ctx.font = '800 13px Inter, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(this.aplicado.productoNombre.toUpperCase(), 36, H - 36);
+
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#475569';
+            ctx.font = '600 12px Inter, sans-serif';
+            ctx.fillText(`${this.aplicado.color} | ${this.aplicado.estampado}`, W - 36, H - 36);
+
+            try {
+                this.imagenPreviewB64 = canvas.toDataURL('image/png');
+            } catch (err) {
+                console.warn(err);
+            }
+        },
+
+        dibujarSiluetaPrenda(ctx, W, H, tipo, pal) {
+            ctx.save();
+            ctx.fillStyle = pal.fill;
+            ctx.strokeStyle = pal.stroke;
+            ctx.lineWidth = 4;
+            ctx.lineJoin = 'round';
+
+            if (tipo === 'Cargo Pants') {
+                // Silueta Cargo Pants Relaxed Fit
+                ctx.beginPath();
+                ctx.moveTo(220, 140);
+                ctx.lineTo(480, 140); // Cintura
+                ctx.lineTo(510, 580); // Pierna der ext
+                ctx.lineTo(395, 580); // Bota der
+                ctx.lineTo(350, 290); // Entrepierna
+                ctx.lineTo(305, 580); // Bota izq
+                ctx.lineTo(190, 580); // Pierna izq ext
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Pretina y bolsillos cargo laterales
+                ctx.fillStyle = pal.neck;
+                ctx.fillRect(220, 140, 260, 28);
+                ctx.strokeRect(220, 140, 260, 28);
+
+                // Bolsillos cargo
+                ctx.fillStyle = pal.fill;
+                ctx.fillRect(192, 310, 42, 95);
+                ctx.strokeRect(192, 310, 42, 95);
+                ctx.fillRect(466, 310, 42, 95);
+                ctx.strokeRect(466, 310, 42, 95);
+                ctx.restore();
+                return;
+            }
+
+            // Silueta Superior Oversize (Hoodie, T-Shirt, Crewneck, Bomber)
+            const esMangaCorta = (tipo === 'T-Shirt Heavyweight');
+
+            ctx.beginPath();
+            // Hombro izquierdo a cuello
+            ctx.moveTo(265, 165);
+            ctx.quadraticCurveTo(350, 195, 435, 165);
+            // Hombro derecho caído y manga derecha
+            if (esMangaCorta) {
+                ctx.lineTo(595, 245);
+                ctx.lineTo(545, 340);
+                ctx.lineTo(485, 305);
+            } else {
+                ctx.lineTo(600, 265);
+                ctx.lineTo(565, 520);
+                ctx.lineTo(495, 510);
+                ctx.lineTo(485, 300);
+            }
+            // Torso derecho a cintura
+            ctx.lineTo(485, 575);
+            ctx.lineTo(215, 575);
+            // Torso izquierdo a manga izquierda
+            if (esMangaCorta) {
+                ctx.lineTo(215, 305);
+                ctx.lineTo(155, 340);
+                ctx.lineTo(105, 245);
+            } else {
+                ctx.lineTo(215, 300);
+                ctx.lineTo(205, 510);
+                ctx.lineTo(135, 520);
+                ctx.lineTo(100, 265);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Costuras de hombros caídos (Drop Shoulder)
+            ctx.strokeStyle = pal.stroke;
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(265, 165);
+            ctx.lineTo(215, 300);
+            ctx.moveTo(435, 165);
+            ctx.lineTo(485, 300);
+            ctx.stroke();
+
+            // Pretina inferior acanalada (en Hoodie, Crewneck, Bomber)
+            if (!esMangaCorta) {
+                ctx.fillStyle = pal.neck;
+                ctx.fillRect(215, 548, 270, 27);
+                ctx.strokeRect(215, 548, 270, 27);
+            }
+
+            // Detalles específicos por tipo
+            if (tipo === 'Hoodie Oversize') {
+                // Capota (Hood)
+                ctx.fillStyle = pal.neck;
+                ctx.strokeStyle = pal.stroke;
+                ctx.lineWidth = 3.5;
+                ctx.beginPath();
+                ctx.moveTo(260, 168);
+                ctx.quadraticCurveTo(245, 90, 350, 88);
+                ctx.quadraticCurveTo(455, 90, 440, 168);
+                ctx.quadraticCurveTo(350, 198, 260, 168);
+                ctx.fill();
+                ctx.stroke();
+
+                // Bolsillo canguro inferior
+                ctx.fillStyle = pal.fill;
+                ctx.beginPath();
+                ctx.moveTo(255, 548);
+                ctx.lineTo(280, 478);
+                ctx.lineTo(420, 478);
+                ctx.lineTo(445, 548);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            } else if (tipo === 'Bomber Jacket') {
+                // Cuello Bomber + Cremallera central
+                ctx.fillStyle = pal.neck;
+                ctx.beginPath();
+                ctx.arc(350, 165, 65, 0, Math.PI, false);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.strokeStyle = '#94A3B8';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(350, 195);
+                ctx.lineTo(350, 575);
+                ctx.stroke();
+            } else {
+                // Cuello redondo acanalado (T-Shirt / Crewneck)
+                ctx.fillStyle = pal.neck;
+                ctx.strokeStyle = pal.stroke;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(265, 165);
+                ctx.quadraticCurveTo(350, 212, 435, 165);
+                ctx.quadraticCurveTo(350, 188, 265, 165);
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        },
+
+        dibujarEstampadoOficial(ctx, cx, cy, estampado, pal) {
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            if (estampado === 'Acid Butterfly') {
+                // Mariposa simétrica estilo Cyberpunk Acid
+                ctx.strokeStyle = pal.accent;
+                ctx.fillStyle = pal.secondary;
+                ctx.lineWidth = 3;
+
+                // Ala superior izquierda y derecha
+                [-1, 1].forEach(dir => {
+                    ctx.save();
+                    ctx.scale(dir, 1);
+                    ctx.beginPath();
+                    ctx.moveTo(0, -10);
+                    ctx.bezierCurveTo(45, -65, 85, -45, 65, 5);
+                    ctx.bezierCurveTo(50, 25, 20, 15, 0, 10);
+                    ctx.closePath();
+                    ctx.globalAlpha = 0.22;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                    ctx.stroke();
+
+                    // Ala inferior
+                    ctx.beginPath();
+                    ctx.moveTo(0, 10);
+                    ctx.bezierCurveTo(45, 20, 55, 65, 22, 58);
+                    ctx.bezierCurveTo(10, 52, 4, 30, 0, 20);
+                    ctx.closePath();
+                    ctx.stroke();
+                    ctx.restore();
+                });
+
+                // Cuerpo central
+                ctx.fillStyle = pal.textPrimary;
+                ctx.fillRect(-3, -28, 6, 56);
+            } else if (estampado === 'Gothic Cross Haze') {
+                // Cruz gótica urbana
+                ctx.strokeStyle = pal.textPrimary;
+                ctx.fillStyle = pal.accent;
+                ctx.lineWidth = 3.5;
+
+                ctx.beginPath();
+                ctx.moveTo(-12, -58);
+                ctx.lineTo(12, -58);
+                ctx.lineTo(8, -14);
+                ctx.lineTo(52, -18);
+                ctx.lineTo(52, 6);
+                ctx.lineTo(8, 2);
+                ctx.lineTo(14, 58);
+                ctx.lineTo(-14, 58);
+                ctx.lineTo(-8, 2);
+                ctx.lineTo(-52, 6);
+                ctx.lineTo(-52, -18);
+                ctx.lineTo(-8, -14);
+                ctx.closePath();
+                ctx.globalAlpha = 0.25;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                ctx.stroke();
+
+                // Rombo central
+                ctx.beginPath();
+                ctx.moveTo(0, -22);
+                ctx.lineTo(16, -6);
+                ctx.lineTo(0, 10);
+                ctx.lineTo(-16, -6);
+                ctx.closePath();
+                ctx.fillStyle = pal.secondary;
+                ctx.fill();
+            } else if (estampado === 'Distorted Cyber Skull') {
+                // Arte Glitch geométrico frontal
+                ctx.strokeStyle = pal.secondary;
+                ctx.lineWidth = 3;
+
+                // Marco hexágono cyber
+                ctx.beginPath();
+                ctx.moveTo(0, -55);
+                ctx.lineTo(48, -28);
+                ctx.lineTo(48, 22);
+                ctx.lineTo(22, 52);
+                ctx.lineTo(-22, 52);
+                ctx.lineTo(-48, 22);
+                ctx.lineTo(-48, -28);
+                ctx.closePath();
+                ctx.stroke();
+
+                // Ojos / Visor cyber
+                ctx.fillStyle = pal.accent;
+                ctx.fillRect(-28, -16, 20, 12);
+                ctx.fillRect(8, -16, 20, 12);
+
+                // Líneas glitch horizontales
+                ctx.strokeStyle = pal.textPrimary;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(-58, -6); ctx.lineTo(-32, -6);
+                ctx.moveTo(32, 10); ctx.lineTo(60, 10);
+                ctx.moveTo(-14, 24); ctx.lineTo(14, 24);
+                ctx.moveTo(-10, 36); ctx.lineTo(10, 36);
+                ctx.stroke();
+            } else if (estampado === 'Minimal Studio Signature') {
+                // Emblema minimalista de estudio
+                ctx.strokeStyle = pal.textPrimary;
+                ctx.lineWidth = 2.5;
+                ctx.strokeRect(-68, -36, 136, 72);
+                ctx.strokeStyle = pal.accent;
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(-62, -30, 124, 60);
+
+                ctx.fillStyle = pal.textPrimary;
+                ctx.font = '900 18px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('HAZE STUDIO', 0, -4);
+                ctx.fillStyle = pal.secondary;
+                ctx.font = '700 10px Inter, sans-serif';
+                ctx.fillText('HEAVYWEIGHT GARMENT // 450GSM', 0, 16);
+            } else {
+                // Tokyo Night Skyline
+                ctx.fillStyle = pal.accent;
+                ctx.globalAlpha = 0.85;
+                ctx.beginPath();
+                ctx.arc(0, -8, 42, Math.PI, 0, false);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+
+                // Silueta de rascacielos
+                ctx.fillStyle = pal.fill;
+                ctx.strokeStyle = pal.textPrimary;
+                ctx.lineWidth = 2;
+                const buildings = [
+                    [-48, -18, 16, 36],
+                    [-30, -34, 18, 52],
+                    [-10, -46, 20, 64],
+                    [12, -28, 16, 46],
+                    [30, -22, 18, 40]
+                ];
+                buildings.forEach(b => {
+                    ctx.fillRect(b[0], b[1], b[2], b[3]);
+                    ctx.strokeRect(b[0], b[1], b[2], b[3]);
+                });
+
+                // Horizonte neón
+                ctx.strokeStyle = pal.secondary;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(-65, 18);
+                ctx.lineTo(65, 18);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        },
+
+        dibujarTipografiaOficial(ctx, cx, cy, texto, tipografia, pal) {
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.textAlign = 'center';
+
+            const label = (texto || 'HAZE CUSTOM').toUpperCase().slice(0, 22);
+
+            if (tipografia === 'Oversize Heavy Metal') {
+                ctx.font = '900 22px Georgia, "Times New Roman", serif';
+                ctx.fillStyle = pal.textPrimary;
+                ctx.fillText(`« ${label} »`, 0, 0);
+            } else if (tipografia === 'Modern Cyber Tech') {
+                ctx.font = '800 19px "Courier New", monospace';
+                ctx.fillStyle = pal.secondary;
+                ctx.fillText(`[ ${label} ]`, 0, 0);
+            } else if (tipografia === 'Vintage Y2K Italic') {
+                ctx.font = 'italic 900 22px "Trebuchet MS", sans-serif';
+                ctx.fillStyle = pal.accent;
+                ctx.fillText(label, 0, 0);
+                ctx.strokeStyle = pal.textPrimary;
+                ctx.lineWidth = 1;
+                ctx.strokeText(label, 0, 0);
+            } else {
+                // Brutalism Bold Sans
+                ctx.font = '900 22px Impact, Inter, Arial Black, sans-serif';
+                ctx.fillStyle = pal.textPrimary;
+                ctx.fillText(label, 0, 0);
+            }
+
+            ctx.font = '700 10px Inter, sans-serif';
+            ctx.fillStyle = pal.stroke;
+            ctx.fillText(`ESTAMPADO: ${this.aplicado.estampado.toUpperCase()}`, 0, 20);
+            ctx.restore();
+        }
+    };
+}
+</script>
+{% endblock %}

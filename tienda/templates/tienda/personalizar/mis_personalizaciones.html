@@ -1,0 +1,213 @@
+{% extends "tienda/base_tienda.html" %}
+{% load static %}
+
+{% block title %}Mis Personalizaciones y Diseños | Haze Studios{% endblock %}
+
+{% block content %}
+<div x-data="{ modalEliminarPers: false, persIdEliminar: null, persNombreEliminar: '', modalEliminarPub: false, pubUrlEliminar: '', pubNombreEliminar: '' }">
+ <div class="page-header" style="margin-bottom:1.5rem;">
+ <div>
+ <h1 class="tienda-page-title"> Mis Personalizaciones y Comunidad</h1>
+ <p class="tienda-page-subtitle">Consulta las especificaciones de tus diseños en proceso y administra tus prendas publicadas en la comunidad.</p>
+ </div>
+ <div style="display:flex;gap:0.65rem;flex-wrap:wrap;">
+ <a href="{% url 'tienda_personalizar' %}" class="btn btn-primary btn-sm" style="background:linear-gradient(135deg, #3B82F6, #8B5CF6);border:none;">
+ + Nueva Personalización
+ </a>
+ <a href="{% url 'tienda_comunidad_publicar' %}" class="btn btn-secondary btn-sm">
+ Publicar en Comunidad
+ </a>
+ <a href="{% url 'tienda_comunidad_lista' %}" class="btn btn-outline btn-sm">
+ Explorar Comunidad
+ </a>
+ </div>
+ </div>
+
+ <!-- SECCIÓN 1: MIS PERSONALIZACIONES -->
+ <div class="tienda-card" style="padding:1.65rem;margin-bottom:2rem;">
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.15rem;">
+ <div>
+ <h2 style="font-size:1.15rem;font-weight:900;color:var(--gris-900);margin:0;">
+ 1. Mis Personalizaciones Realizadas ({{ personalizaciones.count }})
+ </h2>
+ <p style="font-size:0.82rem;color:var(--gris-500);margin:0.2rem 0 0;">
+ Estados disponibles: <strong>En proceso</strong> (guardada en tu estudio) y <strong>Publicada</strong> (visible en la comunidad).
+ </p>
+ </div>
+ </div>
+
+ {% if personalizaciones %}
+ <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:1.25rem;">
+ {% for pers in personalizaciones %}
+ <div style="border:1.5px solid var(--gris-200);border-radius:12px;padding:1.15rem;background:#F8FAFC;display:flex;flex-direction:column;justify-content:space-between;">
+ <div>
+ <div style="height:200px;border-radius:10px;overflow:hidden;background:#FFFFFF;border:1px solid var(--gris-200);margin-bottom:0.85rem;display:flex;align-items:center;justify-content:center;">
+ <img src="{{ pers.get_imagen_url }}" alt="{{ pers.nombre_personalizacion }}" style="width:100%;height:100%;object-fit:contain;background:#FFFFFF;">
+ </div>
+ <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;margin-bottom:0.65rem;">
+ <div>
+ <span style="font-size:0.72rem;font-weight:800;color:var(--gris-500);text-transform:uppercase;">
+ Base: {{ pers.producto.nombre }}
+ </span>
+ <h3 style="font-size:1.05rem;font-weight:900;color:var(--gris-900);margin:0.15rem 0 0;">
+ {{ pers.nombre_personalizacion }}
+ </h3>
+ </div>
+ {% if pers.estado == 'publicada' %}
+ <span class="badge badge-entrada">Publicada</span>
+ {% else %}
+ <span class="badge badge-pendiente">En proceso</span>
+ {% endif %}
+ </div>
+
+ <!-- Especificaciones de la personalización -->
+ <div style="background:#FFFFFF;border:1px solid var(--gris-200);border-radius:8px;padding:0.75rem;margin-bottom:0.75rem;font-size:0.8rem;">
+ <div style="font-weight:800;color:var(--gris-700);margin-bottom:0.35rem;font-size:0.74rem;text-transform:uppercase;">
+ Especificaciones de la Personalización:
+ </div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.35rem;color:var(--gris-700);">
+ <div><strong>Tipo:</strong> {{ pers.tipo }}</div>
+ <div><strong>Talla:</strong> {{ pers.talla }}</div>
+ <div><strong>Color:</strong> {{ pers.color }}</div>
+ <div><strong>Fecha:</strong> {{ pers.fecha_creacion|date:"d/m/Y" }}</div>
+ </div>
+ <div style="margin-top:0.35rem;padding-top:0.35rem;border-top:1px dashed var(--gris-200);">
+ <div><strong>Estampado:</strong> {{ pers.estampado }}</div>
+ <div><strong>Tipografía:</strong> {{ pers.tipografia }}</div>
+ </div>
+ </div>
+
+ <p style="font-size:0.82rem;color:var(--gris-600);margin:0 0 1rem;line-height:1.45;">
+ {{ pers.detalle|truncatewords:22 }}
+ </p>
+ </div>
+
+ <div style="display:flex;gap:0.5rem;flex-wrap:wrap;padding-top:0.75rem;border-top:1px solid var(--gris-200);">
+ {% if pers.publicacion_comunidad %}
+ <a href="{% url 'tienda_comunidad_detalle' pers.publicacion_comunidad.pk %}" class="btn btn-secondary btn-sm" style="flex:1;">
+ Ver en Comunidad
+ </a>
+ <a href="{% url 'tienda_comunidad_editar' pers.publicacion_comunidad.pk %}" class="btn btn-outline btn-sm">
+ Editar Publicación
+ </a>
+ {% else %}
+ <a href="{% url 'tienda_comunidad_publicar' %}?personalizacion={{ pers.pk }}" class="btn btn-primary btn-sm" style="flex:1;background:linear-gradient(135deg, #3B82F6, #8B5CF6);border:none;">
+ Publicar en Comunidad
+ </a>
+ {% endif %}
+ <button type="button" class="btn btn-danger btn-sm"
+ @click="persIdEliminar = '{{ pers.pk }}'; persNombreEliminar = '{{ pers.nombre_personalizacion|escapejs }}'; modalEliminarPers = true;">
+ Eliminar
+ </button>
+ </div>
+ </div>
+ {% endfor %}
+ </div>
+ {% else %}
+ <div style="text-align:center;padding:2.5rem 1rem;">
+ <p style="color:var(--gris-500);margin-bottom:1rem;">Aún no tienes personalizaciones creadas.</p>
+ <a href="{% url 'tienda_personalizar' %}" class="btn btn-primary btn-sm">Crear mi primera personalización</a>
+ </div>
+ {% endif %}
+ </div>
+
+ <!-- SECCIÓN 2: MIS PRENDAS PUBLICADAS EN LA COMUNIDAD -->
+ <div class="tienda-card" style="padding:1.65rem;">
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.15rem;">
+ <div>
+ <h2 style="font-size:1.15rem;font-weight:900;color:var(--gris-900);margin:0;">
+ 2. Mis Prendas Publicadas en Comunidad ({{ publicaciones.count }})
+ </h2>
+ <p style="font-size:0.82rem;color:var(--gris-500);margin:0.2rem 0 0;">
+ Solo tú como autor puedes editar, cambiar el estado (Activo / Inactivo) o eliminar tus publicaciones.
+ </p>
+ </div>
+ </div>
+
+ {% if publicaciones %}
+ <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));gap:1.25rem;">
+ {% for pub in publicaciones %}
+ <div class="product-card" style="border:1.5px solid var(--gris-200);">
+ <div class="product-card-img" style="height:200px;">
+ {% if pub.estado == 'activo' %}
+ <span class="badge-stock-pill badge-entrada">Activo</span>
+ {% else %}
+ <span class="badge-stock-pill badge-salida">Inactivo</span>
+ {% endif %}
+ <img src="{{ pub.get_imagen_url }}" alt="{{ pub.nombre }}" class="product-card-real-img">
+ </div>
+ <div class="product-card-body">
+ <div class="product-category-tag">{{ pub.color }} · {{ pub.talla }}</div>
+ <a href="{% url 'tienda_comunidad_detalle' pub.pk %}" class="product-title">{{ pub.nombre }}</a>
+ <div style="font-size:0.78rem;color:var(--gris-600);margin:0.35rem 0;">
+ <div> <strong>Estampado:</strong> {{ pub.estampado }}</div>
+ <div> <strong>Tipografía:</strong> {{ pub.tipografia }}</div>
+ </div>
+ <div style="display:flex;gap:1rem;font-size:0.8rem;font-weight:700;color:var(--gris-500);margin-bottom:0.85rem;">
+ <span> {{ pub.total_reacciones }} reacciones</span>
+ <span> {{ pub.total_comentarios }} comentarios</span>
+ </div>
+ <div style="display:flex;gap:0.45rem;">
+ <a href="{% url 'tienda_comunidad_detalle' pub.pk %}" class="btn btn-secondary btn-sm" style="flex:1;">Ver</a>
+ <a href="{% url 'tienda_comunidad_editar' pub.pk %}" class="btn btn-primary btn-sm" style="flex:1;">Editar</a>
+ <button type="button" class="btn btn-danger btn-sm"
+ @click="pubUrlEliminar = '{% url 'tienda_comunidad_eliminar' pub.pk %}'; pubNombreEliminar = '{{ pub.nombre|escapejs }}'; modalEliminarPub = true;">
+ Eliminar
+ </button>
+ </div>
+ </div>
+ </div>
+ {% endfor %}
+ </div>
+ {% else %}
+ <div style="text-align:center;padding:2.5rem 1rem;">
+ <p style="color:var(--gris-500);margin-bottom:1rem;">Aún no has publicado ninguna prenda en la comunidad.</p>
+ </div>
+ {% endif %}
+ </div>
+
+ <!-- MODAL DE CONFIRMACIÓN PARA ELIMINAR PERSONALIZACIÓN -->
+ <div x-show="modalEliminarPers" x-cloak
+ style="position:fixed;inset:0;z-index:9999;background:rgba(11,15,25,0.78);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1rem;">
+ <div @click.away="modalEliminarPers = false"
+ style="background:linear-gradient(160deg, #111827 0%, #0B0F19 100%);border:1px solid rgba(255,255,255,0.12);border-radius:16px;max-width:440px;width:100%;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.5);color:#F8FAFC;">
+ <div style="height:4px;background:linear-gradient(90deg, #3B82F6, #8B5CF6, #EF4444);"></div>
+ <div style="padding:1.75rem;">
+ <h3 style="font-size:1.15rem;font-weight:900;margin:0 0 0.5rem;color:#F8FAFC;">¿Eliminar personalización?</h3>
+ <p style="font-size:0.88rem;color:#94A3B8;line-height:1.5;margin-bottom:1.5rem;">
+ Estás por eliminar la personalización <strong style="color:#F8FAFC;" x-text="persNombreEliminar"></strong>. Esta acción no se podrá deshacer.
+ </p>
+ <div style="display:flex;justify-content:flex-end;gap:0.75rem;">
+ <button type="button" @click="modalEliminarPers = false" class="btn btn-secondary btn-sm">Cancelar</button>
+ <form method="post" :action="`/tienda/personalizar/${persIdEliminar}/eliminar/`" style="margin:0;">
+ {% csrf_token %}
+ <button type="submit" class="btn btn-danger btn-sm">Sí, eliminar</button>
+ </form>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- MODAL DE CONFIRMACIÓN PARA ELIMINAR PUBLICACIÓN DE COMUNIDAD -->
+ <div x-show="modalEliminarPub" x-cloak
+ style="position:fixed;inset:0;z-index:9999;background:rgba(11,15,25,0.78);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1rem;">
+ <div @click.away="modalEliminarPub = false"
+ style="background:linear-gradient(160deg, #111827 0%, #0B0F19 100%);border:1px solid rgba(255,255,255,0.12);border-radius:16px;max-width:440px;width:100%;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.5);color:#F8FAFC;">
+ <div style="height:4px;background:linear-gradient(90deg, #3B82F6, #8B5CF6, #EF4444);"></div>
+ <div style="padding:1.75rem;">
+ <h3 style="font-size:1.15rem;font-weight:900;margin:0 0 0.5rem;color:#F8FAFC;">Confirmar eliminación de publicación</h3>
+ <p style="font-size:0.88rem;color:#94A3B8;line-height:1.5;margin-bottom:1.5rem;">
+ ¿Estás seguro de que deseas eliminar tu prenda publicada <strong style="color:#F8FAFC;" x-text="pubNombreEliminar"></strong>? Esta acción no se podrá deshacer.
+ </p>
+ <div style="display:flex;justify-content:flex-end;gap:0.75rem;">
+ <button type="button" @click="modalEliminarPub = false" class="btn btn-secondary btn-sm">Cancelar</button>
+ <form method="post" :action="pubUrlEliminar" style="margin:0;">
+ {% csrf_token %}
+ <button type="submit" class="btn btn-danger btn-sm">Confirmar eliminación</button>
+ </form>
+ </div>
+ </div>
+ </div>
+ </div>
+</div>
+{% endblock %}
