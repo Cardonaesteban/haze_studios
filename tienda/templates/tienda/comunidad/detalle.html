@@ -141,10 +141,10 @@
 
  {% if es_autor %}
  <div style="display:flex;gap:0.5rem;">
- <a href="{% url 'tienda_comunidad_editar' prenda.pk %}" class="btn btn-secondary btn-sm">
+ <a href="{% url 'tienda_comunidad_editar' prenda.pk %}" class="btn btn-secondary btn-sm" style="border-radius:8px;font-weight:700;padding:0.55rem 0.95rem;">
  Editar Publicación
  </a>
- <button type="button" @click="modalEliminarPrenda = true" class="btn btn-danger btn-sm">
+ <button type="button" @click="modalEliminarPrenda = true" class="btn btn-danger btn-sm" style="border-radius:8px;font-weight:700;padding:0.55rem 0.95rem;">
  Eliminar
  </button>
  </div>

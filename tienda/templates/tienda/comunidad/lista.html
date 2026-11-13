@@ -4,299 +4,331 @@
 {% block title %}Comunidad de Prendas Personalizadas | Haze Studios{% endblock %}
 
 {% block content %}
-<div class="page-header" style="margin-bottom:1.25rem;">
- <div>
- <h1 class="tienda-page-title"> Comunidad Haze Studios</h1>
- <p class="tienda-page-subtitle">Explora, reacciona y comenta las prendas oversize personalizadas diseñadas por la comunidad.</p>
- </div>
- <div style="display:flex;gap:0.65rem;flex-wrap:wrap;">
- <a href="{% url 'tienda_personalizar' %}" class="btn btn-secondary btn-sm">
- Estudio de Personalización
- </a>
- <a href="{% url 'tienda_comunidad_publicar' %}" class="btn btn-primary btn-sm" style="background:linear-gradient(135deg, #3B82F6, #8B5CF6);border:none;">
- Publicar mi Prenda
- </a>
- </div>
+<!-- CABECERA PRINCIPAL -->
+<div class="page-header" style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+  <div>
+    <h1 class="tienda-page-title" style="margin:0 0 0.35rem;">Comunidad Haze Studios</h1>
+    <p class="tienda-page-subtitle" style="margin:0;">Explora, guarda en favoritos y comenta los diseños oversize creados por la comunidad.</p>
+  </div>
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+    <a href="{% url 'tienda_personalizar' %}" class="btn btn-secondary btn-sm" style="border-radius:8px;font-weight:700;padding:0.55rem 1.1rem;">
+      Estudio de Personalización
+    </a>
+    <a href="{% url 'tienda_comunidad_publicar' %}" class="btn btn-primary btn-sm" style="border-radius:8px;font-weight:800;padding:0.55rem 1.25rem;background:linear-gradient(135deg, #2563EB, #7C3AED);border:none;color:#FFF;">
+      + Publicar mi Prenda
+    </a>
+  </div>
 </div>
 
-<!-- APARTADO DE PERSONALIZACIÓN Y COMUNIDAD -->
-<div style="background:linear-gradient(135deg, #0B0F19 0%, #111827 65%, #1E1B4B 100%);border-radius:14px;padding:1.4rem 1.75rem;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1.25rem;flex-wrap:wrap;border:1px solid rgba(59,130,246,0.3);">
- <div style="max-width:680px;">
- <span style="display:inline-block;background:rgba(59,130,246,0.2);color:#93C5FD;font-size:0.72rem;font-weight:800;padding:0.25rem 0.7rem;border-radius:999px;margin-bottom:0.4rem;text-transform:uppercase;">
- Escaparate Creativo · {{ total_activas_comunidad }} Diseño(s) Activo(s)
- </span>
- <h2 style="color:#F8FAFC;font-size:1.15rem;font-weight:900;margin:0 0 0.25rem;">
- Diseña en el Estudio Haze y comparte tu prenda personalizada
- </h2>
- <p style="color:#94A3B8;font-size:0.84rem;margin:0;line-height:1.45;">
- Crea tu personalización con nuestros estampados y tipografías oficiales; al seleccionarla para publicar en comunidad, todas sus especificaciones se cargarán automáticamente.
- </p>
- </div>
- <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
- {% if cliente %}
- <a href="{% url 'tienda_mis_personalizaciones' %}" class="btn btn-outline btn-sm" style="border-color:rgba(255,255,255,0.25);color:#F8FAFC;">
- Mis Personalizaciones
- </a>
- <a href="{% url 'tienda_comunidad_publicar' %}" class="btn btn-primary btn-sm" style="background:#3B82F6;border-color:#3B82F6;color:#fff;">
- + Publicar Prenda
- </a>
- {% else %}
- <a href="{% url 'tienda_login' %}?next={% url 'tienda_comunidad_lista' %}" class="btn btn-primary btn-sm" style="background:#3B82F6;border-color:#3B82F6;color:#fff;">
- Inicia sesión para publicar o reaccionar
- </a>
- {% endif %}
- </div>
+<!-- BANNER CREATIVO DE LA COMUNIDAD -->
+<div style="background:linear-gradient(135deg, #0B0F19 0%, #111827 65%, #1E1B4B 100%);border-radius:14px;padding:1.5rem 1.75rem;margin-bottom:2rem;display:flex;align-items:center;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;border:1px solid rgba(59,130,246,0.25);box-shadow:0 8px 24px rgba(0,0,0,0.12);">
+  <div style="max-width:680px;">
+    <span style="display:inline-block;background:rgba(59,130,246,0.2);color:#93C5FD;font-size:0.72rem;font-weight:800;padding:0.25rem 0.75rem;border-radius:999px;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.04em;">
+      Escaparate Creativo · {{ total_activas_comunidad }} Diseño(s) Activo(s)
+    </span>
+    <h2 style="color:#F8FAFC;font-size:1.25rem;font-weight:900;margin:0 0 0.35rem;line-height:1.3;">
+      Diseña en el Estudio Haze y comparte tu prenda personalizada
+    </h2>
+    <p style="color:#94A3B8;font-size:0.86rem;margin:0;line-height:1.5;">
+      Crea tu diseño con nuestros estampados y tipografías oficiales. Al seleccionarlo para publicar en la comunidad, todas sus especificaciones se cargarán de forma automática.
+    </p>
+  </div>
+  <div style="display:flex;gap:0.65rem;flex-wrap:wrap;">
+    {% if cliente %}
+    <a href="{% url 'tienda_mis_personalizaciones' %}" class="btn btn-outline btn-sm" style="border-radius:8px;font-weight:700;border-color:rgba(255,255,255,0.3);color:#F8FAFC;padding:0.55rem 1.1rem;">
+      Mis Personalizaciones
+    </a>
+    <a href="{% url 'tienda_comunidad_publicar' %}" class="btn btn-primary btn-sm" style="border-radius:8px;font-weight:800;background:#2563EB;border-color:#2563EB;color:#FFF;padding:0.55rem 1.25rem;">
+      Publicar Diseño
+    </a>
+    {% else %}
+    <a href="{% url 'tienda_login' %}?next={% url 'tienda_comunidad_lista' %}" class="btn btn-primary btn-sm" style="border-radius:8px;font-weight:800;background:#2563EB;border-color:#2563EB;color:#FFF;padding:0.55rem 1.25rem;">
+      Inicia sesión para publicar
+    </a>
+    {% endif %}
+  </div>
 </div>
 
 <!-- BUSCADOR Y FILTROS COMBINABLES DE LA COMUNIDAD -->
-<div class="tienda-card" style="padding:1.35rem 1.5rem;margin-bottom:1.75rem;">
- <form method="get" action="{% url 'tienda_comunidad_lista' %}">
- <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.9rem;flex-wrap:wrap;gap:0.5rem;">
- <span style="font-size:0.86rem;font-weight:900;color:var(--gris-900);text-transform:uppercase;letter-spacing:0.04em;">
- Buscar y Filtrar Prendas Activas (Filtros Combinables)
- </span>
- <div style="display:flex;align-items:center;gap:0.5rem;">
- <label for="id_orden" style="font-size:0.78rem;font-weight:800;color:var(--gris-600);margin:0;">Ordenar por:</label>
- <select name="orden" id="id_orden" onchange="this.form.submit()" style="padding:0.35rem 0.75rem;border-radius:8px;font-size:0.8rem;font-weight:700;border:1.5px solid var(--gris-200);width:auto;">
- <option value="recientes" {% if orden == 'recientes' %}selected{% endif %}>Más recientes</option>
- <option value="populares" {% if orden == 'populares' %}selected{% endif %}>Más populares (Reacciones)</option>
- </select>
- </div>
- </div>
+<div class="tienda-card" style="padding:1.5rem;margin-bottom:2rem;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,0.03);border:1.5px solid var(--gris-200);">
+  <form method="get" action="{% url 'tienda_comunidad_lista' %}">
+    <!-- CABECERA DE FILTROS -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:0.75rem;padding-bottom:1rem;border-bottom:1px solid var(--gris-200);">
+      <div style="display:flex;align-items:center;gap:0.6rem;">
+        <span style="font-size:0.95rem;font-weight:900;color:var(--gris-900);letter-spacing:-0.01em;">
+          Filtros de Búsqueda
+        </span>
+        <span style="font-size:0.75rem;background:var(--gris-100);color:var(--gris-600);font-weight:700;padding:0.2rem 0.65rem;border-radius:999px;">
+          {{ prendas|length }} resultado(s)
+        </span>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.5rem;">
+        <label for="id_orden" style="font-size:0.8rem;font-weight:700;color:var(--gris-600);margin:0;">Ordenar:</label>
+        <select name="orden" id="id_orden" onchange="this.form.submit()" 
+                style="padding:0.45rem 0.85rem;border-radius:8px;font-size:0.82rem;font-weight:700;border:1.5px solid var(--gris-300);background:#FFF;cursor:pointer;outline:none;">
+          <option value="recientes" {% if orden == 'recientes' %}selected{% endif %}>Más recientes</option>
+          <option value="populares" {% if orden == 'populares' %}selected{% endif %}>Más populares (Me gusta)</option>
+        </select>
+      </div>
+    </div>
 
- <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(175px, 1fr));gap:0.75rem;">
- <div>
- <label style="font-size:0.75rem;font-weight:700;color:var(--gris-600);display:block;margin-bottom:0.25rem;">Nombre de prenda</label>
- <input type="text" name="nombre" value="{{ nombre_q }}" placeholder="Ej. Cyber, Acid..." style="padding:0.5rem 0.75rem;font-size:0.83rem;">
- </div>
+    <!-- CAMPOS DE FILTRADO -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));gap:1rem;">
+      <div>
+        <label style="font-size:0.78rem;font-weight:700;color:var(--gris-700);display:block;margin-bottom:0.35rem;">Nombre de prenda</label>
+        <input type="text" name="nombre" value="{{ nombre_q }}" placeholder="Ej. Cyber, Acid, Heavy..." 
+               style="width:100%;padding:0.55rem 0.85rem;font-size:0.85rem;border-radius:8px;border:1.5px solid var(--gris-300);background:#FFF;box-sizing:border-box;outline:none;">
+      </div>
 
- <div>
- <label style="font-size:0.75rem;font-weight:700;color:var(--gris-600);display:block;margin-bottom:0.25rem;">Autor</label>
- <input type="text" name="autor" value="{{ autor_q }}" placeholder="Nombre del autor..." style="padding:0.5rem 0.75rem;font-size:0.83rem;">
- </div>
+      <div>
+        <label style="font-size:0.78rem;font-weight:700;color:var(--gris-700);display:block;margin-bottom:0.35rem;">Autor</label>
+        <input type="text" name="autor" value="{{ autor_q }}" placeholder="Nombre del diseñador..." 
+               style="width:100%;padding:0.55rem 0.85rem;font-size:0.85rem;border-radius:8px;border:1.5px solid var(--gris-300);background:#FFF;box-sizing:border-box;outline:none;">
+      </div>
 
- <div>
- <label style="font-size:0.75rem;font-weight:700;color:var(--gris-600);display:block;margin-bottom:0.25rem;">Color</label>
- <select name="color" style="padding:0.5rem 0.75rem;font-size:0.83rem;">
- <option value="">Todos los colores</option>
- {% for val, label in colores_choices %}
- <option value="{{ val }}" {% if color_q == val %}selected{% endif %}>{{ label }}</option>
- {% endfor %}
- </select>
- </div>
+      <div>
+        <label style="font-size:0.78rem;font-weight:700;color:var(--gris-700);display:block;margin-bottom:0.35rem;">Color</label>
+        <select name="color" style="width:100%;padding:0.55rem 0.85rem;font-size:0.85rem;border-radius:8px;border:1.5px solid var(--gris-300);background:#FFF;box-sizing:border-box;cursor:pointer;outline:none;">
+          <option value="">Todos los colores</option>
+          {% for val, label in colores_choices %}
+          <option value="{{ val }}" {% if color_q == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
 
- <div>
- <label style="font-size:0.75rem;font-weight:700;color:var(--gris-600);display:block;margin-bottom:0.25rem;">Talla</label>
- <select name="talla" style="padding:0.5rem 0.75rem;font-size:0.83rem;">
- <option value="">Todas las tallas</option>
- {% for val, label in tallas_choices %}
- <option value="{{ val }}" {% if talla_q == val %}selected{% endif %}>{{ label }}</option>
- {% endfor %}
- </select>
- </div>
+      <div>
+        <label style="font-size:0.78rem;font-weight:700;color:var(--gris-700);display:block;margin-bottom:0.35rem;">Talla</label>
+        <select name="talla" style="width:100%;padding:0.55rem 0.85rem;font-size:0.85rem;border-radius:8px;border:1.5px solid var(--gris-300);background:#FFF;box-sizing:border-box;cursor:pointer;outline:none;">
+          <option value="">Todas las tallas</option>
+          {% for val, label in tallas_choices %}
+          <option value="{{ val }}" {% if talla_q == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
 
- <div>
- <label style="font-size:0.75rem;font-weight:700;color:var(--gris-600);display:block;margin-bottom:0.25rem;">Estampado</label>
- <select name="estampado" style="padding:0.5rem 0.75rem;font-size:0.83rem;">
- <option value="">Todos los estampados</option>
- {% for val, label in estampados_choices %}
- <option value="{{ val }}" {% if estampado_q == val %}selected{% endif %}>{{ val }}</option>
- {% endfor %}
- </select>
- </div>
+      <div>
+        <label style="font-size:0.78rem;font-weight:700;color:var(--gris-700);display:block;margin-bottom:0.35rem;">Estampado</label>
+        <select name="estampado" style="width:100%;padding:0.55rem 0.85rem;font-size:0.85rem;border-radius:8px;border:1.5px solid var(--gris-300);background:#FFF;box-sizing:border-box;cursor:pointer;outline:none;">
+          <option value="">Todos los estampados</option>
+          {% for val, label in estampados_choices %}
+          <option value="{{ val }}" {% if estampado_q == val %}selected{% endif %}>{{ val }}</option>
+          {% endfor %}
+        </select>
+      </div>
 
- <div>
- <label style="font-size:0.75rem;font-weight:700;color:var(--gris-600);display:block;margin-bottom:0.25rem;">Tipografía</label>
- <select name="tipografia" style="padding:0.5rem 0.75rem;font-size:0.83rem;">
- <option value="">Todas las tipografías</option>
- {% for val, label in tipografias_choices %}
- <option value="{{ val }}" {% if tipografia_q == val %}selected{% endif %}>{{ val }}</option>
- {% endfor %}
- </select>
- </div>
- </div>
+      <div>
+        <label style="font-size:0.78rem;font-weight:700;color:var(--gris-700);display:block;margin-bottom:0.35rem;">Tipografía</label>
+        <select name="tipografia" style="width:100%;padding:0.55rem 0.85rem;font-size:0.85rem;border-radius:8px;border:1.5px solid var(--gris-300);background:#FFF;box-sizing:border-box;cursor:pointer;outline:none;">
+          <option value="">Todas las tipografías</option>
+          {% for val, label in tipografias_choices %}
+          <option value="{{ val }}" {% if tipografia_q == val %}selected{% endif %}>{{ val }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
 
- <div style="display:flex;justify-content:flex-end;gap:0.65rem;margin-top:1rem;padding-top:0.85rem;border-top:1px solid var(--gris-200);">
- {% if hay_filtros %}
- <a href="{% url 'tienda_comunidad_lista' %}" class="btn btn-secondary btn-sm">
- Limpiar filtros
- </a>
- {% endif %}
- <button type="submit" class="btn btn-primary btn-sm" style="padding:0.5rem 1.35rem;">
- Buscar en Comunidad
- </button>
- </div>
- </form>
+    <!-- BOTONES DE ACCIÓN DEL FILTRO -->
+    <div style="display:flex;justify-content:flex-end;align-items:center;gap:0.75rem;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--gris-200);flex-wrap:wrap;">
+      {% if hay_filtros %}
+      <a href="{% url 'tienda_comunidad_lista' %}" class="btn btn-outline btn-sm" style="border-radius:8px;padding:0.55rem 1.1rem;font-weight:700;">
+        Limpiar filtros
+      </a>
+      {% endif %}
+      <button type="submit" class="btn btn-primary btn-sm" style="border-radius:8px;padding:0.55rem 1.6rem;font-weight:800;background:var(--gris-900);border-color:var(--gris-900);color:#FFF;">
+        Aplicar Filtros
+      </button>
+    </div>
+  </form>
 </div>
 
-<!-- LISTADO DE PRENDAS PUBLICADAS -->
+<!-- LISTADO DE TARJETAS DE LA COMUNIDAD -->
 {% if prendas %}
 <div class="product-grid">
- {% for prenda in prendas %}
- <div class="product-card" style="display:flex;flex-direction:column;justify-content:space-between;">
- <div>
- <div class="product-card-img" style="height:240px;">
- <span class="badge-oversize">{{ prenda.talla }}</span>
- <span class="badge-stock-pill badge-entrada">{{ prenda.color }}</span>
- <img src="{{ prenda.get_imagen_url }}" alt="{{ prenda.nombre }}" class="product-card-real-img" loading="lazy">
- </div>
- <div class="product-card-body" style="padding-bottom:0.5rem;">
- <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;">
- <span class="product-category-tag" style="margin:0;">
- Por {{ prenda.autor.nombre }} {{ prenda.autor.apellido }}
- </span>
- <span style="font-size:0.72rem;color:var(--gris-400);font-weight:600;">
- {{ prenda.fecha_publicacion|date:"d/m/Y" }}
- </span>
- </div>
+  {% for prenda in prendas %}
+  <div class="product-card" style="display:flex;flex-direction:column;justify-content:space-between;border-radius:14px;overflow:hidden;border:1.5px solid var(--gris-200);box-shadow:0 4px 12px rgba(0,0,0,0.03);transition:transform 0.2s, box-shadow 0.2s;">
+    <div>
+      <!-- IMAGEN Y BADGES -->
+      <div class="product-card-img" style="height:250px;position:relative;background:#F8FAFC;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+        <!-- Píldoras de Especificaciones -->
+        <span style="position:absolute;top:10px;left:10px;background:rgba(15,23,42,0.88);color:#FFF;padding:0.25rem 0.65rem;border-radius:6px;font-size:0.7rem;font-weight:800;letter-spacing:0.04em;z-index:2;backdrop-filter:blur(4px);">
+          {{ prenda.talla }} · {{ prenda.color }}
+        </span>
 
- <a href="{% url 'tienda_comunidad_detalle' prenda.pk %}" class="product-title" style="display:block;margin-bottom:0.4rem;">
- {{ prenda.nombre }}
- </a>
+        <!-- Botón flotante para guardar en Favoritos -->
+        {% if cliente %}
+        <div x-data="favComunidadCard({% if prenda.pk in favoritos_comunidad_ids %}true{% else %}false{% endif %}, {{ prenda.pk }})"
+             style="position:absolute;top:10px;right:10px;z-index:3;">
+          <button type="button" @click="toggle()"
+                  title="Guardar en favoritos"
+                  style="background:rgba(255,255,255,0.95);border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.05rem;box-shadow:0 2px 8px rgba(0,0,0,0.15);transition:transform 0.15s;"
+                  @mouseenter="this.style.transform='scale(1.1)'"
+                  @mouseleave="this.style.transform='scale(1)'">
+            <span x-text="esFav ? '❤️' : '🤍'"></span>
+          </button>
+        </div>
+        {% endif %}
 
- <p style="font-size:0.82rem;color:var(--gris-600);margin-bottom:0.75rem;line-height:1.45;">
- {{ prenda.descripcion|truncatewords:16 }}
- </p>
+        <img src="{{ prenda.get_imagen_url }}" alt="{{ prenda.nombre }}" class="product-card-real-img" style="max-height:90%;max-width:90%;object-fit:contain;" loading="lazy">
+      </div>
 
- <!-- Especificaciones de Estampado y Tipografía -->
- <div style="background:#F8FAFC;border:1px solid var(--gris-200);border-radius:8px;padding:0.55rem 0.7rem;font-size:0.76rem;color:var(--gris-700);margin-bottom:0.75rem;">
- <div style="margin-bottom:0.2rem;"> <strong>Estampado:</strong> {{ prenda.estampado }}</div>
- <div> <strong>Tipografía:</strong> {{ prenda.tipografia }}</div>
- </div>
- </div>
- </div>
+      <!-- CUERPO DE LA TARJETA -->
+      <div class="product-card-body" style="padding:1.15rem 1.25rem 0.75rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.45rem;">
+          <span style="font-size:0.75rem;font-weight:800;color:#2563EB;background:#EFF6FF;padding:0.2rem 0.6rem;border-radius:999px;">
+            Por {{ prenda.autor.nombre }}
+          </span>
+          <span style="font-size:0.72rem;color:var(--gris-400);font-weight:600;">
+            {{ prenda.fecha_publicacion|date:"d/m/Y" }}
+          </span>
+        </div>
 
- <div style="padding:0 1.25rem 1.25rem;">
- <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;padding-top:0.75rem;border-top:1px solid var(--gris-200);">
- <!-- Botón de reacción Me Gusta con corazón y Favoritos -->
- <div style="display:flex;align-items:center;gap:0.4rem;">
- {% if cliente %}
- <div x-data="reaccionCard({% if prenda.pk in reacciones_cliente_ids %}true{% else %}false{% endif %}, {{ prenda.total_reacciones }}, {{ prenda.pk }})">
- <button type="button" @click="toggle()"
- style="background:none;border:1.5px solid var(--gris-200);border-radius:999px;padding:0.35rem 0.75rem;cursor:pointer;display:inline-flex;align-items:center;gap:0.35rem;font-size:0.78rem;font-weight:800;"
- :style="activo ? 'border-color:#EF4444;background:#FEF2F2;color:#DC2626;' : 'color:var(--gris-700);'">
- <span x-text="activo ? '❤️' : '🤍'"></span>
- <span x-text="'Me gusta (' + total + ')'"></span>
- </button>
- </div>
+        <a href="{% url 'tienda_comunidad_detalle' prenda.pk %}" class="product-title" style="display:block;font-size:1.05rem;font-weight:900;color:var(--gris-900);line-height:1.35;text-decoration:none;margin-bottom:0.45rem;">
+          {{ prenda.nombre }}
+        </a>
 
- <!-- Botón de Favorito en tarjeta -->
- <div x-data="favComunidadCard({% if prenda.pk in favoritos_comunidad_ids %}true{% else %}false{% endif %}, {{ prenda.pk }})">
- <button type="button" @click="toggle()"
- title="Guardar en favoritos"
- style="background:none;border:1.5px solid var(--gris-200);border-radius:50%;width:32px;height:32px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:0.85rem;"
- :style="esFav ? 'border-color:#EF4444;background:#FEF2F2;' : 'color:var(--gris-600);'">
- <span x-text="esFav ? '❤️' : '🤍'"></span>
- </button>
- </div>
- {% else %}
- <a href="{% url 'tienda_login' %}?next={% url 'tienda_comunidad_lista' %}"
- style="text-decoration:none;border:1.5px solid var(--gris-200);border-radius:999px;padding:0.35rem 0.75rem;display:inline-flex;align-items:center;gap:0.35rem;font-size:0.78rem;font-weight:800;color:var(--gris-700);">
- 🤍 Me gusta ({{ prenda.total_reacciones }})
- </a>
- {% endif %}
- </div>
+        <p style="font-size:0.82rem;color:var(--gris-600);margin-bottom:0.75rem;line-height:1.45;min-height:2.4em;">
+          {{ prenda.descripcion|truncatewords:14 }}
+        </p>
 
- <a href="{% url 'tienda_comunidad_detalle' prenda.pk %}#comentarios"
- style="text-decoration:none;font-size:0.78rem;font-weight:700;color:var(--gris-600);">
- Comentarios ({{ prenda.total_comentarios }})
- </a>
+        <!-- ESPECIFICACIONES DE ESTAMPADO Y TIPOGRAFÍA EN CHIPS -->
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+          <span style="font-size:0.73rem;background:#F1F5F9;color:#334155;padding:0.25rem 0.6rem;border-radius:6px;font-weight:700;">
+            {{ prenda.estampado }}
+          </span>
+          <span style="font-size:0.73rem;background:#F1F5F9;color:#334155;padding:0.25rem 0.6rem;border-radius:6px;font-weight:700;">
+            {{ prenda.tipografia }}
+          </span>
+        </div>
+      </div>
+    </div>
 
- <div style="display:flex;gap:0.35rem;margin-left:auto;">
- {% if cliente and prenda.autor_id == cliente.pk %}
- <a href="{% url 'tienda_comunidad_editar' prenda.pk %}" class="btn btn-secondary btn-sm" style="padding:0.4rem 0.7rem;font-size:0.76rem;">
- Editar
- </a>
- {% endif %}
- <a href="{% url 'tienda_comunidad_detalle' prenda.pk %}" class="btn btn-primary btn-sm" style="padding:0.4rem 0.85rem;font-size:0.78rem;">
- Ver Detalle
- </a>
- </div>
- </div>
- </div>
- </div>
- {% endfor %}
+    <!-- PIE DE TARJETA CON INTERACCIONES Y ACCIONES -->
+    <div style="padding:0 1.25rem 1.15rem;">
+      <!-- FILA DE ESTADÍSTICAS SOCIALES -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.65rem 0;border-top:1px solid var(--gris-200);margin-bottom:0.75rem;">
+        <!-- Botón Me Gusta con corazón -->
+        {% if cliente %}
+        <div x-data="reaccionCard({% if prenda.pk in reacciones_cliente_ids %}true{% else %}false{% endif %}, {{ prenda.total_reacciones }}, {{ prenda.pk }})">
+          <button type="button" @click="toggle()"
+                  style="background:none;border:1.5px solid var(--gris-200);border-radius:999px;padding:0.35rem 0.8rem;cursor:pointer;display:inline-flex;align-items:center;gap:0.35rem;font-size:0.78rem;font-weight:800;transition:all 0.15s;"
+                  :style="activo ? 'border-color:#EF4444;background:#FEF2F2;color:#DC2626;' : 'color:var(--gris-700);'">
+            <span x-text="activo ? '❤️' : '🤍'"></span>
+            <span>Me gusta</span>
+            <span style="background:rgba(0,0,0,0.06);padding:0.05rem 0.45rem;border-radius:999px;" x-text="total"></span>
+          </button>
+        </div>
+        {% else %}
+        <a href="{% url 'tienda_login' %}?next={% url 'tienda_comunidad_lista' %}"
+           style="text-decoration:none;border:1.5px solid var(--gris-200);border-radius:999px;padding:0.35rem 0.8rem;display:inline-flex;align-items:center;gap:0.35rem;font-size:0.78rem;font-weight:800;color:var(--gris-700);">
+          🤍 Me gusta ({{ prenda.total_reacciones }})
+        </a>
+        {% endif %}
+
+        <!-- Enlace a Comentarios -->
+        <a href="{% url 'tienda_comunidad_detalle' prenda.pk %}#comentarios"
+           style="text-decoration:none;font-size:0.78rem;font-weight:700;color:var(--gris-600);display:inline-flex;align-items:center;gap:0.3rem;">
+          <span>Comentarios</span>
+          <span style="background:var(--gris-100);color:var(--gris-700);padding:0.1rem 0.45rem;border-radius:999px;">{{ prenda.total_comentarios }}</span>
+        </a>
+      </div>
+
+      <!-- BOTONES DE ACCIÓN PRINCIPALES -->
+      <div style="display:flex;gap:0.5rem;align-items:center;">
+        <a href="{% url 'tienda_comunidad_detalle' prenda.pk %}" class="btn btn-primary btn-sm" 
+           style="flex:1;text-align:center;padding:0.55rem 0.85rem;font-weight:800;border-radius:8px;font-size:0.82rem;background:var(--gris-900);border-color:var(--gris-900);color:#FFF;">
+          Ver Detalle
+        </a>
+        {% if cliente and prenda.autor_id == cliente.pk %}
+        <a href="{% url 'tienda_comunidad_editar' prenda.pk %}" class="btn btn-outline btn-sm" 
+           style="padding:0.55rem 0.85rem;font-weight:700;border-radius:8px;font-size:0.82rem;">
+          Editar
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
 </div>
 {% else %}
-<div class="tienda-card" style="text-align:center;padding:3.5rem 1.5rem;">
- <h2 style="font-size:1.25rem;font-weight:900;color:var(--gris-900);margin-bottom:0.5rem;">
- No se encontraron prendas publicadas con esos criterios
- </h2>
- <p style="color:var(--gris-500);margin-bottom:1.25rem;font-size:0.9rem;">
- {% if hay_filtros %}
- Intenta ajustar o limpiar los filtros de búsqueda combinados.
- {% else %}
- ¡Sé el primero en personalizar una prenda en el Estudio Haze y compartirla con la comunidad!
- {% endif %}
- </p>
- <div style="display:flex;justify-content:center;gap:0.75rem;flex-wrap:wrap;">
- {% if hay_filtros %}
- <a href="{% url 'tienda_comunidad_lista' %}" class="btn btn-secondary btn-sm">Ver todas las publicaciones</a>
- {% endif %}
- <a href="{% url 'tienda_personalizar' %}" class="btn btn-primary btn-sm"> Crear Personalización</a>
- </div>
+<div class="tienda-card" style="text-align:center;padding:3.5rem 1.5rem;border-radius:14px;">
+  <h2 style="font-size:1.25rem;font-weight:900;color:var(--gris-900);margin-bottom:0.5rem;">
+    No se encontraron prendas publicadas con esos criterios
+  </h2>
+  <p style="color:var(--gris-500);margin-bottom:1.5rem;font-size:0.9rem;">
+    Prueba ajustando los filtros o explora todos los diseños de la comunidad.
+  </p>
+  <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;">
+    {% if hay_filtros %}
+    <a href="{% url 'tienda_comunidad_lista' %}" class="btn btn-outline btn-sm" style="border-radius:8px;font-weight:700;padding:0.55rem 1.25rem;">
+      Limpiar filtros
+    </a>
+    {% endif %}
+    <a href="{% url 'tienda_personalizar' %}" class="btn btn-primary btn-sm" style="border-radius:8px;font-weight:800;padding:0.55rem 1.25rem;">
+      Crear Personalización
+    </a>
+  </div>
 </div>
 {% endif %}
 
 <script>
 document.addEventListener('alpine:init', () => {
- Alpine.data('reaccionCard', (estadoInicial, totalInicial, prendaId) => ({
- activo: estadoInicial,
- total: totalInicial,
- cargando: false,
- async toggle() {
- if (this.cargando) return;
- this.cargando = true;
- try {
- const resp = await fetch(`/tienda/comunidad/${prendaId}/reaccionar/`, {
- method: 'POST',
- headers: {
- 'X-CSRFToken': '{{ csrf_token }}',
- 'X-Requested-With': 'XMLHttpRequest',
- }
- });
- const data = await resp.json();
- if (data.success) {
- this.activo = data.reaccionado;
- this.total = data.total;
- }
- } catch (e) {
- console.error(e);
- } finally {
- this.cargando = false;
- }
- }
- }));
+  Alpine.data('reaccionCard', (estadoInicial, totalInicial, prendaId) => ({
+    activo: estadoInicial,
+    total: totalInicial,
+    cargando: false,
+    async toggle() {
+      if (this.cargando) return;
+      this.cargando = true;
+      try {
+        const resp = await fetch(`/tienda/comunidad/${prendaId}/reaccionar/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'X-Requested-With': 'XMLHttpRequest',
+          }
+        });
+        const data = await resp.json();
+        if (data.success) {
+          this.activo = data.reaccionado;
+          this.total = data.total;
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        this.cargando = false;
+      }
+    }
+  }));
 
- Alpine.data('favComunidadCard', (estadoInicial, prendaId) => ({
- esFav: estadoInicial,
- cargando: false,
- async toggle() {
- if (this.cargando) return;
- const nuevo = !this.esFav;
- this.esFav = nuevo;
- this.cargando = true;
- try {
- const resp = await fetch(`/tienda/favoritos/comunidad/toggle-api/${prendaId}/`, {
- method: 'POST',
- headers: {
- 'X-CSRFToken': '{{ csrf_token }}',
- 'Content-Type': 'application/json',
- 'X-Requested-With': 'XMLHttpRequest',
- },
- body: JSON.stringify({ accion: nuevo ? 'agregar' : 'quitar' })
- });
- const data = await resp.json();
- if (!data.success) {
- this.esFav = !nuevo;
- }
- } catch (e) {
- this.esFav = !nuevo;
- } finally {
- this.cargando = false;
- }
- }
- }));
+  Alpine.data('favComunidadCard', (estadoInicial, prendaId) => ({
+    esFav: estadoInicial,
+    cargando: false,
+    async toggle() {
+      if (this.cargando) return;
+      const nuevo = !this.esFav;
+      this.esFav = nuevo;
+      this.cargando = true;
+      try {
+        const resp = await fetch(`/tienda/favoritos/comunidad/toggle-api/${prendaId}/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body: JSON.stringify({ accion: nuevo ? 'agregar' : 'quitar' })
+        });
+        const data = await resp.json();
+        if (!data.success) {
+          this.esFav = !nuevo;
+        }
+      } catch (e) {
+        this.esFav = !nuevo;
+      } finally {
+        this.cargando = false;
+      }
+    }
+  }));
 });
 </script>
 {% endblock %}
