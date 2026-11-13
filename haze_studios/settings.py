@@ -134,3 +134,12 @@ else:
 PAYPAL_CLIENT_ID = config('PAYPAL_CLIENT_ID', default=os.environ.get('PAYPAL_CLIENT_ID', ''))
 PAYPAL_SECRET = config('PAYPAL_SECRET', default=os.environ.get('PAYPAL_SECRET', ''))
 PAYPAL_MODE = str(config('PAYPAL_MODE', default=os.environ.get('PAYPAL_MODE', 'sandbox'))).lower()
+
+# Seguridad de Producción (Se activa automáticamente cuando DEBUG=False)
+if not DEBUG:
+    SECURE_SSL_REDIRECT = str(config('SECURE_SSL_REDIRECT', default='True')).lower() in ('true', '1', 'yes')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True

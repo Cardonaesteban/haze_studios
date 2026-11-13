@@ -21,7 +21,7 @@
 
 {% include "tienda/includes/tienda_form_errors.html" %}
 
-<div x-data="publicarComunidadHandler()" style="display:grid;grid-template-columns:1.2fr 0.85fr;gap:1.75rem;align-items:start;">
+<div x-data="publicarComunidadHandler()" class="custom-studio-grid">
  <div class="tienda-card" style="padding:1.75rem;">
  <form method="post" enctype="multipart/form-data" novalidate>
  {% csrf_token %}
@@ -54,7 +54,7 @@
  {% for e in form.descripcion.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
  </div>
 
- <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+ <div class="form-row-2col">
  <div class="form-group{% if form.color.errors %} has-error{% endif %}">
  <label for="id_color">Color *</label>
  <select name="color" id="id_color" x-model="color">
@@ -76,7 +76,7 @@
  </div>
  </div>
 
- <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+ <div class="form-row-2col">
  <div class="form-group{% if form.estampado.errors %} has-error{% endif %}">
  <label for="id_estampado">Estampado usado *</label>
  <select name="estampado" id="id_estampado" x-model="estampado">
@@ -133,8 +133,9 @@
  </div>
 </div>
 
+{{ personalizaciones_json|json_script:"personalizaciones-usuario-data" }}
 <script>
-const PERSONALIZACIONES_USUARIO = {{ personalizaciones_json|safe }};
+const PERSONALIZACIONES_USUARIO = JSON.parse(document.getElementById('personalizaciones-usuario-data').textContent || '{}');
 
 function publicarComunidadHandler() {
  const initId = '{{ form.personalizacion.value|default:pers_inicial_id }}';

@@ -219,8 +219,9 @@
     </div>
 </div>
 
+{{ productos_json|json_script:"productos-catalogo-data" }}
 <script>
-const PRODUCTOS_CATALOGO = {{ productos_json|safe }};
+const PRODUCTOS_CATALOGO = JSON.parse(document.getElementById('productos-catalogo-data').textContent || '{}');
 
 const PALETA_COLORES = {
     'Negro Obsidiana':   { fill: '#161922', stroke: '#2D3343',neck: '#0D0F14', textPrimary: '#F8FAFC', accent: '#A855F7', secondary: '#38BDF8' },

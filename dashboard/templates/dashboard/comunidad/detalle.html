@@ -4,7 +4,7 @@
 {% block content %}
 <div class="page-header">
  <h1>Detalle de Prenda Publicada y Personalización</h1>
- <div style="display:flex;gap:0.5rem;">
+ <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
  <a class="btn btn-secondary" href="{% url 'comunidad_admin_editar' prenda.pk %}">Editar</a>
  <a class="btn btn-secondary" href="{% url 'comunidad_admin_estado' prenda.pk %}">Cambiar Estado</a>
  <a class="btn btn-danger" href="{% url 'comunidad_admin_eliminar' prenda.pk %}">Eliminar</a>
@@ -12,7 +12,7 @@
  </div>
 </div>
 
-<div style="display:grid;grid-template-columns:300px 1fr;gap:1.5rem;align-items:start;">
+<div class="dashboard-detail-grid" style="display:grid;grid-template-columns:300px 1fr;gap:1.5rem;align-items:start;">
  <div class="form-card" style="padding:1.25rem;text-align:center;">
  <img src="{{ prenda.get_imagen_url }}" alt="{{ prenda.nombre }}"
  style="width:100%;height:260px;object-fit:cover;border-radius:10px;border:1px solid var(--gris-200);margin-bottom:0.85rem;">

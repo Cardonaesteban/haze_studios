@@ -20,7 +20,7 @@
  <form method="post" enctype="multipart/form-data" novalidate>
  {% csrf_token %}
 
- <div style="display:grid;grid-template-columns:2fr 1fr;gap:1rem;">
+ <div class="form-row-2col">
  <div class="form-group{% if form.nombre.errors %} has-error{% endif %}">
  <label for="{{ form.nombre.id_for_label }}">Nombre de la prenda *</label>
  {{ form.nombre }}
@@ -41,7 +41,7 @@
  {% for e in form.descripcion.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
  </div>
 
- <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+ <div class="form-row-2col">
  <div class="form-group{% if form.color.errors %} has-error{% endif %}">
  <label for="{{ form.color.id_for_label }}">Color *</label>
  {{ form.color }}
@@ -55,7 +55,7 @@
  </div>
  </div>
 
- <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+ <div class="form-row-2col">
  <div class="form-group{% if form.estampado.errors %} has-error{% endif %}">
  <label for="{{ form.estampado.id_for_label }}">Estampado usado *</label>
  {{ form.estampado }}
@@ -69,7 +69,7 @@
  </div>
  </div>
 
- <div style="margin-top:1.5rem;display:flex;gap:0.85rem;">
+ <div style="margin-top:1.5rem;display:flex;gap:0.85rem;flex-wrap:wrap;">
  <button type="submit" class="btn btn-primary" style="padding:0.8rem 1.75rem;">
  Guardar Cambios
  </button>

@@ -9,13 +9,13 @@
             Enviado el {{ mensaje.fecha_envio|date:"d/m/Y \a \l\a\s H:i" }}
         </p>
     </div>
-    <div style="display: flex; gap: 0.5rem;">
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
         <a href="{% url 'mensajes_list' %}" class="btn btn-secondary">← Volver a mensajes</a>
         <a href="{% url 'mensajes_eliminar' mensaje.pk %}" class="btn btn-danger">Eliminar</a>
     </div>
 </div>
 
-<div style="display: grid; grid-template-columns: 1fr 1.6fr; gap: 1.5rem; align-items: start;">
+<div class="dashboard-detail-grid" style="display: grid; grid-template-columns: 1fr 1.6fr; gap: 1.5rem; align-items: start;">
     <!-- Tarjeta de Metadatos -->
     <div class="card" style="background: var(--blanco); border: 1px solid var(--gris-200); border-radius: var(--border-radius-lg); padding: 1.5rem; box-shadow: var(--sombra-sm);">
         <h3 style="font-size: 1.05rem; font-weight: 600; margin-bottom: 1.25rem; color: var(--gris-900); border-bottom: 1px solid var(--gris-100); padding-bottom: 0.75rem;">

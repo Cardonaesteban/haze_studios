@@ -456,7 +456,7 @@ tbody tr:hover { background: var(--gris-100); transition: background 0.15s; }
 }
 
 /* ── RESPONSIVE BASE & DASHBOARD ─────────── */
-@media (max-width: 850px) {
+@media (max-width: 1200px) {
     .navbar {
         display: flex;
         flex-direction: column;
@@ -487,6 +487,15 @@ tbody tr:hover { background: var(--gris-100); transition: background 0.15s; }
         padding: 0.55rem 0.75rem;
         font-size: 0.88rem;
     }
+    .navbar-nav form {
+        width: 100%;
+        display: block !important;
+    }
+    .navbar-nav form .nav-logout {
+        width: 100%;
+        text-align: left;
+        display: block;
+    }
     .nav-dropdown-menu {
         position: static;
         box-shadow: none;
@@ -495,18 +504,110 @@ tbody tr:hover { background: var(--gris-100); transition: background 0.15s; }
     }
 }
 
+.table-wrap table {
+    width: 100%;
+    min-width: 780px;
+}
+.table-wrap th {
+    white-space: nowrap;
+}
+.table-wrap td.acciones,
+.table-wrap td:last-child {
+    white-space: nowrap;
+}
+
+@media (max-width: 800px) {
+    .dashboard-detail-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1.25rem !important;
+    }
+}
+
 @media (max-width: 768px) {
     .page-wrap { padding: 1rem 0.85rem 2.5rem; }
     h1 { font-size: 1.5rem; }
-    table { font-size: 0.8rem; }
-    .table-wrap table { min-width: 620px; }
-    th, td { padding: 0.6rem 0.5rem; }
+    table { font-size: 0.82rem; }
+    th, td { padding: 0.65rem 0.6rem; }
     .botones { flex-direction: column; gap: 0.25rem; }
+}
+
+@media (max-width: 640px) {
+    .page-header {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 0.75rem !important;
+    }
+    .page-header h1 {
+        font-size: 1.45rem;
+        word-break: break-word;
+    }
+    .page-header .btn {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+    .page-actions {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.75rem !important;
+    }
+    .page-actions form {
+        width: 100% !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.5rem !important;
+    }
+    .page-actions form label {
+        width: 100% !important;
+        margin-bottom: 0.15rem;
+    }
+    .page-actions form select,
+    .page-actions form input,
+    .page-actions form .btn {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    .page-actions > span {
+        width: 100% !important;
+        font-size: 0.82rem !important;
+    }
+    .formset-row {
+        grid-template-columns: 1fr !important;
+        gap: 0.65rem !important;
+    }
 }
 
 @media (max-width: 480px) {
     .page-wrap { padding: 0.85rem 0.65rem 2rem; }
-    .table-wrap table { min-width: 580px; }
+    .form-wrap {
+        padding: 1.25rem 1rem;
+        border-radius: var(--border-radius-xl);
+    }
+    .stats-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 0.6rem;
+    }
+    .stat-box {
+        padding: 0.75rem 0.5rem;
+    }
+    .stat-box .num {
+        font-size: 1.4rem;
+    }
+    .modules-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    .module-card {
+        padding: 1rem 1.15rem;
+    }
+    .login-wrap {
+        padding: 1rem;
+    }
+    .login-box {
+        padding: 1.75rem 1.25rem;
+    }
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -537,8 +638,8 @@ tbody tr:hover { background: var(--gris-100); transition: background 0.15s; }
 .stat-alert { border:2px solid #ffc107 !important; background:#fff8e1 !important; }
 
 /* ── Page header ──────────────────────────── */
-.page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; }
-.page-header h1 { margin:0; }
+.page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.75rem; }
+.page-header h1 { margin:0; word-break:break-word; }
 
 /* ── Help text ────────────────────────────── */
 small.help, p.help { color:#6c757d; font-size:.82rem; display:block; margin-top:2px; }

@@ -9,7 +9,7 @@
             Vista de solo lectura del permiso del sistema
         </p>
     </div>
-    <div style="display: flex; gap: 0.5rem;">
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
         <a href="{% url 'permisos_list' %}" class="btn btn-secondary">← Volver a permisos</a>
         <a href="{% url 'permisos_editar' permiso.pk %}" class="btn btn-primary">Editar descripción</a>
     </div>

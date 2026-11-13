@@ -4,7 +4,7 @@
 
 <div class="page-header">
  <h1> Pedido #{{ pedido.pk }}</h1>
- <div style="display:flex;gap:0.5rem;">
+ <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
  <a class="btn btn-secondary" href="{% url 'pedidos_editar' pedido.pk %}"> Editar</a>
  <a class="btn btn-secondary" href="{% url 'pedidos_list' %}">← Volver</a>
  </div>

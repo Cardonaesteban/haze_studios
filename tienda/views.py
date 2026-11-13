@@ -20,6 +20,7 @@ from django.contrib.auth.hashers import check_password, make_password
 from django.contrib import messages
 from django.db import transaction
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from functools import wraps
 
 from dashboard.models import (
@@ -52,7 +53,8 @@ logger = logging.getLogger(__name__)
 def cliente_required(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
-        if not request.session.get('cliente_id'):
+        cliente = get_cliente_actual(request)
+        if not cliente:
             messages.info(request, 'Debes iniciar sesión para continuar.')
             return redirect(f'{reverse("tienda_login")}?next={request.path}')
         return view_func(request, *args, **kwargs)
@@ -915,11 +917,12 @@ def login_cliente(request):
                 if cliente.estado == 'inactivo':
                     error = 'Tu cuenta se encuentra inactiva. Contacta con soporte.'
                 elif check_password(contraseña, cliente.contraseña):
+                    request.session.cycle_key()
                     request.session['cliente_id'] = cliente.pk
                     request.session['cliente_nombre'] = cliente.nombre
                     request.session['cliente_correo'] = cliente.correo
                     messages.success(request, f'¡Bienvenido de nuevo, {cliente.nombre}!')
-                    if next_url and next_url != 'tienda_inicio' and next_url.startswith('/'):
+                    if next_url and next_url != 'tienda_inicio' and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
                         return redirect(next_url)
                     return redirect('tienda_inicio')
                 else:
@@ -943,7 +946,8 @@ def registro_cliente(request):
             cliente.estado = 'activo'
             cliente.save()
 
-            # Iniciar sesión automáticamente
+            # Iniciar sesión automáticamente de forma segura
+            request.session.cycle_key()
             request.session['cliente_id'] = cliente.pk
             request.session['cliente_nombre'] = cliente.nombre
             request.session['cliente_correo'] = cliente.correo
@@ -1343,7 +1347,7 @@ def personalizar_producto(request):
         'cliente': cliente,
         'producto_preseleccionado': producto_preseleccionado,
         'productos_disponibles': productos_catalogo,
-        'productos_json': json.dumps(productos_info),
+        'productos_json': productos_info,
         'estampados_choices': ESTAMPADOS_OFICIALES_CHOICES,
         'tipografias_choices': TIPOGRAFIAS_OFICIALES_CHOICES,
     }
@@ -1567,7 +1571,7 @@ def comunidad_publicar(request):
         'form': form,
         'cliente': cliente,
         'personalizaciones_usuario': personalizaciones_usuario,
-        'personalizaciones_json': json.dumps(pers_data),
+        'personalizaciones_json': pers_data,
         'pers_inicial_id': str(pers_preseleccionada.pk) if pers_preseleccionada else '',
     }
     return render(request, 'tienda/comunidad/publicar.html', context)
