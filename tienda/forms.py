@@ -63,7 +63,7 @@ class RegistroClienteForm(forms.ModelForm):
         correo = self.cleaned_data.get('correo', '').strip().lower()
         if not correo:
             raise ValidationError('El correo electrónico es obligatorio.')
-        if Cliente.objects.filter(correo=correo).exists():
+        if Cliente.objects.filter(correo__iexact=correo).exists():
             raise ValidationError('Ya existe una cuenta registrada con este correo electrónico.')
         return correo
 
@@ -85,18 +85,20 @@ class RegistroClienteForm(forms.ModelForm):
 
     def clean_direccion(self):
         direccion = self.cleaned_data.get('direccion', '').strip()
+        if not direccion:
+            raise ValidationError('La dirección es obligatoria.')
         if len(direccion) < 10:
-            raise ValidationError('La direccion debe tener mínimo 10 caracteres).')
+            raise ValidationError('La dirección debe tener al menos 10 caracteres.')
         return direccion
 
     def clean_contraseña(self):
         contraseña = self.cleaned_data.get('contraseña', '').strip()
+        if not contraseña:
+            raise ValidationError('La contraseña es obligatoria.')
         if len(contraseña) < 6:
             raise ValidationError('La contraseña debe tener al menos 6 caracteres.')
         if ' ' in contraseña:
             raise ValidationError('La contraseña no puede contener espacios.')
-        if not contraseña:
-            raise ValidationError('La contraseña es obligatoria.')  
         return contraseña
 
     def clean(self):
@@ -119,15 +121,26 @@ class PerfilClienteForm(forms.ModelForm):
 
     def clean_nombre(self):
         nombre = self.cleaned_data.get('nombre', '').strip()
+        if not nombre:
+            raise ValidationError('El nombre es obligatorio.')
         if len(nombre) < 2:
             raise ValidationError('El nombre debe tener al menos 2 caracteres.')
+        if any(c.isdigit() for c in nombre):
+            raise ValidationError('El nombre no puede contener números.')
         return nombre
 
     def clean_apellido(self):
         apellido = self.cleaned_data.get('apellido', '').strip()
+        if not apellido:
+            raise ValidationError('El apellido es obligatorio.')
         if len(apellido) < 2:
             raise ValidationError('El apellido debe tener al menos 2 caracteres.')
+        if any(c.isdigit() for c in apellido):
+            raise ValidationError('El apellido no puede contener números.')
         return apellido
+
+    def clean_correo(self):
+        return self.instance.correo if self.instance and self.instance.pk else self.cleaned_data.get('correo')
 
     def clean_telefono(self):
         telefono = self.cleaned_data.get('telefono', '').strip()
@@ -144,6 +157,14 @@ class PerfilClienteForm(forms.ModelForm):
         if len(telefono) > 15:
             raise ValidationError('El teléfono no puede tener más de 15 dígitos.')
         return telefono
+
+    def clean_direccion(self):
+        direccion = self.cleaned_data.get('direccion', '').strip()
+        if not direccion:
+            raise ValidationError('La dirección es obligatoria.')
+        if len(direccion) < 10:
+            raise ValidationError('La dirección debe tener al menos 10 caracteres.')
+        return direccion
 
 
 class CambiarPasswordClienteForm(forms.Form):
@@ -171,6 +192,16 @@ class CambiarPasswordClienteForm(forms.Form):
         if self.cliente and not check_password(actual, self.cliente.contraseña):
             raise ValidationError('La contraseña actual no es correcta.')
         return actual
+
+    def clean_nuevo_password(self):
+        nuevo = self.cleaned_data.get('nuevo_password', '').strip()
+        if not nuevo:
+            raise ValidationError('La nueva contraseña es obligatoria.')
+        if len(nuevo) < 6:
+            raise ValidationError('La nueva contraseña debe tener al menos 6 caracteres.')
+        if ' ' in nuevo:
+            raise ValidationError('La nueva contraseña no puede contener espacios.')
+        return nuevo
 
     def clean(self):
         cleaned_data = super().clean()
@@ -205,8 +236,14 @@ class ConfirmarPasswordClienteForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-        p1 = cleaned_data.get('password1')
-        p2 = cleaned_data.get('password2')
+        p1 = cleaned_data.get('password1', '').strip() if cleaned_data.get('password1') else ''
+        p2 = cleaned_data.get('password2', '').strip() if cleaned_data.get('password2') else ''
+        if not p1:
+            self.add_error('password1', 'La contraseña es obligatoria.')
+        elif len(p1) < 6:
+            self.add_error('password1', 'La contraseña debe tener al menos 6 caracteres.')
+        elif ' ' in p1:
+            self.add_error('password1', 'La contraseña no puede contener espacios.')
         if p1 and p2 and p1 != p2:
             self.add_error('password2', 'Las contraseñas no coinciden.')
         return cleaned_data
@@ -254,6 +291,8 @@ class CheckoutForm(forms.Form):
 
     def clean_direccion_envio(self):
         direccion = self.cleaned_data.get('direccion_envio', '').strip()
+        if not direccion:
+            raise ValidationError('La dirección es obligatoria.')
         if len(direccion) < 10:
             raise ValidationError('La dirección debe tener al menos 10 caracteres.')
         return direccion
@@ -269,17 +308,18 @@ class CheckoutForm(forms.Form):
 
     def clean_telefono_contacto(self):
         telefono = self.cleaned_data.get('telefono_contacto', '').strip()
-        digitos = ''.join(c for c in telefono if c.isdigit())
-        if len(digitos) < 7:
-            raise ValidationError('Ingresa un teléfono válido (mínimo 7 dígitos).')
-        if len(digitos) > 15:
-            raise ValidationError('El teléfono no puede tener más de 15 dígitos.')
-        if not telefono.isdigit():
-            raise ValidationError('El teléfono debe contener solo números.')
+        if not telefono:
+            raise ValidationError('El teléfono de contacto es obligatorio.')
         if ' ' in telefono:
             raise ValidationError('El teléfono no puede contener espacios.')
         if '.' in telefono:
             raise ValidationError('El teléfono no puede contener puntos.')
+        if not telefono.isdigit():
+            raise ValidationError('El teléfono debe contener solo números.')
+        if len(telefono) < 7:
+            raise ValidationError('Ingresa un teléfono válido (mínimo 7 dígitos).')
+        if len(telefono) > 15:
+            raise ValidationError('El teléfono no puede tener más de 15 dígitos.')
         return telefono
 
 

@@ -532,7 +532,7 @@ def checkout(request):
                     pedido = Pedido.objects.create(
                         cliente=cliente,
                         fecha_pedido=timezone.now().date(),
-                        estado='pendiente_pago',
+                        estado='pendiente',
                         total=carrito_data['total_general'],
                         notas=notas_finales.strip(),
                         metodo_pago=metodo_pago_val
@@ -616,7 +616,7 @@ def confirmar_pago(request, pedido_id):
         messages.error(request, f'El tiempo límite de 15 minutos para confirmar el pedido #{pedido.pk} expiró.')
         return redirect('tienda_carrito')
 
-    if pedido.estado != 'pendiente_pago':
+    if pedido.fecha_pago is not None or pedido.estado in ('procesando', 'enviado', 'entregado', 'cancelado'):
         return redirect('tienda_pedido_confirmado', pedido_id=pedido.pk)
 
     if request.method == 'POST':
@@ -630,7 +630,7 @@ def confirmar_pago(request, pedido_id):
                     messages.error(request, f'El tiempo límite de espera para el pedido #{pedido.pk} expiró.')
                     return redirect('tienda_carrito')
 
-                if pedido_lock.estado != 'pendiente_pago':
+                if pedido_lock.fecha_pago is not None or pedido_lock.estado in ('procesando', 'enviado', 'entregado', 'cancelado'):
                     return redirect('tienda_pedido_confirmado', pedido_id=pedido.pk)
 
                 pedido_lock.estado = 'pendiente'
@@ -689,8 +689,8 @@ def paypal_crear_orden(request, pedido_id):
             if pedido.verificar_expiracion():
                 return JsonResponse({'error': 'El tiempo para pagar este pedido ha expirado (15 min).'}, status=400)
 
-            if pedido.estado != 'pendiente_pago':
-                return JsonResponse({'error': 'El pedido no se encuentra en estado pendiente de pago.'}, status=400)
+            if pedido.fecha_pago is not None or pedido.estado in ('procesando', 'enviado', 'entregado', 'cancelado'):
+                return JsonResponse({'error': 'El pedido ya fue pagado o procesado.'}, status=400)
 
             tasa = obtener_tasa_usd_cop() or Decimal('4000.00')
             monto_usd = round(Decimal(str(pedido.total)) / Decimal(str(tasa)), 2)
@@ -1346,6 +1346,90 @@ def personalizar_producto(request):
         'form': form,
         'cliente': cliente,
         'producto_preseleccionado': producto_preseleccionado,
+        'productos_disponibles': productos_catalogo,
+        'productos_json': productos_info,
+        'estampados_choices': ESTAMPADOS_OFICIALES_CHOICES,
+        'tipografias_choices': TIPOGRAFIAS_OFICIALES_CHOICES,
+    }
+    return render(request, 'tienda/personalizar/form.html', context)
+
+
+@cliente_required
+def personalizacion_editar(request, pk):
+    """
+    Permite al usuario editar una personalización propia que se encuentre en estado 'en_proceso'.
+    No permite modificar personalizaciones que ya fueron publicadas en la comunidad.
+    """
+    cliente = get_cliente_actual(request)
+    if cliente is None:
+        return redirect('tienda_login')
+
+    personalizacion = get_object_or_404(Personalizacion, pk=pk, cliente=cliente)
+
+    if personalizacion.estado != 'en_proceso':
+        messages.warning(request, 'Solo las personalizaciones en proceso pueden ser editadas.')
+        return redirect('tienda_mis_personalizaciones')
+
+    productos_catalogo = Producto.objects.all().select_related('categoria').order_by(
+        '-estado', '-stock', 'nombre'
+    )
+
+    productos_info = {}
+    for p in productos_catalogo:
+        disponible = (p.estado == 'activo' and p.stock > 0)
+        productos_info[str(p.pk)] = {
+            'id': p.pk,
+            'nombre': p.nombre,
+            'categoria': p.categoria.nombre if p.categoria else 'Oversize',
+            'imagen_url': p.get_imagen_url(),
+            'stock': p.stock,
+            'estado': p.estado,
+            'disponible': disponible,
+        }
+
+    if request.method == 'POST':
+        form = PersonalizacionForm(request.POST, instance=personalizacion)
+        if form.is_valid():
+            pers = form.save(commit=False)
+            pers.cliente = cliente
+            pers.estado = 'en_proceso'
+
+            # Guardar la imagen generada desde la vista previa en fondo blanco si fue enviada
+            img_b64 = (request.POST.get('imagen_preview_b64') or '').strip()
+            if img_b64.startswith('data:image/png;base64,'):
+                try:
+                    raw_b64 = img_b64.split(',', 1)[1]
+                    img_bytes = base64.b64decode(raw_b64)
+                    filename = f"custom_{cliente.pk}_{uuid.uuid4().hex[:8]}.png"
+                    pers.imagen_preview.save(filename, ContentFile(img_bytes), save=False)
+                except Exception as e:
+                    logger.warning(f"No se pudo guardar imagen_preview_b64 en edición: {e}")
+
+            pers.save()
+
+            accion = request.POST.get('accion', 'guardar')
+            if accion == 'guardar_y_publicar':
+                messages.success(
+                    request,
+                    f'Personalización "{pers.nombre_personalizacion}" actualizada y aplicada. Completa la publicación en la comunidad.'
+                )
+                return redirect(f"{reverse('tienda_comunidad_publicar')}?personalizacion={pers.pk}")
+
+            messages.success(
+                request,
+                f'Tu personalización "{pers.nombre_personalizacion}" ha sido actualizada con éxito.'
+            )
+            return redirect('tienda_mis_personalizaciones')
+        else:
+            messages.warning(request, 'Por favor revisa los campos del estudio de personalización.')
+    else:
+        form = PersonalizacionForm(instance=personalizacion)
+
+    context = {
+        'form': form,
+        'personalizacion': personalizacion,
+        'cliente': cliente,
+        'producto_preseleccionado': personalizacion.producto,
         'productos_disponibles': productos_catalogo,
         'productos_json': productos_info,
         'estampados_choices': ESTAMPADOS_OFICIALES_CHOICES,

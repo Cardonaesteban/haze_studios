@@ -511,6 +511,7 @@ def pedidos_detalle(request, pk):
         'pedido': pedido,
         'detalles': detalles,
         'notas_info': notas_info,
+        'estados': Pedido.ESTADO_CHOICES,
     })
 
 

@@ -55,7 +55,7 @@ class ClienteForm(forms.ModelForm):
     def clean_telefono(self):
         telefono = self.cleaned_data.get('telefono', '').strip()
         if not telefono:
-            return telefono
+            raise ValidationError('El teléfono es obligatorio.')
         if ' ' in telefono:
             raise ValidationError('El teléfono no puede contener espacios.')
         if '.' in telefono:
@@ -70,6 +70,8 @@ class ClienteForm(forms.ModelForm):
     
     def clean_direccion(self):
         direccion = self.cleaned_data.get('direccion', '').strip()
+        if not direccion:
+            raise ValidationError('La dirección es obligatoria.')
         if len(direccion) < 10:
             raise ValidationError('La dirección debe tener al menos 10 caracteres.')
         return direccion
@@ -78,7 +80,7 @@ class ClienteForm(forms.ModelForm):
         correo = self.cleaned_data.get('correo', '').strip().lower()
         if not correo:
             raise ValidationError('El correo es obligatorio.')
-        qs = Cliente.objects.filter(correo=correo)
+        qs = Cliente.objects.filter(correo__iexact=correo)
         if self.instance.pk:
             qs = qs.exclude(pk=self.instance.pk)
         if qs.exists():
@@ -86,15 +88,17 @@ class ClienteForm(forms.ModelForm):
         return correo
 
     def clean_contraseña(self):
-        pwd = self.cleaned_data.get('contraseña', '')
+        pwd = self.cleaned_data.get('contraseña', '').strip()
         # Si es edición y viene vacío, OK (mantiene la actual)
         if not pwd and self.instance.pk:
             return ''
         # Si es creación, la contraseña es obligatoria
         if not pwd and not self.instance.pk:
             raise ValidationError('La contraseña es obligatoria para nuevos usuarios.')
-        if pwd and len(pwd) < 6:
+        if len(pwd) < 6:
             raise ValidationError('La contraseña debe tener al menos 6 caracteres.')
+        if ' ' in pwd:
+            raise ValidationError('La contraseña no puede contener espacios.')
         return pwd
 
     def save(self, commit=True):
@@ -164,9 +168,9 @@ class ProductoForm(forms.ModelForm):
         if stock_minimo is None:
             raise ValidationError('El stock mínimo es obligatorio.')
         if stock_minimo < 0:
-            raise ValidationError('El stock mínimo debe ser mayor a cero')
+            raise ValidationError('El stock mínimo no puede ser negativo.')
         stock = self.cleaned_data.get('stock')
-        if stock_minimo > stock:
+        if stock is not None and stock_minimo > stock:
             raise ValidationError('El stock mínimo no puede ser mayor que el stock actual.')
         return stock_minimo
     
@@ -235,50 +239,12 @@ class ProductoEditarForm(ProductoForm):
         if 'stock_minimo' in self.fields:
             self.fields['stock_minimo'].disabled = True
             self.fields['stock_minimo'].help_text = 'El stock mínimo no se puede modificar desde aquí. Se gestiona desde la sección de Stock.'
-    
-    def clean_nombre(self):
-            nombre = self.cleaned_data.get('nombre', '').strip()
-            if not nombre:
-                raise ValidationError('El nombre del producto es obligatorio.')
-            if any(c.isdigit() for c in nombre):
-                raise ValidationError('El nombre del producto no puede contener numeros')
-            if len(nombre) < 3:
-                raise ValidationError('El nombre del producto debe tener al menos 3 caracteres.')
-            return nombre
-
-    def clean_descripcion(self):
-                descripcion = self.cleaned_data.get('descripcion', '').strip()
-                if not descripcion:
-                    raise ValidationError('La descripción es obligatoria.')
-                if any(c.isdigit() for c in descripcion):
-                    raise ValidationError('La descripción no puede contener números.')
-                return descripcion
-
-    def clean_precio(self):
-            precio = self.cleaned_data.get('precio')
-            if precio is None:
-                raise ValidationError('El precio es obligatorio.')
-            if precio <= 0:
-                raise ValidationError('El precio debe ser mayor a 0')
-            return precio
 
     def clean_stock(self):
         return self.instance.stock if self.instance and self.instance.pk else 0
 
     def clean_stock_minimo(self):
         return self.instance.stock_minimo if self.instance and self.instance.pk else 0
-
-    def clean_disenador(self):
-        disenador = self.cleaned_data.get('disenador')
-        if disenador and disenador.estado == 'inactivo':
-            raise ValidationError(f'El diseñador {disenador.nombre} está inactivo y no puede ser asignado a un producto.')
-        return disenador
-
-    def clean_proveedor(self):
-        proveedor = self.cleaned_data.get('proveedor')
-        if proveedor and proveedor.estado == 'inactivo':
-            raise ValidationError(f'El proveedor {proveedor.nombre} está inactivo y no puede ser asignado a un producto.')
-        return proveedor
 
 
 # ──────────────────────────────────────────────
@@ -323,6 +289,11 @@ class ProveedorForm(forms.ModelForm):
         nombre = self.cleaned_data.get('nombre', '').strip()
         if not nombre:
             raise ValidationError('El nombre del proveedor es obligatorio.')
+        qs = Proveedor.objects.filter(nombre__iexact=nombre)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError('Ya existe un proveedor con ese nombre.')
         if any(c.isdigit() for c in nombre):
             raise ValidationError('El nombre del proveedor no puede contener números.')
         return nombre
@@ -506,6 +477,28 @@ class PedidoForm(forms.ModelForm):
         if not fecha:
             raise ValidationError('La fecha del pedido es obligatoria.')
         return fecha
+
+    def clean_telefono_contacto(self):
+        telefono = self.cleaned_data.get('telefono_contacto', '').strip()
+        if not telefono:
+            return telefono
+        if ' ' in telefono:
+            raise ValidationError('El teléfono no puede contener espacios.')
+        if '.' in telefono:
+            raise ValidationError('El teléfono no puede contener puntos.')
+        if not telefono.isdigit():
+            raise ValidationError('El teléfono debe contener solo números.')
+        if len(telefono) < 7:
+            raise ValidationError('Ingresa un teléfono válido (mínimo 7 dígitos).')
+        if len(telefono) > 15:
+            raise ValidationError('El teléfono no puede tener más de 15 dígitos.')
+        return telefono
+
+    def clean_direccion_envio(self):
+        direccion = self.cleaned_data.get('direccion_envio', '').strip()
+        if direccion and len(direccion) < 10:
+            raise ValidationError('La dirección debe tener al menos 10 caracteres.')
+        return direccion
 
     def save(self, commit=True):
         pedido = super().save(commit=False)
@@ -742,11 +735,16 @@ class UsuarioDashboardForm(forms.ModelForm):
         cleaned = super().clean()
         p1 = cleaned.get('password1')
         p2 = cleaned.get('password2')
+        # Si es creación, la contraseña es obligatoria
+        if not self.instance.pk and not p1:
+            raise ValidationError({'password1': 'La contraseña es obligatoria para nuevos usuarios.'})
         if p1 or p2:
             if not p1:
                 raise ValidationError({'password1': 'Ingresa la contraseña.'})
             if len(p1) < 6:
                 raise ValidationError({'password1': 'La contraseña debe tener al menos 6 caracteres.'})
+            if ' ' in p1:
+                raise ValidationError({'password1': 'La contraseña no puede contener espacios.'})
             if p1 != p2:
                 raise ValidationError({'password2': 'Las contraseñas no coinciden.'})
         return cleaned
@@ -803,6 +801,8 @@ class CambiarContrasenaForm(forms.Form):
         cleaned = super().clean()
         p1 = cleaned.get('password1', '')
         p2 = cleaned.get('password2', '')
+        if p1 and ' ' in p1:
+            raise forms.ValidationError('La contraseña no puede contener espacios.')
         if p1 and p2 and p1 != p2:
             raise forms.ValidationError('Las contraseñas no coinciden.')
         return cleaned

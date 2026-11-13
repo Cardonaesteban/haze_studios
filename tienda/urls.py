@@ -44,6 +44,7 @@ urlpatterns = [
 
     # Personalización de Prendas
     path('personalizar/', views.personalizar_producto, name='tienda_personalizar'),
+    path('personalizar/<int:pk>/editar/', views.personalizacion_editar, name='tienda_personalizacion_editar'),
     path('mis-personalizaciones/', views.mis_personalizaciones, name='tienda_mis_personalizaciones'),
     path('personalizar/<int:pk>/eliminar/', views.personalizacion_eliminar, name='tienda_personalizacion_eliminar'),
 

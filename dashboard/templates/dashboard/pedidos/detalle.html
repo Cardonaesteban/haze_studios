@@ -19,10 +19,46 @@
  <p style="font-size:0.78rem;color:var(--gris-500);margin-bottom:0.25rem;">FECHA</p>
  <p style="font-weight:600;">{{ pedido.fecha_pedido|date:"d/m/Y" }}</p>
  </div>
- <div class="form-wrap" style="margin:0;padding:1.25rem 1.5rem;">
+ <div class="form-wrap" style="margin:0;padding:1.25rem 1.5rem;" x-data="{ modalEstado: false }">
  <p style="font-size:0.78rem;color:var(--gris-500);margin-bottom:0.25rem;">ESTADO</p>
  <span class="badge badge-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span>
- <a class="btn btn-sm btn-secondary" style="margin-left:0.5rem;" href="{% url 'pedidos_estado' pedido.pk %}">Cambiar</a>
+ <button type="button" class="btn btn-sm btn-secondary" style="margin-left:0.5rem;" @click="modalEstado = true">Cambiar</button>
+
+ <div x-show="modalEstado" x-cloak
+      style="position:fixed; inset:0; background:rgba(15,23,42,0.55); backdrop-filter:blur(2px); z-index:9999; display:flex; align-items:center; justify-content:center; padding:1rem;"
+      @click.self="modalEstado = false"
+      @keydown.escape.window="modalEstado = false">
+     <div style="background:#ffffff; border-radius:var(--border-radius-lg); box-shadow:var(--sombra-xl); max-width:340px; width:100%; padding:1.25rem; border:1px solid var(--gris-200); text-align:left;">
+         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; border-bottom:1px solid var(--gris-200); padding-bottom:0.75rem;">
+             <div>
+                 <h3 style="margin:0; font-size:1rem; font-weight:700; color:var(--gris-900);">Cambiar Estado</h3>
+                 <p style="margin:0.2rem 0 0; font-size:0.8rem; color:var(--gris-500);">Pedido #{{ pedido.pk }} — {{ pedido.cliente }}</p>
+             </div>
+             <button type="button" @click="modalEstado = false" style="background:none; border:none; font-size:1.4rem; cursor:pointer; color:var(--gris-400); line-height:1; padding:0.2rem 0.4rem;">&times;</button>
+         </div>
+
+         <div style="display:flex; flex-direction:column; gap:0.45rem;">
+             {% for val, label in estados %}
+             <form method="post" action="{% url 'pedidos_estado' pedido.pk %}" style="margin:0;">
+                 {% csrf_token %}
+                 <input type="hidden" name="nuevo_estado" value="{{ val }}">
+                 <button type="submit"
+                         style="width:100%; text-align:left; background:{% if pedido.estado == val %}var(--gris-100){% else %}#ffffff{% endif %}; border:1px solid {% if pedido.estado == val %}var(--azul){% else %}var(--gris-200){% endif %}; padding:0.5rem 0.75rem; border-radius:var(--border-radius-md); display:flex; justify-content:space-between; align-items:center; cursor:pointer;"
+                         {% if pedido.estado == val %}disabled{% endif %}>
+                     <span class="badge badge-{{ val }}">{{ label }}</span>
+                     {% if pedido.estado == val %}
+                         <span style="font-size:0.75rem; font-weight:700; color:var(--azul);">● Actual</span>
+                     {% endif %}
+                 </button>
+             </form>
+             {% endfor %}
+         </div>
+
+         <div style="margin-top:1rem; text-align:right;">
+             <button type="button" class="btn btn-sm btn-secondary" @click="modalEstado = false">Cerrar</button>
+         </div>
+     </div>
+ </div>
  </div>
  <div class="form-wrap" style="margin:0;padding:1.25rem 1.5rem;">
  <p style="font-size:0.78rem;color:var(--gris-500);margin-bottom:0.25rem;">TOTAL</p>

@@ -137,7 +137,11 @@
  <span class="badge badge-entrada" style="display:inline-block;margin-bottom:0.35rem;">Publicada</span>
  {% else %}
  <span class="badge badge-pendiente" style="display:inline-block;margin-bottom:0.35rem;">En proceso</span>
- <div>
+ <div style="display:flex;gap:0.4rem;align-items:center;justify-content:flex-end;">
+ <a href="{% url 'tienda_personalizacion_editar' pers.pk %}" style="font-size:0.75rem;font-weight:800;color:var(--gris-700);text-decoration:none;">
+ Editar
+ </a>
+ <span style="font-size:0.75rem;color:var(--gris-400);">·</span>
  <a href="{% url 'tienda_comunidad_publicar' %}?personalizacion={{ pers.pk }}" style="font-size:0.75rem;font-weight:800;color:#2563EB;text-decoration:none;">
  Publicar →
  </a>

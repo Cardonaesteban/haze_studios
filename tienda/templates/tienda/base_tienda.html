@@ -35,7 +35,7 @@
     <div class="tienda-nav-center" :class="{ 'mobile-open': mobileMenuOpen }">
         <a class="nav-link {% if request.resolver_match.url_name == 'tienda_inicio' %}active{% endif %}" href="{% url 'tienda_inicio' %}">Inicio</a>
         <a class="nav-link {% if request.resolver_match.url_name == 'tienda_productos' %}active{% endif %}" href="{% url 'tienda_productos' %}">Colección</a>
-        <a class="nav-link {% if request.resolver_match.url_name == 'tienda_personalizar' or request.resolver_match.url_name == 'tienda_mis_personalizaciones' %}active{% endif %}" href="{% url 'tienda_personalizar' %}">
+        <a class="nav-link {% if request.resolver_match.url_name == 'tienda_personalizar' or request.resolver_match.url_name == 'tienda_mis_personalizaciones' or request.resolver_match.url_name == 'tienda_personalizacion_editar' %}active{% endif %}" href="{% url 'tienda_personalizar' %}">
             Personalizar
         </a>
         <a class="nav-link {% if 'comunidad' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'tienda_comunidad_lista' %}">

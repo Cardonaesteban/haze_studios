@@ -328,7 +328,6 @@ class Pedido(models.Model):
     TIEMPO_LIMITE_PAGO = timedelta(minutes=15)
 
     ESTADO_CHOICES = [
-        ('pendiente_pago', 'Pendiente de pago'),
         ('pendiente', 'Pendiente'),
         ('procesando', 'Procesando'),
         ('enviado', 'Enviado'),
@@ -342,7 +341,7 @@ class Pedido(models.Model):
     )
     fecha_pedido = models.DateField()
     fecha_creacion = models.DateTimeField(auto_now_add=True)
-    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente_pago')
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
     total = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0'))
     notas = models.TextField(blank=True, default='')
 
@@ -381,7 +380,7 @@ class Pedido(models.Model):
         return f'Pedido #{self.pk} — {self.cliente}'
 
     def toggle_estado(self):
-        estados = ['pendiente_pago', 'pendiente', 'procesando', 'enviado', 'entregado', 'cancelado']
+        estados = ['pendiente', 'procesando', 'enviado', 'entregado', 'cancelado']
         idx = estados.index(self.estado) if self.estado in estados else 0
         self.estado = estados[(idx + 1) % len(estados)]
         self.save()
@@ -392,12 +391,16 @@ class Pedido(models.Model):
         self.save(update_fields=['total'])
         return total
 
+    @property
+    def cantidad_total(self):
+        return sum(d.cantidad for d in self.detalles.all())
+
     def puede_cancelar(self):
-        return self.estado in ['pendiente_pago', 'pendiente', 'procesando']
+        return self.estado in ['pendiente', 'procesando']
 
     def ha_expirado(self):
-        """True si sigue pendiente de pago y ya pasaron los 15 minutos límite."""
-        if self.estado != 'pendiente_pago':
+        """True si sigue sin pago y ya pasaron los 15 minutos límite."""
+        if self.fecha_pago is not None or self.estado in ['procesando', 'enviado', 'entregado', 'cancelado']:
             return False
         return timezone.now() > self.fecha_creacion + self.TIEMPO_LIMITE_PAGO
 

@@ -13,6 +13,14 @@
         <div class="login-brand">HAZE STUDIOS</div>
         <h1>Panel Admin</h1>
 
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li class="{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
         {% if form.errors %}
         <ul class="messages">
             <li class="error">Usuario o contraseña incorrectos.</li>

@@ -1,13 +1,17 @@
 {% extends "tienda/base_tienda.html" %}
 {% load static %}
 
-{% block title %}Estudio de Personalización | Haze Studios{% endblock %}
+{% block title %}{% if personalizacion %}Editar Personalización: {{ personalizacion.nombre_personalizacion }} | Haze Studios{% else %}Estudio de Personalización | Haze Studios{% endif %}{% endblock %}
 
 {% block content %}
 <div class="page-header" style="margin-bottom:1.25rem;">
     <div>
-        <h1 class="tienda-page-title">Estudio de Personalización Haze</h1>
-        <p class="tienda-page-subtitle">Diseña tu prenda oversize, visualiza el resultado sobre el lienzo blanco y aplica la personalización para compartirla en la comunidad.</p>
+        <h1 class="tienda-page-title">
+            {% if personalizacion %}Editar Personalización: {{ personalizacion.nombre_personalizacion }}{% else %}Estudio de Personalización Haze{% endif %}
+        </h1>
+        <p class="tienda-page-subtitle">
+            {% if personalizacion %}Modifica las especificaciones de tu prenda en proceso y actualiza el diseño sobre el lienzo blanco.{% else %}Diseña tu prenda oversize, visualiza el resultado sobre el lienzo blanco y aplica la personalización para compartirla en la comunidad.{% endif %}
+        </p>
     </div>
     <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
         <a href="{% url 'tienda_mis_personalizaciones' %}" class="btn btn-secondary btn-sm">
@@ -25,10 +29,14 @@
     <!-- FORMULARIO DE PERSONALIZACIÓN -->
     <div class="tienda-card" style="padding:1.75rem;">
         <h2 style="font-size:1.15rem;font-weight:900;color:var(--gris-900);margin-bottom:0.35rem;">
-            1. Configura tu Prenda Personalizada
+            {% if personalizacion %}1. Edita tu Prenda Personalizada{% else %}1. Configura tu Prenda Personalizada{% endif %}
         </h2>
         <p style="font-size:0.83rem;color:var(--gris-500);margin-bottom:1.35rem;">
+            {% if personalizacion %}
+            Modifica el producto base o las especificaciones y pulsa <strong>Aplicar Personalización a la Prenda</strong> para actualizar el diseño en la vista previa.
+            {% else %}
             Selecciona un producto disponible, elige tus especificaciones y pulsa <strong>Aplicar Personalización a la Prenda</strong> para fijar el diseño en la vista previa.
+            {% endif %}
         </p>
 
         <form method="post" @submit="prepararEnvio($event)" novalidate>
@@ -143,13 +151,18 @@
                 <button type="submit" name="accion" value="guardar_y_publicar"
                         :disabled="productoSeleccionadoNoDisponible"
                         class="btn btn-primary" style="background:linear-gradient(135deg, #3B82F6, #8B5CF6);border:none;padding:0.8rem 1.5rem;">
-                    Guardar y Publicar en Comunidad
+                    {% if personalizacion %}Actualizar y Publicar en Comunidad{% else %}Guardar y Publicar en Comunidad{% endif %}
                 </button>
                 <button type="submit" name="accion" value="guardar"
                         :disabled="productoSeleccionadoNoDisponible"
                         class="btn btn-secondary" style="padding:0.8rem 1.35rem;">
-                    Guardar en Proceso
+                    {% if personalizacion %}Guardar Cambios en Proceso{% else %}Guardar en Proceso{% endif %}
                 </button>
+                {% if personalizacion %}
+                <a href="{% url 'tienda_mis_personalizaciones' %}" class="btn btn-outline" style="padding:0.8rem 1.2rem;">
+                    Cancelar
+                </a>
+                {% endif %}
             </div>
         </form>
     </div>
