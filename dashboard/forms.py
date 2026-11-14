@@ -447,7 +447,9 @@ class PedidoForm(forms.ModelForm):
             if not self.initial.get('fecha_pedido'):
                 self.initial['fecha_pedido'] = hoy
 
+        self._fecha_original = None
         if self.instance and self.instance.pk:
+            self._fecha_original = self.instance.fecha_pedido
             notas_raw = self.instance.notas or ''
             info = estructurar_notas_pedido(notas_raw)
             if info.get('telefono'):
@@ -483,8 +485,10 @@ class PedidoForm(forms.ModelForm):
         if not fecha:
             raise ValidationError('La fecha del pedido es obligatoria.')
         hoy = timezone.localdate()
-        if (not self.instance.pk or 'fecha_pedido' in self.changed_data) and fecha < hoy:
+        if not self.instance.pk and fecha < hoy:
             raise ValidationError('No se pueden registrar pedidos con fechas anteriores a la fecha actual.')
+        if self.instance.pk and self._fecha_original and fecha < self._fecha_original:
+            raise ValidationError('No se puede poner una fecha anterior a la fecha original del pedido.')
         return fecha
 
     def clean_telefono_contacto(self):
