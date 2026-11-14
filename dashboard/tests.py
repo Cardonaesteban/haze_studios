@@ -534,5 +534,34 @@ class ValidacionesUnificadasTests(TestCase):
         resp = self.client.get(reverse('tienda_personalizacion_editar', args=[pers_pub.pk]))
         self.assertRedirects(resp, reverse('tienda_mis_personalizaciones'))
 
+    def test_validacion_fecha_pedido_no_permite_pasada(self):
+        """No permite registrar pedidos con fechas anteriores a la actual."""
+        from datetime import timedelta
+        from django.utils import timezone
+        from dashboard.forms import PedidoForm
+
+        cliente = Cliente.objects.create(
+            nombre='Carlos', apellido='Pérez', correo='carlos_fecha@example.com',
+            telefono='3001234567', direccion='Calle 100 #20-30', contraseña='pass'
+        )
+        ayer = timezone.localdate() - timedelta(days=1)
+        form = PedidoForm(data={
+            'cliente': cliente.pk,
+            'fecha_pedido': ayer.isoformat(),
+            'estado': 'pendiente',
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('fecha_pedido', form.errors)
+        self.assertIn('No se pueden registrar pedidos con fechas anteriores', form.errors['fecha_pedido'][0])
+
+        # Con fecha de hoy debe ser válido
+        hoy = timezone.localdate()
+        form_hoy = PedidoForm(data={
+            'cliente': cliente.pk,
+            'fecha_pedido': hoy.isoformat(),
+            'estado': 'pendiente',
+        })
+        self.assertTrue(form_hoy.is_valid())
+
 
 

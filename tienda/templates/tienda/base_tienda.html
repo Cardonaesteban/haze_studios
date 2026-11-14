@@ -81,7 +81,10 @@
                 <a href="{% url 'tienda_comunidad_lista' %}"> Comunidad Haze</a>
                 <a href="{% url 'tienda_favoritos' %}">❤️ Mis Favoritos</a>
                 <hr>
-                <a href="{% url 'tienda_logout' %}" class="logout-link">Cerrar Sesión</a>
+                <form method="post" action="{% url 'tienda_logout' %}" style="margin:0;">
+                    {% csrf_token %}
+                    <button type="submit" class="logout-link" style="width:100%;text-align:left;background:none;border:none;cursor:pointer;">Cerrar Sesión</button>
+                </form>
             </div>
         </div>
         {% else %}

@@ -49,45 +49,73 @@
         <hr style="border:none;border-top:1px solid var(--gris-200);margin:1.5rem 0;">
         <h3 style="font-size:1rem;font-weight:600;color:var(--gris-700);margin-bottom:1rem;">Productos del pedido</h3>
 
-        {{ formset.management_form }}
-        {% if formset.non_form_errors %}
-        <ul class="errorlist">{% for e in formset.non_form_errors %}<li>{{ e }}</li>{% endfor %}</ul>
-        {% endif %}
-
-        <div id="formset-container">
-        {% for detalle_form in formset %}
-        <div class="formset-row" style="background:var(--gris-50);border:1px solid var(--gris-200);border-radius:var(--border-radius-lg);padding:1rem;margin-bottom:0.75rem;display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:0.75rem;align-items:start;">
-            {{ detalle_form.id }}
-            <div class="form-group" style="margin:0;">
-                <label style="font-size:0.78rem;">Producto <span style="color:var(--rojo)">*</span></label>
-                {{ detalle_form.producto }}
-                {% if detalle_form.producto.errors %}<ul class="errorlist">{% for e in detalle_form.producto.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
-            </div>
-            <div class="form-group" style="margin:0;">
-                <label style="font-size:0.78rem;">Cantidad <span style="color:var(--rojo)">*</span></label>
-                {{ detalle_form.cantidad }}
-                {% if detalle_form.cantidad.errors %}<ul class="errorlist">{% for e in detalle_form.cantidad.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
-            </div>
-            <div class="form-group" style="margin:0;">
-                <label style="font-size:0.78rem;">Precio unitario <span style="color:var(--rojo)">*</span></label>
-                {{ detalle_form.precio_unitario }}
-                {% if detalle_form.precio_unitario.errors %}<ul class="errorlist">{% for e in detalle_form.precio_unitario.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
-            </div>
-            <div style="display:flex;align-items:flex-end;padding-bottom:0.1rem;">
-                <label style="font-size:0.75rem;color:var(--gris-500);display:flex;align-items:center;gap:0.3rem;cursor:pointer;">
-                    {{ detalle_form.DELETE }} Quitar
-                </label>
-            </div>
-            {% if detalle_form.non_field_errors %}
-            <div style="grid-column:1/-1;">
-                <ul class="errorlist">{% for e in detalle_form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
-            </div>
+        <div x-data="{ total: {{ formset.total_form_count }} }">
+            <div x-ref="mgmt">{{ formset.management_form }}</div>
+            {% if formset.non_form_errors %}
+            <ul class="errorlist">{% for e in formset.non_form_errors %}<li>{{ e }}</li>{% endfor %}</ul>
             {% endif %}
-        </div>
-        {% endfor %}
-        </div>
 
-        <button type="button" class="btn btn-secondary" id="add-row" style="margin-bottom:1.5rem;">+ Agregar producto</button>
+            <div id="formset-container" x-ref="container">
+            {% for detalle_form in formset %}
+            <div class="formset-row" style="background:var(--gris-50);border:1px solid var(--gris-200);border-radius:var(--border-radius-lg);padding:1rem;margin-bottom:0.75rem;display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:0.75rem;align-items:start;">
+                {{ detalle_form.id }}
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size:0.78rem;">Producto <span style="color:var(--rojo)">*</span></label>
+                    {{ detalle_form.producto }}
+                    {% if detalle_form.producto.errors %}<ul class="errorlist">{% for e in detalle_form.producto.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size:0.78rem;">Cantidad <span style="color:var(--rojo)">*</span></label>
+                    {{ detalle_form.cantidad }}
+                    {% if detalle_form.cantidad.errors %}<ul class="errorlist">{% for e in detalle_form.cantidad.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size:0.78rem;">Precio unitario <span style="color:var(--rojo)">*</span></label>
+                    {{ detalle_form.precio_unitario }}
+                    {% if detalle_form.precio_unitario.errors %}<ul class="errorlist">{% for e in detalle_form.precio_unitario.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+                <div style="display:flex;align-items:flex-end;padding-bottom:0.1rem;">
+                    <label style="font-size:0.75rem;color:var(--gris-500);display:flex;align-items:center;gap:0.3rem;cursor:pointer;">
+                        {{ detalle_form.DELETE }} Quitar
+                    </label>
+                </div>
+                {% if detalle_form.non_field_errors %}
+                <div style="grid-column:1/-1;">
+                    <ul class="errorlist">{% for e in detalle_form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            </div>
+
+            <template x-ref="emptyRow">
+                <div class="formset-row" style="background:var(--gris-50);border:1px solid var(--gris-200);border-radius:var(--border-radius-lg);padding:1rem;margin-bottom:0.75rem;display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:0.75rem;align-items:start;">
+                    {{ formset.empty_form.id }}
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-size:0.78rem;">Producto <span style="color:var(--rojo)">*</span></label>
+                        {{ formset.empty_form.producto }}
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-size:0.78rem;">Cantidad <span style="color:var(--rojo)">*</span></label>
+                        {{ formset.empty_form.cantidad }}
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-size:0.78rem;">Precio unitario <span style="color:var(--rojo)">*</span></label>
+                        {{ formset.empty_form.precio_unitario }}
+                    </div>
+                    <div style="display:flex;align-items:flex-end;padding-bottom:0.1rem;">
+                        <label style="font-size:0.75rem;color:var(--gris-500);display:flex;align-items:center;gap:0.3rem;cursor:pointer;">
+                            {{ formset.empty_form.DELETE }} Quitar
+                        </label>
+                    </div>
+                </div>
+            </template>
+
+            <button type="button" class="btn btn-secondary" style="margin-bottom:1.5rem;"
+                    @click="$refs.container.insertAdjacentHTML('beforeend', $refs.emptyRow.innerHTML.replaceAll('__prefix__', total)); total++; $refs.mgmt.querySelector('[name$=\'-TOTAL_FORMS\']').value = total;">
+                + Agregar producto
+            </button>
+        </div>
 
         {% if form.non_field_errors %}
         <ul class="errorlist">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
@@ -99,22 +127,4 @@
         </div>
     </form>
 </div>
-
-<script>
-document.getElementById('add-row').addEventListener('click', function() {
-    const container = document.getElementById('formset-container');
-    const totalForms = document.querySelector('[name$="-TOTAL_FORMS"]');
-    const count = parseInt(totalForms.value);
-    const firstRow = container.querySelector('.formset-row');
-    const newRow = firstRow.cloneNode(true);
-    newRow.innerHTML = newRow.innerHTML.replace(/-(\d+)-/g, '-' + count + '-');
-    newRow.querySelectorAll('input, select').forEach(el => {
-        if (el.type === 'checkbox') el.checked = false;
-        else if (el.type !== 'hidden') el.value = '';
-    });
-    newRow.querySelectorAll('.errorlist').forEach(el => el.remove());
-    container.appendChild(newRow);
-    totalForms.value = count + 1;
-});
-</script>
 {% endblock %}

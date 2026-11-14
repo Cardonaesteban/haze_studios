@@ -46,7 +46,10 @@
             <td>{{ r.usuarios.count }} usuario(s)</td>
             <td>
                 <a class="btn btn-sm btn-secondary" href="{% url 'roles_editar' r.pk %}">Editar</a>
-                <a class="btn btn-sm btn-secondary" href="{% url 'roles_estado' r.pk %}">Estado</a>
+                <form method="post" action="{% url 'roles_estado' r.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-secondary">Estado</button>
+                </form>
                 <a class="btn btn-sm btn-danger" href="{% url 'roles_eliminar' r.pk %}">Eliminar</a>
             </td>
         </tr>

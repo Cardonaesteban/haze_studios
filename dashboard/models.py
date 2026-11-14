@@ -232,6 +232,12 @@ class Producto(models.Model):
     def clean(self):
         if self.precio is not None and self.precio < 0:
             raise ValidationError({'precio': 'El precio no puede ser negativo.'})
+        if self.stock is not None and self.stock < 0:
+            raise ValidationError({'stock': 'El stock no puede ser negativo.'})
+        if self.stock_minimo is not None and self.stock_minimo < 0:
+            raise ValidationError({'stock_minimo': 'El stock mínimo no puede ser negativo.'})
+        if self.stock is not None and self.stock_minimo is not None and self.stock_minimo > self.stock:
+            raise ValidationError({'stock_minimo': 'El stock mínimo no puede ser mayor que el stock actual.'})
 
 
 # ──────────────────────────────────────────────

@@ -6,7 +6,10 @@
  <h1>Detalle de Prenda Publicada y Personalización</h1>
  <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
  <a class="btn btn-secondary" href="{% url 'comunidad_admin_editar' prenda.pk %}">Editar</a>
- <a class="btn btn-secondary" href="{% url 'comunidad_admin_estado' prenda.pk %}">Cambiar Estado</a>
+ <form method="post" action="{% url 'comunidad_admin_estado' prenda.pk %}" style="display:inline;">
+     {% csrf_token %}
+     <button type="submit" class="btn btn-secondary">Cambiar Estado</button>
+ </form>
  <a class="btn btn-danger" href="{% url 'comunidad_admin_eliminar' prenda.pk %}">Eliminar</a>
  <a class="btn btn-secondary" href="{% url 'comunidad_admin_list' %}">← Volver al listado</a>
  </div>

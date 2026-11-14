@@ -1,6 +1,7 @@
 import re
 from django import forms
 from django.conf import settings
+from django.utils import timezone
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
@@ -10,6 +11,13 @@ from .models import (
     Rol, Permiso, PerfilUsuario, Mensaje
 )
 
+
+
+def validar_activo(obj, etiqueta):
+    """Valida que un registro relacionado no esté inactivo."""
+    if obj and obj.estado == 'inactivo':
+        raise ValidationError(f'El {etiqueta} {obj.nombre} está inactivo y no puede ser asignado a un producto.')
+    return obj
 
 
 # ──────────────────────────────────────────────
@@ -133,19 +141,15 @@ class ProductoForm(forms.ModelForm):
         nombre = self.cleaned_data.get('nombre', '').strip()
         if not nombre:
             raise ValidationError('El nombre del producto es obligatorio.')
-        if any(c.isdigit() for c in nombre):
-            raise ValidationError('El nombre del producto no puede contener numeros')
         if len(nombre) < 3:
             raise ValidationError('El nombre del producto debe tener al menos 3 caracteres.')
         return nombre
 
     def clean_descripcion(self):
-            descripcion = self.cleaned_data.get('descripcion', '').strip()
-            if not descripcion:
-                raise ValidationError('La descripción es obligatoria.')
-            if any(c.isdigit() for c in descripcion):
-                raise ValidationError('La descripción no puede contener números.')
-            return descripcion
+        descripcion = self.cleaned_data.get('descripcion', '').strip()
+        if not descripcion:
+            raise ValidationError('La descripción es obligatoria.')
+        return descripcion
 
     def clean_precio(self):
         precio = self.cleaned_data.get('precio')
@@ -159,8 +163,8 @@ class ProductoForm(forms.ModelForm):
         stock = self.cleaned_data.get('stock')
         if stock is None:
             raise ValidationError('El stock es obligatorio.')
-        if stock <= 0:
-            raise ValidationError('El stock debe ser mayor a cero')
+        if stock < 0:
+            raise ValidationError('El stock no puede ser negativo.')
         return stock
 
     def clean_stock_minimo(self):
@@ -169,22 +173,13 @@ class ProductoForm(forms.ModelForm):
             raise ValidationError('El stock mínimo es obligatorio.')
         if stock_minimo < 0:
             raise ValidationError('El stock mínimo no puede ser negativo.')
-        stock = self.cleaned_data.get('stock')
-        if stock is not None and stock_minimo > stock:
-            raise ValidationError('El stock mínimo no puede ser mayor que el stock actual.')
         return stock_minimo
     
     def clean_disenador(self):
-        disenador = self.cleaned_data.get('disenador')
-        if disenador and disenador.estado == 'inactivo':
-            raise ValidationError(f'El diseñador {disenador.nombre} está inactivo y no puede ser asignado a un producto.')
-        return disenador
+        return validar_activo(self.cleaned_data.get('disenador'), 'diseñador')
 
     def clean_proveedor(self):
-        proveedor = self.cleaned_data.get('proveedor')
-        if proveedor and proveedor.estado == 'inactivo':
-            raise ValidationError(f'El proveedor {proveedor.nombre} está inactivo y no puede ser asignado a un producto.')
-        return proveedor
+        return validar_activo(self.cleaned_data.get('proveedor'), 'proveedor')
 
     imagen_existente = forms.CharField(required=False, widget=forms.HiddenInput())
 
@@ -201,6 +196,11 @@ class ProductoForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        stock = cleaned_data.get('stock')
+        stock_minimo = cleaned_data.get('stock_minimo')
+        if stock is not None and stock_minimo is not None and stock_minimo > stock:
+            self.add_error('stock_minimo', 'El stock mínimo no puede ser mayor que el stock actual.')
+
         imagen = cleaned_data.get('imagen')
         imagen_existente = cleaned_data.get('imagen_existente', '').strip()
 
@@ -209,11 +209,14 @@ class ProductoForm(forms.ModelForm):
         if not imagen and not imagen_existente and not tiene_imagen_previa:
             self.add_error('imagen', 'Debe seleccionar una imagen para el producto (subir una nueva o elegir una existente).')
 
-        # Si se seleccionó una imagen existente, validar que realmente exista en el disco
+        # Si se seleccionó una imagen existente, validar nombre seguro y existencia en disco
         if not imagen and imagen_existente:
-            ruta_archivo = settings.MEDIA_ROOT / 'productos' / imagen_existente
-            if not ruta_archivo.exists() or not ruta_archivo.is_file():
-                self.add_error('imagen', 'La imagen seleccionada no existe en el servidor.')
+            if '/' in imagen_existente or '\\' in imagen_existente or '..' in imagen_existente:
+                self.add_error('imagen', 'Nombre de imagen no válido.')
+            else:
+                ruta_archivo = settings.MEDIA_ROOT / 'productos' / imagen_existente
+                if not ruta_archivo.exists() or not ruta_archivo.is_file():
+                    self.add_error('imagen', 'La imagen seleccionada no existe en el servidor.')
 
         return cleaned_data
 
@@ -316,15 +319,12 @@ class ProveedorForm(forms.ModelForm):
 
     def clean_correo(self):
         correo = self.cleaned_data.get('correo', '').strip()
-        if correo and not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', correo):
-            raise ValidationError('Ingresa un correo electrónico válido.')
         if correo:
             qs = Proveedor.objects.filter(correo__iexact=correo)
             if self.instance.pk:
                 qs = qs.exclude(pk=self.instance.pk)
             if qs.exists():
                 raise ValidationError('Ya existe un proveedor con ese correo.')
-        # correo es opcional en proveedor, pero si viene debe ser válido (el campo EmailField ya lo valida)
         return correo
 
 
@@ -441,6 +441,12 @@ class PedidoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        hoy = timezone.localdate()
+        if not self.instance.pk:
+            self.fields['fecha_pedido'].widget.attrs['min'] = hoy.isoformat()
+            if not self.initial.get('fecha_pedido'):
+                self.initial['fecha_pedido'] = hoy
+
         if self.instance and self.instance.pk:
             notas_raw = self.instance.notas or ''
             info = estructurar_notas_pedido(notas_raw)
@@ -476,6 +482,9 @@ class PedidoForm(forms.ModelForm):
         fecha = self.cleaned_data.get('fecha_pedido')
         if not fecha:
             raise ValidationError('La fecha del pedido es obligatoria.')
+        hoy = timezone.localdate()
+        if (not self.instance.pk or 'fecha_pedido' in self.changed_data) and fecha < hoy:
+            raise ValidationError('No se pueden registrar pedidos con fechas anteriores a la fecha actual.')
         return fecha
 
     def clean_telefono_contacto(self):
@@ -514,6 +523,13 @@ class PedidoForm(forms.ModelForm):
         if notas_adic:
             partes.append(f"Instrucciones del cliente: {notas_adic}")
 
+        # Conservar líneas técnicas de la tienda (ej. resumen de prendas/tallas) si existían
+        if self.instance and self.instance.pk and self.instance.notas:
+            for linea in self.instance.notas.splitlines():
+                l_strip = linea.strip()
+                if l_strip.startswith('•') or l_strip.lower().startswith('prendas:'):
+                    partes.append(l_strip)
+
         pedido.notas = "\n".join(partes)
 
         if commit:
@@ -529,6 +545,14 @@ class DetallePedidoForm(forms.ModelForm):
             'cantidad': forms.NumberInput(attrs={'min': 1, 'placeholder': '1'}),
             'precio_unitario': forms.NumberInput(attrs={'min': 0, 'step': '0.01', 'placeholder': '0.00'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'producto' in self.fields:
+            qs = Producto.objects.filter(estado='activo')
+            if self.instance and self.instance.pk and self.instance.producto_id:
+                qs = Producto.objects.filter(estado='activo') | Producto.objects.filter(pk=self.instance.producto_id)
+            self.fields['producto'].queryset = qs.distinct().order_by('nombre')
 
     def clean_producto(self):
         producto = self.cleaned_data.get('producto')
@@ -552,10 +576,14 @@ class DetallePedidoForm(forms.ModelForm):
         cleaned = super().clean()
         producto = cleaned.get('producto')
         cantidad = cleaned.get('cantidad')
-        if producto and cantidad and cantidad > producto.stock:
-            raise ValidationError(
-                f'Stock insuficiente para "{producto.nombre}". Disponible: {producto.stock}'
-            )
+        if producto and cantidad:
+            stock_disponible = producto.stock
+            if self.instance and self.instance.pk and self.instance.producto_id == producto.pk:
+                stock_disponible += self.instance.cantidad
+            if cantidad > stock_disponible:
+                raise ValidationError(
+                    f'Stock insuficiente para "{producto.nombre}". Disponible: {stock_disponible}'
+                )
         return cleaned
 
 
@@ -583,7 +611,10 @@ class MovimientoStockForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.allow_zero = kwargs.pop('allow_zero', False)
         super().__init__(*args, **kwargs)
+        if self.allow_zero and 'cantidad' in self.fields:
+            self.fields['cantidad'].widget.attrs['min'] = 0
         if 'producto' in self.fields:
             self.fields['producto'].queryset = Producto.objects.filter(estado='activo').order_by('nombre')
 
@@ -591,7 +622,10 @@ class MovimientoStockForm(forms.ModelForm):
         cantidad = self.cleaned_data.get('cantidad')
         if cantidad is None:
             raise ValidationError('La cantidad es obligatoria.')
-        if cantidad <= 0:
+        if self.allow_zero:
+            if cantidad < 0:
+                raise ValidationError('La cantidad no puede ser negativa.')
+        elif cantidad <= 0:
             raise ValidationError('La cantidad debe ser mayor a cero.')
         return cantidad
 
@@ -682,7 +716,7 @@ class PermisoForm(forms.ModelForm):
 
 class AsignarRolForm(forms.ModelForm):
     rol = forms.ModelChoiceField(
-        queryset=Rol.objects.all(), required=False, label='Rol',
+        queryset=Rol.objects.filter(estado='activo'), required=False, label='Rol',
         empty_label='— Sin rol —'
     )
 
@@ -700,13 +734,24 @@ class UsuarioDashboardForm(forms.ModelForm):
         label='Confirmar contraseña', widget=forms.PasswordInput, required=False
     )
     rol = forms.ModelChoiceField(
-        queryset=Rol.objects.all(), required=False, label='Rol',
+        queryset=Rol.objects.filter(estado='activo'), required=False, label='Rol',
         empty_label='— Sin rol —'
     )
 
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email', 'is_active']
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').strip()
+        if not email:
+            raise ValidationError('El correo electrónico es obligatorio.')
+        qs = User.objects.filter(email__iexact=email)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError('Este correo electrónico ya está en uso.')
+        return email
 
     def clean_username(self):
         username = self.cleaned_data.get('username', '').strip()
@@ -777,11 +822,18 @@ class SolicitarRecuperacionForm(forms.Form):
     )
 
     def clean_username(self):
-        username = self.cleaned_data['username']
-        from django.contrib.auth.models import User
-        try:
-            user = User.objects.get(username=username, is_staff=True)
-        except User.DoesNotExist:
+        username = self.cleaned_data['username'].strip()
+        user = User.objects.filter(username=username).first()
+        es_admin_valido = False
+        if user:
+            if user.is_superuser:
+                es_admin_valido = True
+            else:
+                try:
+                    es_admin_valido = user.perfil.es_admin()
+                except PerfilUsuario.DoesNotExist:
+                    es_admin_valido = False
+        if not user or not es_admin_valido:
             raise forms.ValidationError('No se encontró un administrador con ese nombre de usuario.')
         return username
 

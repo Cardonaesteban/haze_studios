@@ -50,7 +50,10 @@
             </td>
             <td>
                 <a class="btn btn-sm btn-secondary" href="{% url 'disenadores_editar' d.pk %}">Editar</a>
-                <a class="btn btn-sm btn-secondary" href="{% url 'disenadores_toggle_estado' d.pk %}">Estado</a>
+                <form method="post" action="{% url 'disenadores_toggle_estado' d.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-secondary">Estado</button>
+                </form>
                 <a class="btn btn-sm btn-danger" href="{% url 'disenadores_eliminar' d.pk %}">Eliminar</a>
             </td>
         </tr>

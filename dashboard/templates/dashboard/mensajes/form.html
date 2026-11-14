@@ -7,12 +7,12 @@
     <form method="post">
         {% csrf_token %}
         {% for field in form %}
-        <div class="form-group">
+        <div class="form-group" {% if field.name == 'contenido' %}x-data="{ len: {{ field.value|default:''|length }} }" @input="len = $event.target.value.length"{% endif %}>
             <label>{{ field.label }}{% if field.field.required %} <span style="color:var(--rojo)">*</span>{% endif %}</label>
             {{ field }}
             {% if field.name == 'contenido' %}
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.3rem;">
-                <span class="help-text" id="char-counter">0 / 500 caracteres</span>
+                <span class="help-text" :style="len > 500 ? 'color:var(--rojo)' : 'color:var(--gris-500)'" x-text="len + ' / 500 caracteres'"></span>
                 {% if field.help_text %}<span class="help-text">{{ field.help_text }}</span>{% endif %}
             </div>
             {% else %}
@@ -27,24 +27,4 @@
         </div>
     </form>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const textarea = document.getElementById('id_contenido');
-    const counter = document.getElementById('char-counter');
-    if (textarea && counter) {
-        function updateCounter() {
-            const len = textarea.value.length;
-            counter.textContent = len + ' / 500 caracteres';
-            if (len > 500) {
-                counter.style.color = 'var(--rojo)';
-            } else {
-                counter.style.color = 'var(--gris-500)';
-            }
-        }
-        textarea.addEventListener('input', updateCounter);
-        updateCounter();
-    }
-});
-</script>
 {% endblock %}

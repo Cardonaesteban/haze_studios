@@ -19,6 +19,7 @@ from django.core.mail import send_mail
 from django.contrib.auth.hashers import check_password, make_password
 from django.contrib import messages
 from django.db import transaction
+from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from functools import wraps
@@ -334,6 +335,7 @@ def carrito(request):
     return render(request, 'tienda/carrito.html', context)
 
 
+@require_POST
 def agregar_carrito(request, producto_id):
     """Añadir producto al carrito diferenciando por talla con validación de stock."""
     producto = get_object_or_404(Producto, pk=producto_id, estado='activo')
@@ -440,6 +442,7 @@ def actualizar_carrito(request):
     return redirect('tienda_carrito')
 
 
+@require_POST
 def eliminar_carrito(request, item_key):
     """Eliminar un producto y talla específico del carrito."""
     carrito = request.session.get('carrito', {})
@@ -460,6 +463,7 @@ def eliminar_carrito(request, item_key):
     return redirect('tienda_carrito')
 
 
+@require_POST
 def vaciar_carrito(request):
     """Vaciar todo el contenido del carrito."""
     request.session['carrito'] = {}
@@ -510,6 +514,8 @@ def checkout(request):
                     # Re-verificar y bloquear stock
                     for pid, cant_requerida in totales_por_producto.items():
                         prod = Producto.objects.select_for_update().get(pk=pid)
+                        if prod.estado != 'activo':
+                            raise ValueError(f'El producto "{prod.nombre}" ya no está disponible.')
                         if prod.stock < cant_requerida:
                             raise ValueError(
                                 f'Stock insuficiente para "{prod.nombre}". Solicitado en total: {cant_requerida}, Disponible: {prod.stock}'
@@ -750,9 +756,25 @@ def paypal_capturar_orden(request, pedido_id):
                     'redirect_url': reverse('tienda_pedido_confirmado', args=[pedido.pk])
                 })
 
-            resultado = capturar_orden_paypal(order_id)
+            if pedido.referencia_pago and order_id != pedido.referencia_pago:
+                return JsonResponse({'error': 'La orden de PayPal no coincide con este pedido.'}, status=400)
 
-            if resultado.get('success'):
+            monto_esperado = pedido.monto_usd
+
+        # Llamar a PayPal fuera de transaction.atomic() para no bloquear la BD durante la red
+        resultado = capturar_orden_paypal(order_id)
+
+        if not resultado.get('success'):
+            error_msg = resultado.get('error', 'La transacción no pudo ser completada por PayPal.')
+            return JsonResponse({'status': 'FAILED', 'error': error_msg}, status=400)
+
+        if monto_esperado and resultado.get('monto_usd'):
+            if abs(Decimal(str(resultado['monto_usd'])) - monto_esperado) > Decimal('0.05'):
+                return JsonResponse({'status': 'FAILED', 'error': 'El monto cobrado no coincide con el pedido.'}, status=400)
+
+        with transaction.atomic():
+            pedido = Pedido.objects.select_for_update().get(pk=pedido_id, cliente=cliente)
+            if pedido.estado not in ('procesando', 'enviado', 'entregado'):
                 pedido.estado = 'procesando'
                 pedido.metodo_pago = 'paypal'
                 pedido.transaccion_id = resultado.get('capture_id') or order_id
@@ -764,17 +786,14 @@ def paypal_capturar_orden(request, pedido_id):
                         pass
                 pedido.save(update_fields=['estado', 'metodo_pago', 'transaccion_id', 'fecha_pago', 'monto_usd'])
 
-                # Enviar factura por correo electrónico
-                enviar_factura_pedido(pedido)
+        # Enviar factura por correo electrónico
+        enviar_factura_pedido(pedido)
 
-                messages.success(request, f'¡Pago aprobado con éxito! Tu pedido #{pedido.pk} está en proceso de despacho.')
-                return JsonResponse({
-                    'status': 'COMPLETED',
-                    'redirect_url': reverse('tienda_pedido_confirmado', args=[pedido.pk])
-                })
-            else:
-                error_msg = resultado.get('error', 'La transacción no pudo ser completada por PayPal.')
-                return JsonResponse({'status': 'FAILED', 'error': error_msg}, status=400)
+        messages.success(request, f'¡Pago aprobado con éxito! Tu pedido #{pedido.pk} está en proceso de despacho.')
+        return JsonResponse({
+            'status': 'COMPLETED',
+            'redirect_url': reverse('tienda_pedido_confirmado', args=[pedido.pk])
+        })
 
     except Pedido.DoesNotExist:
         return JsonResponse({'error': 'Pedido no encontrado'}, status=404)
@@ -811,9 +830,28 @@ def paypal_retorno(request, pedido_id):
             if pedido_lock.estado in ('procesando', 'enviado', 'entregado'):
                 return redirect('tienda_pedido_confirmado', pedido_id=pedido.pk)
 
-            resultado = capturar_orden_paypal(order_id)
+            if pedido_lock.referencia_pago and order_id != pedido_lock.referencia_pago:
+                messages.error(request, 'La orden de PayPal no coincide con este pedido.')
+                return redirect('tienda_confirmar_pago', pedido_id=pedido.pk)
 
-            if resultado.get('success'):
+            monto_esperado = pedido_lock.monto_usd
+
+        # Llamar a PayPal fuera de transaction.atomic()
+        resultado = capturar_orden_paypal(order_id)
+
+        if not resultado.get('success'):
+            error_msg = resultado.get('error', 'No fue posible completar el cobro en PayPal.')
+            messages.error(request, f'El pago no se completó: {error_msg}. Puedes intentar nuevamente o seleccionar Pago Contra Entrega.')
+            return redirect('tienda_confirmar_pago', pedido_id=pedido.pk)
+
+        if monto_esperado and resultado.get('monto_usd'):
+            if abs(Decimal(str(resultado['monto_usd'])) - monto_esperado) > Decimal('0.05'):
+                messages.error(request, 'El monto cobrado por PayPal no coincide con el pedido.')
+                return redirect('tienda_confirmar_pago', pedido_id=pedido.pk)
+
+        with transaction.atomic():
+            pedido_lock = Pedido.objects.select_for_update().get(pk=pedido.pk, cliente=cliente)
+            if pedido_lock.estado not in ('procesando', 'enviado', 'entregado'):
                 pedido_lock.estado = 'procesando'
                 pedido_lock.metodo_pago = 'paypal'
                 pedido_lock.transaccion_id = resultado.get('capture_id') or order_id
@@ -825,14 +863,10 @@ def paypal_retorno(request, pedido_id):
                         pass
                 pedido_lock.save(update_fields=['estado', 'metodo_pago', 'transaccion_id', 'fecha_pago', 'monto_usd'])
 
-                enviar_factura_pedido(pedido_lock)
+        enviar_factura_pedido(pedido_lock)
 
-                messages.success(request, f'¡Pago aprobado con éxito! Tu pedido #{pedido.pk} ha sido registrado.')
-                return redirect('tienda_pedido_confirmado', pedido_id=pedido.pk)
-            else:
-                error_msg = resultado.get('error', 'No fue posible completar el cobro en PayPal.')
-                messages.error(request, f'El pago no se completó: {error_msg}. Puedes intentar nuevamente o seleccionar Pago Contra Entrega.')
-                return redirect('tienda_confirmar_pago', pedido_id=pedido.pk)
+        messages.success(request, f'¡Pago aprobado con éxito! Tu pedido #{pedido.pk} ha sido registrado.')
+        return redirect('tienda_pedido_confirmado', pedido_id=pedido.pk)
 
     except Exception as e:
         logger.error(f"Error en retorno de PayPal para pedido #{pedido.pk}: {e}")
@@ -874,15 +908,18 @@ def pedido_detalle(request, pedido_id):
     return render(request, 'tienda/pedido_detalle.html', context)
 
 @cliente_required
+@require_POST
 def pedido_cancelar(request, pedido_id):
     """Permite al cliente cancelar su pedido si el estado lo permite"""
     cliente = get_cliente_actual(request)
     if cliente is None:
         return redirect('tienda_login')
 
-    pedido = get_object_or_404(Pedido, pk=pedido_id, cliente=cliente)
+    with transaction.atomic():
+        pedido = get_object_or_404(Pedido.objects.select_for_update(), pk=pedido_id, cliente=cliente)
+        cancelado = pedido.cancelar()
 
-    if pedido.cancelar():
+    if cancelado:
         messages.success(request, f'Pedido #{pedido.pk} cancelado correctamente.')
     else:
         messages.error(request, f'No se puede cancelar el pedido #{pedido.pk}. Estado actual: {pedido.estado}.')
@@ -960,6 +997,7 @@ def registro_cliente(request):
     return render(request, 'tienda/registro.html', {'form': form})
 
 
+@require_POST
 def logout_cliente(request):
     """Cerrar sesión del cliente."""
     # Guardar carrito temporalmente si se desea, o limpiar sesión
@@ -1058,20 +1096,25 @@ def recuperar_password_cliente(request):
                 reset_url = request.build_absolute_uri(
                     reverse('tienda_recuperar_password_confirmar', kwargs={'token': token_obj.token})
                 )
-                send_mail(
-                    subject='Restablecer contraseña — Haze Studios',
-                    message=(
-                        f'Hola {cliente.nombre},\n\n'
-                        f'Recibimos una solicitud para restablecer la contraseña de tu cuenta.\n'
-                        f'Usa este enlace (válido 2 horas, un solo uso):\n\n'
-                        f'{reset_url}\n\n'
-                        f'Si no solicitaste este cambio, ignora este correo.\n\n'
-                        f'— Haze Studios'
-                    ),
-                    from_email=None,
-                    recipient_list=[cliente.correo],
-                    fail_silently=False,
-                )
+                try:
+                    send_mail(
+                        subject='Restablecer contraseña — Haze Studios',
+                        message=(
+                            f'Hola {cliente.nombre},\n\n'
+                            f'Recibimos una solicitud para restablecer la contraseña de tu cuenta.\n'
+                            f'Usa este enlace (válido 2 horas, un solo uso):\n\n'
+                            f'{reset_url}\n\n'
+                            f'Si no solicitaste este cambio, ignora este correo.\n\n'
+                            f'— Haze Studios'
+                        ),
+                        from_email=None,
+                        recipient_list=[cliente.correo],
+                        fail_silently=False,
+                    )
+                except Exception as exc:
+                    logger.error(f'Error al enviar correo de recuperación al cliente {cliente.pk}: {exc}')
+                    messages.error(request, 'No pudimos enviar el correo en este momento. Intenta de nuevo más tarde.')
+                    return redirect('tienda_recuperar_password')
 
             return redirect('tienda_recuperar_password_enviado')
     else:
@@ -1475,6 +1518,9 @@ def personalizacion_eliminar(request, pk):
 
     cliente = get_cliente_actual(request)
     personalizacion = get_object_or_404(Personalizacion, pk=pk, cliente=cliente)
+    if personalizacion.estado == 'publicada':
+        messages.error(request, 'No puedes eliminar una personalización publicada en la comunidad.')
+        return redirect('tienda_mis_personalizaciones')
     nombre = personalizacion.nombre_personalizacion
     personalizacion.delete()
     messages.success(request, f'La personalización "{nombre}" fue eliminada correctamente.')
@@ -1731,7 +1777,7 @@ def comunidad_editar(request, pk):
                 pers.estampado = prenda_editada.estampado
                 pers.tipografia = prenda_editada.tipografia
                 pers.detalle = prenda_editada.descripcion
-                pers.estado = prenda_editada.estado
+                pers.estado = 'publicada' if prenda_editada.estado == 'activo' else 'en_proceso'
                 pers.save()
             messages.success(request, f'La publicación "{prenda_editada.nombre}" fue actualizada correctamente.')
             return redirect('tienda_comunidad_detalle', pk=prenda.pk)

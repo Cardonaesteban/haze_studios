@@ -109,10 +109,10 @@
  <label style="font-weight:800;font-size:0.88rem;color:var(--gris-800);display:block;margin-bottom:0.5rem;">
  Cantidad:
  </label>
- <div class="qty-controller">
- <button type="button" class="qty-btn" onclick="let inputMenos = document.getElementById('prod_qty'); if(parseInt(inputMenos.value) > 1) inputMenos.value = parseInt(inputMenos.value) - 1;">−</button>
- <input type="number" name="cantidad" id="prod_qty" value="1" min="1" max="{{ producto.stock }}" required class="qty-input">
- <button type="button" class="qty-btn" onclick="let inputMas = document.getElementById('prod_qty'); if(parseInt(inputMas.value) < {{ producto.stock }}) inputMas.value = parseInt(inputMas.value) + 1;">+</button>
+ <div class="qty-controller" x-data="{ cant: 1 }">
+ <button type="button" class="qty-btn" @click="if (cant > 1) cant--">−</button>
+ <input type="number" name="cantidad" id="prod_qty" x-model.number="cant" min="1" max="{{ producto.stock }}" required class="qty-input">
+ <button type="button" class="qty-btn" @click="if (cant < {{ producto.stock }}) cant++">+</button>
  </div>
  </div>
  <div style="flex:1;">
@@ -138,25 +138,25 @@
  {% endif %}
 
  <!-- PESTAÑAS INFORMATIVAS INTERACTIVAS -->
- <div class="tab-container">
+ <div class="tab-container" x-data="{ tab: 'guia' }">
  <div class="tab-header">
- <button type="button" class="tab-trigger active" onclick="switchTab(event, 'tab-guia')">Guía de Calce y Medidas</button>
- <button type="button" class="tab-trigger" onclick="switchTab(event, 'tab-detalles')">Detalles y Confección</button>
- <button type="button" class="tab-trigger" onclick="switchTab(event, 'tab-envios')">Envíos y Despachos</button>
+ <button type="button" class="tab-trigger" :class="{ 'active': tab === 'guia' }" @click="tab = 'guia'">Guía de Calce y Medidas</button>
+ <button type="button" class="tab-trigger" :class="{ 'active': tab === 'detalles' }" @click="tab = 'detalles'">Detalles y Confección</button>
+ <button type="button" class="tab-trigger" :class="{ 'active': tab === 'envios' }" @click="tab = 'envios'">Envíos y Despachos</button>
  </div>
 
- <div id="tab-guia" class="tab-panel active">
+ <div class="tab-panel" :class="{ 'active': tab === 'guia' }">
  <p>Nuestras prendas cuentan con un <strong>corte oversize intencional</strong> con hombros caídos y torso amplio. Si buscas un calce holgado tradicional de moda urbana, te recomendamos pedir tu talla habitual. Si prefieres un ajuste más entallado, elige una talla menos.</p>
  </div>
 
- <div id="tab-detalles" class="tab-panel">
+ <div class="tab-panel" :class="{ 'active': tab === 'detalles' }">
  <p>• 100% Algodón de alto gramaje preencogido.</p>
  <p>• Cuello reforzado y costuras dobles de alta resistencia.</p>
  {% if producto.categoria %}<p>• Categoría: {{ producto.categoria.nombre }}</p>{% endif %}
  {% if producto.disenador %}<p>• Diseñado por: {{ producto.disenador.nombre }}</p>{% endif %}
  </div>
 
- <div id="tab-envios" class="tab-panel">
+ <div class="tab-panel" :class="{ 'active': tab === 'envios' }">
  <p>• Despachos a nivel nacional con número de seguimiento.</p>
  <p>• El tiempo estimado de entrega es de 2 a 4 días hábiles según la ciudad de destino.</p>
  </div>
@@ -199,13 +199,6 @@
 </style>
 
 <script>
-function switchTab(evt, tabId) {
- document.querySelectorAll('.tab-trigger').forEach(b => b.classList.remove('active'));
- document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
- evt.currentTarget.classList.add('active');
- document.getElementById(tabId).classList.add('active');
-}
-
 document.addEventListener('alpine:init', () => {
  Alpine.data('favoritoHandler', (estadoInicial, productoId) => ({
  esFavorito: estadoInicial,

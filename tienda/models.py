@@ -49,6 +49,11 @@ class Favorito(models.Model):
         verbose_name_plural = 'Favoritos'
         ordering = ['-fecha_agregado']
 
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if bool(self.producto) == bool(self.prenda_comunidad):
+            raise ValidationError('El favorito debe asociarse exactamente a un producto o a una prenda de comunidad.')
+
     def __str__(self):
         if self.producto:
             return f'{self.cliente} — {self.producto.nombre}'

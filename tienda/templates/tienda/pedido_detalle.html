@@ -158,10 +158,13 @@
                             style="padding: 0.65rem 1.25rem; font-size: 0.85rem; font-weight: 600; color: #E5E7EB; background: #1F2937; border: 1px solid #374151; border-radius: 8px; cursor: pointer;">
                         Conservar Pedido
                     </button>
-                    <a href="{% url 'tienda_pedido_cancelar' pedido.pk %}"
-                       style="padding: 0.65rem 1.25rem; font-size: 0.85rem; font-weight: 700; color: #FFFFFF; background: #DC2626; border: 1px solid #B91C1C; border-radius: 8px; text-decoration: none; display: inline-block;">
-                        Sí, Cancelar
-                    </a>
+                    <form method="post" action="{% url 'tienda_pedido_cancelar' pedido.pk %}" style="margin:0;">
+                        {% csrf_token %}
+                        <button type="submit"
+                                style="padding: 0.65rem 1.25rem; font-size: 0.85rem; font-weight: 700; color: #FFFFFF; background: #DC2626; border: 1px solid #B91C1C; border-radius: 8px; cursor: pointer;">
+                            Sí, Cancelar
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

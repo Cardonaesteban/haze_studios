@@ -1,5 +1,6 @@
 from django.core.mail import send_mail
 from django.conf import settings
+from django.utils.html import escape
 import logging
 
 logger = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ def enviar_notificacion_estado_pedido(pedido, estado_anterior=None):
     # HTML - INICIALIZAR filas_html ANTES de usarla
     filas_html = ""
     for d in detalles:
-        nombre_prod = getattr(d.producto, 'nombre', 'Producto')
+        nombre_prod = escape(getattr(d.producto, 'nombre', 'Producto'))
         filas_html += f"""
         <tr>
             <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 14px; color: #1e293b;">
@@ -107,7 +108,7 @@ def enviar_notificacion_estado_pedido(pedido, estado_anterior=None):
                 <h1>HAZE STUDIOS</h1>
             </div>
             <div class="content">
-                <p style="font-size: 16px; margin-top: 0;">Hola <strong>{cliente.nombre}</strong>,</p>
+                <p style="font-size: 16px; margin-top: 0;">Hola <strong>{escape(cliente.nombre)}</strong>,</p>
                 <p style="font-size: 15px; line-height: 1.5; color: #334155;">
                     Te informamos que tu pedido <strong>#{pedido.pk}</strong> ha tenido una actualización de estado:
                 </p>
@@ -150,7 +151,7 @@ def enviar_notificacion_estado_pedido(pedido, estado_anterior=None):
             from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
             recipient_list=[cliente.correo],
             html_message=html_message,
-            fail_silently=True,
+            fail_silently=False,
         )
 
         # Registrar en el historial de mensajes del sistema
@@ -229,7 +230,7 @@ def enviar_factura_pedido(pedido):
     # Filas de la tabla HTML
     filas_html = ""
     for d in detalles:
-        nombre_prod = getattr(d.producto, 'nombre', 'Prenda Haze')
+        nombre_prod = escape(getattr(d.producto, 'nombre', 'Prenda Haze'))
         filas_html += f"""
         <tr>
             <td style="padding: 12px 14px; border-bottom: 1px solid #1f2937; color: #f3f4f6; font-size: 14px;">
@@ -422,7 +423,7 @@ def enviar_factura_pedido(pedido):
                 <div class="meta-grid">
                     <div class="meta-col">
                         <div class="meta-label">Cliente</div>
-                        <div class="meta-value">{cliente.nombre} {cliente.apellido}</div>
+                        <div class="meta-value">{escape(cliente.nombre)} {escape(cliente.apellido)}</div>
                         <div style="color: #9ca3af;">{cliente.correo}</div>
                     </div>
                     <div class="meta-col" style="text-align: right;">
@@ -456,7 +457,7 @@ def enviar_factura_pedido(pedido):
                     <div style="font-weight: 700; color: #e5e7eb; margin-bottom: 4px; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">
                         Detalles de Entrega y Envio:
                     </div>
-                    <div>{pedido.notas or 'Despacho estandar a direccion registrada.'}</div>
+                    <div>{escape(pedido.notas or 'Despacho estandar a direccion registrada.')}</div>
                 </div>
             </div>
 

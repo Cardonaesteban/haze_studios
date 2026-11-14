@@ -80,11 +80,11 @@
                             Estado ▾
                         </button>
 
-                        <div x-show="modalEstado" x-cloak
-                             style="position:fixed; inset:0; background:rgba(15,23,42,0.55); backdrop-filter:blur(2px); z-index:9999; display:flex; align-items:center; justify-content:center; padding:1rem;"
+                        <div x-show="modalEstado"
+                             style="position:fixed; top:0; left:0; right:0; bottom:0; width:100vw; height:100vh; inset:0; background:rgba(15,23,42,0.55); backdrop-filter:blur(2px); z-index:99999;"
                              @click.self="modalEstado = false"
                              @keydown.escape.window="modalEstado = false">
-                            <div style="background:#ffffff; border-radius:var(--border-radius-lg); box-shadow:var(--sombra-xl); max-width:340px; width:100%; padding:1.25rem; border:1px solid var(--gris-200); text-align:left;">
+                            <div style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:#ffffff; border-radius:var(--border-radius-lg); box-shadow:var(--sombra-xl); max-width:340px; width:calc(100% - 2rem); padding:1.25rem; border:1px solid var(--gris-200); text-align:left; z-index:100000;">
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; border-bottom:1px solid var(--gris-200); padding-bottom:0.75rem;">
                                     <div>
                                         <h3 style="margin:0; font-size:1rem; font-weight:700; color:var(--gris-900);">Cambiar Estado</h3>

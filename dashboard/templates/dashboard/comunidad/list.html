@@ -64,7 +64,10 @@
             <td style="white-space: nowrap;">
                 <a class="btn btn-sm btn-secondary" href="{% url 'comunidad_admin_detalle' p.pk %}">Ver Personalización</a>
                 <a class="btn btn-sm btn-secondary" href="{% url 'comunidad_admin_editar' p.pk %}">Editar</a>
-                <a class="btn btn-sm btn-secondary" href="{% url 'comunidad_admin_estado' p.pk %}">Estado</a>
+                <form method="post" action="{% url 'comunidad_admin_estado' p.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-secondary">Estado</button>
+                </form>
                 <a class="btn btn-sm btn-danger" href="{% url 'comunidad_admin_eliminar' p.pk %}">Eliminar</a>
             </td>
         </tr>

@@ -205,10 +205,13 @@ class CambiarPasswordClienteForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
+        actual = cleaned_data.get('password_actual')
         nuevo = cleaned_data.get('nuevo_password')
         confirmar = cleaned_data.get('confirmar_nuevo_password')
         if nuevo and confirmar and nuevo != confirmar:
             self.add_error('confirmar_nuevo_password', 'Las nuevas contraseñas no coinciden.')
+        if actual and nuevo and actual == nuevo:
+            self.add_error('nuevo_password', 'La nueva contraseña debe ser diferente a la contraseña actual.')
         return cleaned_data
 
 
@@ -252,16 +255,19 @@ class ConfirmarPasswordClienteForm(forms.Form):
 class CheckoutForm(forms.Form):
     departamento = forms.CharField(
         label='Departamento',
+        max_length=100,
         required=True,
         widget=forms.Select(attrs={'class': 'select-departamento'})
     )
     ciudad = forms.CharField(
         label='Ciudad',
+        max_length=100,
         required=True,
         widget=forms.Select(attrs={'class': 'select-ciudad'})
     )
     direccion_envio = forms.CharField(
         label='Dirección (calle/carrera, número, barrio)',
+        max_length=300,
         widget=forms.Textarea(attrs={'rows': 2, 'placeholder': 'Ej. Cra 45 #10-20, Barrio Laureles'}),
         required=True
     )
@@ -439,6 +445,12 @@ class PrendaComunidadPublicarForm(forms.ModelForm):
             raise ValidationError('La descripción debe tener al menos 10 caracteres.')
         return descripcion
 
+    def clean_estado(self):
+        estado = self.cleaned_data.get('estado')
+        if self.instance and self.instance.pk and self.instance.motivo_inactivacion and estado == 'activo':
+            raise ValidationError('Esta publicación fue inactivada por administración y no puede reactivarse.')
+        return estado
+
     def clean_personalizacion(self):
         pers = self.cleaned_data.get('personalizacion')
         if not pers:
@@ -509,6 +521,12 @@ class PrendaComunidadEditarForm(forms.ModelForm):
         if len(descripcion) < 10:
             raise ValidationError('La descripción debe tener al menos 10 caracteres.')
         return descripcion
+
+    def clean_estado(self):
+        estado = self.cleaned_data.get('estado')
+        if self.instance and self.instance.pk and self.instance.motivo_inactivacion and estado == 'activo':
+            raise ValidationError('Esta publicación fue inactivada por administración y no puede reactivarse.')
+        return estado
 
     def clean(self):
         cleaned_data = super().clean()

@@ -42,6 +42,7 @@
  </div>
 </div>
 
+<div x-data="{ open: {% if categoria_seleccionada or rango_precio or solo_disponibles %}true{% else %}false{% endif %}, categoria: '{{ categoria_seleccionada|default:'' }}', rango: '{{ rango_precio|default:'' }}', disponibles: '{% if solo_disponibles %}1{% endif %}' }">
 <!-- BARRA COMPACTA DE HERRAMIENTAS Y BÚSQUEDA -->
 <div class="catalog-toolbar-compact">
  <div class="toolbar-left-group">
@@ -62,7 +63,7 @@
  </form>
 
  <!-- BOTÓN DESPLEGABLE DE FILTROS -->
- <button type="button" class="btn-filter-toggle {% if categoria_seleccionada or rango_precio or solo_disponibles %}active{% endif %}" id="btnFilterToggle" onclick="toggleFilterDrawer();">
+ <button type="button" class="btn-filter-toggle" :class="{ 'active': open || categoria || rango || disponibles }" @click="open = !open">
  <svg style="width:14px;height:14px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
  </svg>
@@ -74,7 +75,7 @@
  {% else %}1{% endif %}
  </span>
  {% endif %}
- <span id="filterChevron" style="font-size:0.75rem;margin-left:0.15rem;">▾</span>
+ <span style="font-size:0.75rem;margin-left:0.15rem;" x-text="open ? '▴' : '▾'">▾</span>
  </button>
  </div>
 
@@ -100,24 +101,24 @@
 </div>
 
 <!-- PANEL COLAPSABLE DE FILTROS COMPACTOS -->
-<div class="filter-drawer-panel {% if categoria_seleccionada or rango_precio or solo_disponibles %}open{% endif %}" id="filterDrawer">
+<div class="filter-drawer-panel" :class="{ 'open': open }">
  <form method="get" action="{% url 'tienda_productos' %}" id="mainFilterForm">
  {% if orden %}<input type="hidden" name="orden" value="{{ orden }}">{% endif %}
  {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
- <input type="hidden" name="categoria" id="input_categoria" value="{{ categoria_seleccionada|default:'' }}">
- <input type="hidden" name="rango_precio" id="input_rango_precio" value="{{ rango_precio|default:'' }}">
- <input type="hidden" name="disponibles" id="input_disponibles" value="{% if solo_disponibles %}1{% endif %}">
+ <input type="hidden" name="categoria" :value="categoria">
+ <input type="hidden" name="rango_precio" :value="rango">
+ <input type="hidden" name="disponibles" :value="disponibles">
 
  <div class="filter-compact-grid">
  <!-- CATEGORÍAS COMPACTAS -->
  <div>
  <div class="filter-compact-title">Categorías de Prenda</div>
  <div class="pills-group-compact">
- <button type="button" class="pill-compact-btn {% if not categoria_seleccionada %}active{% endif %}" onclick="setCompactFilter('input_categoria', '', this);">
+ <button type="button" class="pill-compact-btn" :class="{ 'active': categoria === '' }" @click="categoria = ''">
  Todas <span class="pill-count-badge">{{ total_prendas_global }}</span>
  </button>
  {% for cat in categorias %}
- <button type="button" class="pill-compact-btn {% if categoria_seleccionada == cat.pk %}active{% endif %}" onclick="setCompactFilter('input_categoria', '{{ cat.pk }}', this);">
+ <button type="button" class="pill-compact-btn" :class="{ 'active': categoria === '{{ cat.pk }}' }" @click="categoria = '{{ cat.pk }}'">
  {{ cat.nombre }} <span class="pill-count-badge">{{ cat.total_prods }}</span>
  </button>
  {% endfor %}
@@ -128,23 +129,23 @@
  <div>
  <div class="filter-compact-title">Rango de Precio</div>
  <div class="pills-group-compact">
- <button type="button" class="pill-compact-btn {% if not rango_precio %}active{% endif %}" onclick="setCompactFilter('input_rango_precio', '', this);">
+ <button type="button" class="pill-compact-btn" :class="{ 'active': rango === '' }" @click="rango = ''">
  Todos
  </button>
- <button type="button" class="pill-compact-btn {% if rango_precio == 'menos_100' %}active{% endif %}" onclick="setCompactFilter('input_rango_precio', 'menos_100', this);">
+ <button type="button" class="pill-compact-btn" :class="{ 'active': rango === 'menos_100' }" @click="rango = 'menos_100'">
  < $100.000
  </button>
- <button type="button" class="pill-compact-btn {% if rango_precio == '100_180' %}active{% endif %}" onclick="setCompactFilter('input_rango_precio', '100_180', this);">
+ <button type="button" class="pill-compact-btn" :class="{ 'active': rango === '100_180' }" @click="rango = '100_180'">
  $100k - $180k
  </button>
- <button type="button" class="pill-compact-btn {% if rango_precio == 'mas_180' %}active{% endif %}" onclick="setCompactFilter('input_rango_precio', 'mas_180', this);">
+ <button type="button" class="pill-compact-btn" :class="{ 'active': rango === 'mas_180' }" @click="rango = 'mas_180'">
  > $180.000
  </button>
  </div>
 
  <div style="margin-top:0.75rem;">
- <button type="button" class="availability-pill-compact {% if solo_disponibles %}active{% endif %}" onclick="toggleCompactAvailability(this);">
- <span style="font-size:0.85rem;">{% if solo_disponibles %}✓{% else %}○{% endif %}</span>
+ <button type="button" class="availability-pill-compact" :class="{ 'active': disponibles === '1' }" @click="disponibles = disponibles === '1' ? '' : '1'">
+ <span style="font-size:0.85rem;" x-text="disponibles === '1' ? '✓' : '○'">○</span>
  <span>Solo en inventario</span>
  </button>
  </div>
@@ -162,6 +163,7 @@
  </button>
  </div>
  </form>
+</div>
 </div>
 
 <!-- ETIQUETAS DE FILTROS ACTIVOS (TAGS) -->
@@ -253,41 +255,4 @@
  </a>
 </div>
 {% endif %}
-
-<script>
-function toggleFilterDrawer() {
- const drawer = document.getElementById('filterDrawer');
- const btn = document.getElementById('btnFilterToggle');
- const chevron = document.getElementById('filterChevron');
- 
- if (drawer.classList.contains('open')) {
- drawer.classList.remove('open');
- btn.classList.remove('active');
- chevron.textContent = '▾';
- } else {
- drawer.classList.add('open');
- btn.classList.add('active');
- chevron.textContent = '▴';
- }
-}
-
-function setCompactFilter(inputId, value, btnElem) {
- document.getElementById(inputId).value = value;
- btnElem.parentElement.querySelectorAll('.pill-compact-btn').forEach(b => b.classList.remove('active'));
- btnElem.classList.add('active');
-}
-
-function toggleCompactAvailability(btnElem) {
- const input = document.getElementById('input_disponibles');
- if (input.value === '1') {
- input.value = '';
- btnElem.classList.remove('active');
- btnElem.querySelector('span').textContent = '○';
- } else {
- input.value = '1';
- btnElem.classList.add('active');
- btnElem.querySelector('span').textContent = '✓';
- }
-}
-</script>
 {% endblock %}

@@ -1,6 +1,7 @@
 from typing import Callable, Any
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.http import require_POST
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db import transaction
@@ -132,6 +133,7 @@ def usuarios_eliminar(request, pk):
     return render(request, 'dashboard/confirmar_eliminar.html', {'objeto': cliente, 'tipo': 'usuario'})
 
 @admin_required
+@require_POST
 def usuarios_toggle_estado(request, pk):
     cliente = get_object_or_404(Cliente, pk=pk)
     cliente.toggle_estado()
@@ -226,6 +228,7 @@ def productos_eliminar(request, pk):
     return render(request, 'dashboard/confirmar_eliminar.html', {'objeto': producto, 'tipo': 'producto'})
 
 @admin_required
+@require_POST
 def productos_toggle_estado(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
     producto.toggle_estado()
@@ -255,7 +258,7 @@ def stock_list(request):
 
 def _registrar_movimiento_stock(request, tipo, titulo, help_text=None):
     """Procesa y registra un movimiento de stock (entrada, salida o ajuste) de forma segura y atómica."""
-    form = MovimientoStockForm(request.POST or None)
+    form = MovimientoStockForm(request.POST or None, allow_zero=(tipo == 'ajuste'))
     if request.method == 'POST' and form.is_valid():
         with transaction.atomic():
             mov = form.save(commit=False)
@@ -409,23 +412,25 @@ def pedidos_crear(request):
             detalles = formset.save(commit=False)
             for detalle in detalles:
                 detalle.pedido = pedido
-                producto = detalle.producto
-                if detalle.cantidad > producto.stock:
-                    messages.error(request, f'Stock insuficiente para "{producto.nombre}". Disponible: {producto.stock}')
-                    return render(request, 'dashboard/pedidos/form.html', {
-                        'form': form, 'formset': formset, 'titulo': 'Registrar pedido'
-                    })
-                stock_antes = producto.stock
-                producto.stock -= detalle.cantidad
-                producto.save(update_fields=['stock'])
-                MovimientoStock.objects.create(
-                    producto=producto, tipo='salida',
-                    cantidad=detalle.cantidad,
-                    stock_anterior=stock_antes,
-                    stock_posterior=producto.stock,
-                    motivo=f'Pedido #{pedido.pk}',
-                    usuario=request.user, pedido=pedido
-                )
+                producto = Producto.objects.select_for_update().get(pk=detalle.producto_id)
+                if pedido.estado != 'cancelado':
+                    if detalle.cantidad > producto.stock:
+                        transaction.set_rollback(True)
+                        messages.error(request, f'Stock insuficiente para "{producto.nombre}". Disponible: {producto.stock}')
+                        return render(request, 'dashboard/pedidos/form.html', {
+                            'form': form, 'formset': formset, 'titulo': 'Registrar pedido'
+                        })
+                    stock_antes = producto.stock
+                    producto.stock -= detalle.cantidad
+                    producto.save(update_fields=['stock'])
+                    MovimientoStock.objects.create(
+                        producto=producto, tipo='salida',
+                        cantidad=detalle.cantidad,
+                        stock_anterior=stock_antes,
+                        stock_posterior=producto.stock,
+                        motivo=f'Pedido #{pedido.pk}',
+                        usuario=request.user, pedido=pedido
+                    )
                 detalle.save()
             for detalle in formset.deleted_objects:
                 detalle.delete()
@@ -440,16 +445,93 @@ def pedidos_crear(request):
 def pedidos_editar(request, pk):
     pedido = get_object_or_404(Pedido, pk=pk)
     estado_anterior = pedido.estado
+    cantidades_previas = {d.pk: d.cantidad for d in pedido.detalles.all()}
     form = PedidoForm(request.POST or None, instance=pedido)
     formset = DetallePedidoFormSet(request.POST or None, instance=pedido)
     if request.method == 'POST' and form.is_valid() and formset.is_valid():
         with transaction.atomic():
             pedido = form.save()
-            formset.save()
+            detalles = formset.save(commit=False)
+            # 1. Devolver stock de filas eliminadas si el pedido no estaba cancelado
+            for detalle in formset.deleted_objects:
+                if estado_anterior != 'cancelado':
+                    prod = Producto.objects.select_for_update().get(pk=detalle.producto_id)
+                    antes = prod.stock
+                    prod.stock += detalle.cantidad
+                    prod.save(update_fields=['stock'])
+                    MovimientoStock.objects.create(
+                        producto=prod, tipo='entrada', cantidad=detalle.cantidad,
+                        stock_anterior=antes, stock_posterior=prod.stock,
+                        motivo=f'Edición Pedido #{pedido.pk} (ítem quitado)',
+                        usuario=request.user, pedido=pedido
+                    )
+                detalle.delete()
+
+            # 2. Ajustar diferencias en filas guardadas si el pedido estaba activo
+            for detalle in detalles:
+                detalle.pedido = pedido
+                if estado_anterior != 'cancelado' and pedido.estado != 'cancelado':
+                    prod = Producto.objects.select_for_update().get(pk=detalle.producto_id)
+                    prev = cantidades_previas.get(detalle.pk, 0)
+                    diff = detalle.cantidad - prev
+                    if diff > 0:
+                        if diff > prod.stock:
+                            transaction.set_rollback(True)
+                            messages.error(request, f'Stock insuficiente para "{prod.nombre}". Disponible: {prod.stock}')
+                            return render(request, 'dashboard/pedidos/form.html', {
+                                'form': form, 'formset': formset, 'titulo': 'Editar pedido', 'objeto': pedido
+                            })
+                        antes = prod.stock
+                        prod.stock -= diff
+                        prod.save(update_fields=['stock'])
+                        MovimientoStock.objects.create(
+                            producto=prod, tipo='salida', cantidad=diff,
+                            stock_anterior=antes, stock_posterior=prod.stock,
+                            motivo=f'Edición Pedido #{pedido.pk}',
+                            usuario=request.user, pedido=pedido
+                        )
+                    elif diff < 0:
+                        antes = prod.stock
+                        prod.stock += abs(diff)
+                        prod.save(update_fields=['stock'])
+                        MovimientoStock.objects.create(
+                            producto=prod, tipo='entrada', cantidad=abs(diff),
+                            stock_anterior=antes, stock_posterior=prod.stock,
+                            motivo=f'Edición Pedido #{pedido.pk}',
+                            usuario=request.user, pedido=pedido
+                        )
+                detalle.save()
+
+            # 3. Si cambió a cancelado o salió de cancelado, ajustar todo el pedido
+            if estado_anterior != 'cancelado' and pedido.estado == 'cancelado':
+                pedido._restaurar_stock(f'Cancelación en edición Pedido #{pedido.pk}')
+            elif estado_anterior == 'cancelado' and pedido.estado != 'cancelado':
+                for det in pedido.detalles.select_related('producto'):
+                    prod = Producto.objects.select_for_update().get(pk=det.producto_id)
+                    if det.cantidad > prod.stock:
+                        transaction.set_rollback(True)
+                        messages.error(request, f'Stock insuficiente para reactivar "{prod.nombre}". Disponible: {prod.stock}')
+                        return render(request, 'dashboard/pedidos/form.html', {
+                            'form': form, 'formset': formset, 'titulo': 'Editar pedido', 'objeto': pedido
+                        })
+                    antes = prod.stock
+                    prod.stock -= det.cantidad
+                    prod.save(update_fields=['stock'])
+                    MovimientoStock.objects.create(
+                        producto=prod, tipo='salida', cantidad=det.cantidad,
+                        stock_anterior=antes, stock_posterior=prod.stock,
+                        motivo=f'Reactivación Pedido #{pedido.pk}',
+                        usuario=request.user, pedido=pedido
+                    )
+
             pedido.calcular_total()
+
         if pedido.estado != estado_anterior:
-            enviar_notificacion_estado_pedido(pedido, estado_anterior)
-            messages.success(request, f'Pedido actualizado. Se envió notificación por correo al cliente ({pedido.cliente.correo}) con el estado {pedido.get_estado_display()}.')
+            enviado = enviar_notificacion_estado_pedido(pedido, estado_anterior)
+            if enviado:
+                messages.success(request, f'Pedido actualizado. Se envió notificación por correo al cliente ({pedido.cliente.correo}) con el estado {pedido.get_estado_display()}.')
+            else:
+                messages.warning(request, f'Pedido actualizado a {pedido.get_estado_display()}, pero no se pudo enviar el correo al cliente.')
         else:
             messages.success(request, 'Pedido actualizado.')
         return redirect('pedidos_list')
@@ -461,31 +543,59 @@ def pedidos_editar(request, pk):
 def pedidos_eliminar(request, pk):
     pedido = get_object_or_404(Pedido, pk=pk)
     if request.method == 'POST':
-        pedido.delete()
+        with transaction.atomic():
+            if pedido.estado != 'cancelado':
+                pedido._restaurar_stock(f'Eliminación Pedido #{pedido.pk}')
+            pedido.delete()
         messages.success(request, 'Pedido eliminado.')
         return redirect('pedidos_list')
     return render(request, 'dashboard/confirmar_eliminar.html', {'objeto': pedido, 'tipo': 'pedido'})
 
 @admin_required
+@require_POST
 def pedidos_toggle_estado(request, pk):
     pedido = get_object_or_404(Pedido, pk=pk)
-    nuevo_estado = request.POST.get('nuevo_estado') or request.GET.get('nuevo_estado')
+    nuevo_estado = request.POST.get('nuevo_estado')
     estado_anterior = pedido.estado
     estados_validos = dict(Pedido.ESTADO_CHOICES)
 
     if nuevo_estado and nuevo_estado in estados_validos:
-        if pedido.estado != nuevo_estado:
-            pedido.estado = nuevo_estado
-            pedido.save(update_fields=['estado'])
-            enviar_notificacion_estado_pedido(pedido, estado_anterior)
+        if pedido.estado == nuevo_estado:
+            messages.info(request, f'El pedido #{pedido.pk} ya se encuentra en estado {pedido.get_estado_display()}.')
+            return redirect('pedidos_list')
+
+        with transaction.atomic():
+            if nuevo_estado == 'cancelado':
+                pedido.cancelar(motivo=f'Cancelación manual desde dashboard Pedido #{pedido.pk}')
+            elif estado_anterior == 'cancelado':
+                for det in pedido.detalles.select_related('producto'):
+                    prod = Producto.objects.select_for_update().get(pk=det.producto_id)
+                    if det.cantidad > prod.stock:
+                        transaction.set_rollback(True)
+                        messages.error(request, f'Stock insuficiente para reactivar "{prod.nombre}". Disponible: {prod.stock}')
+                        return redirect('pedidos_list')
+                    antes = prod.stock
+                    prod.stock -= det.cantidad
+                    prod.save(update_fields=['stock'])
+                    MovimientoStock.objects.create(
+                        producto=prod, tipo='salida', cantidad=det.cantidad,
+                        stock_anterior=antes, stock_posterior=prod.stock,
+                        motivo=f'Reactivación Pedido #{pedido.pk}',
+                        usuario=request.user, pedido=pedido
+                    )
+                pedido.estado = nuevo_estado
+                pedido.save(update_fields=['estado'])
+            else:
+                pedido.estado = nuevo_estado
+                pedido.save(update_fields=['estado'])
+
+        enviado = enviar_notificacion_estado_pedido(pedido, estado_anterior)
+        if enviado:
             messages.success(request, f'Estado del pedido #{pedido.pk} cambiado a {pedido.get_estado_display()}. Se notificó al cliente por correo.')
         else:
-            messages.info(request, f'El pedido #{pedido.pk} ya se encuentra en estado {pedido.get_estado_display()}.')
+            messages.warning(request, f'Estado del pedido #{pedido.pk} cambiado a {pedido.get_estado_display()}, pero falló el envío de correo.')
     else:
-        # Fallback legacy si no se especificó nuevo estado
-        pedido.toggle_estado()
-        enviar_notificacion_estado_pedido(pedido, estado_anterior)
-        messages.success(request, f'Estado del pedido #{pedido.pk} cambiado a {pedido.get_estado_display()}.')
+        messages.error(request, 'Estado no válido.')
     return redirect('pedidos_list')
 
 @admin_required
@@ -565,6 +675,7 @@ def proveedores_eliminar(request, pk):
     return render(request, 'dashboard/confirmar_eliminar.html', {'objeto': proveedor, 'tipo': 'proveedor'})
 
 @admin_required
+@require_POST
 def proveedores_toggle_estado(request, pk):
     proveedor = get_object_or_404(Proveedor, pk=pk)
     proveedor.toggle_estado()
@@ -621,6 +732,7 @@ def disenadores_eliminar(request, pk):
     return render(request, 'dashboard/confirmar_eliminar.html', {'objeto': disenador, 'tipo': 'diseñador'})
 
 @admin_required
+@require_POST
 def disenadores_toggle_estado(request, pk):
     disenador = get_object_or_404(Disenador, pk=pk)
     disenador.toggle_estado()
@@ -666,6 +778,9 @@ def roles_editar(request, pk):
 @admin_required
 def roles_eliminar(request, pk):
     rol = get_object_or_404(Rol, pk=pk)
+    if PerfilUsuario.objects.filter(rol=rol).exists():
+        messages.error(request, f'No se puede eliminar el rol "{rol}" porque tiene usuarios asignados.')
+        return redirect('roles_list')
     if request.method == 'POST':
         rol.delete()
         messages.success(request, 'Rol eliminado.')
@@ -673,6 +788,7 @@ def roles_eliminar(request, pk):
     return render(request, 'dashboard/confirmar_eliminar.html', {'objeto': rol, 'tipo': 'rol'})
 
 @admin_required
+@require_POST
 def roles_toggle_estado(request, pk):
     rol = get_object_or_404(Rol, pk=pk)
     rol.toggle_estado()
@@ -824,7 +940,10 @@ def recuperar_password(request):
         form = SolicitarRecuperacionForm(request.POST)
         if form.is_valid():
             username = form.cleaned_data['username']
-            user = User.objects.get(username=username, is_staff=True)
+            user = User.objects.filter(username=username).first()
+            if not user or not es_admin(user):
+                messages.error(request, 'No se encontró un administrador válido.')
+                return redirect('recuperar_password')
             # Invalida tokens anteriores
             TokenRecuperacion.objects.filter(usuario=user, usado=False).update(usado=True)
             # Crea nuevo token
@@ -1031,10 +1150,11 @@ def comunidad_admin_editar(request, pk):
 
 
 @admin_required
+@require_POST
 def comunidad_admin_toggle_estado(request, pk):
     """Permite al administrador cambiar el estado (Activo / Inactivo) de una publicación en comunidad."""
     prenda = get_object_or_404(PrendaComunidad, pk=pk)
-    motivo = (request.POST.get('motivo_inactivacion') or request.GET.get('motivo_inactivacion') or '').strip()
+    motivo = request.POST.get('motivo_inactivacion', '').strip()
     prenda.toggle_estado()
     if prenda.estado == 'inactivo' and motivo:
         prenda.motivo_inactivacion = motivo

@@ -52,7 +52,10 @@
             <td><span class="badge badge-{{ c.estado }}">{{ c.get_estado_display }}</span></td>
             <td>
                 <a class="btn btn-sm btn-secondary" href="{% url 'usuarios_editar' c.pk %}">Editar</a>
-                <a class="btn btn-sm btn-secondary" href="{% url 'usuarios_estado' c.pk %}">Estado</a>
+                <form method="post" action="{% url 'usuarios_estado' c.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-secondary">Estado</button>
+                </form>
                 <a class="btn btn-sm btn-danger" href="{% url 'usuarios_eliminar' c.pk %}">Eliminar</a>
             </td>
         </tr>

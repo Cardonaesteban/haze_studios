@@ -6,14 +6,14 @@
     <form method="post">{% csrf_token %}
         {% for field in form %}
             {% if field.name == 'permisos' %}
-            <div class="form-group" style="margin-top: 1.75rem;">
+            <div class="form-group" style="margin-top: 1.75rem;" x-data>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
                     <label style="font-size: 0.95rem; font-weight: 700; color: var(--gris-900); margin: 0;">
                         {{ field.label }}
                     </label>
                     <div style="display: flex; gap: 0.5rem;">
-                        <button type="button" class="btn btn-sm btn-secondary" onclick="marcarTodosPermisos(true)">Seleccionar todos</button>
-                        <button type="button" class="btn btn-sm btn-secondary" onclick="marcarTodosPermisos(false)">Deseleccionar todos</button>
+                        <button type="button" class="btn btn-sm btn-secondary" @click="$el.closest('.form-group').querySelectorAll('input[name=permisos]').forEach(cb => { cb.checked = true; cb.dispatchEvent(new Event('change')); })">Seleccionar todos</button>
+                        <button type="button" class="btn btn-sm btn-secondary" @click="$el.closest('.form-group').querySelectorAll('input[name=permisos]').forEach(cb => { cb.checked = false; cb.dispatchEvent(new Event('change')); })">Deseleccionar todos</button>
                     </div>
                 </div>
                 <p style="font-size: 0.82rem; color: var(--gris-500); margin-bottom: 0.85rem;">
@@ -23,6 +23,10 @@
                 <div class="permisos-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem;">
                     {% for checkbox in field %}
                     <label class="permiso-card" for="{{ checkbox.id_for_label }}"
+                           x-data="{ activo: false }"
+                           x-init="activo = $el.querySelector('input').checked"
+                           @change="activo = $event.target.checked"
+                           :class="{ 'activo': activo }"
                            style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.85rem 1rem; border: 1px solid var(--gris-200); border-radius: var(--border-radius-md); background: var(--blanco); cursor: pointer; transition: all 0.2s ease; box-shadow: var(--sombra-sm); user-select: none;">
                         <div style="margin-top: 0.15rem;">
                             {{ checkbox.tag }}
@@ -75,35 +79,4 @@
     background: rgba(59, 130, 246, 0.04) !important;
 }
 </style>
-
-<script>
-function actualizarEstadoCard(input) {
-    const card = input.closest('.permiso-card');
-    if (card) {
-        if (input.checked) {
-            card.classList.add('activo');
-        } else {
-            card.classList.remove('activo');
-        }
-    }
-}
-
-function marcarTodosPermisos(marcar) {
-    const checkboxes = document.querySelectorAll('input[name="permisos"]');
-    checkboxes.forEach(cb => {
-        cb.checked = marcar;
-        actualizarEstadoCard(cb);
-    });
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    const checkboxes = document.querySelectorAll('input[name="permisos"]');
-    checkboxes.forEach(cb => {
-        actualizarEstadoCard(cb);
-        cb.addEventListener('change', function() {
-            actualizarEstadoCard(this);
-        });
-    });
-});
-</script>
 {% endblock %}

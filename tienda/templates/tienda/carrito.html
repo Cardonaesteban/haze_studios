@@ -10,16 +10,19 @@
         <p class="tienda-page-subtitle">Revisa tus prendas seleccionadas antes de confirmar tu pedido.</p>
     </div>
     {% if items %}
-    <a href="{% url 'tienda_vaciar_carrito' %}" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de que deseas vaciar tu carrito?');">
-        Vaciar Carrito
-    </a>
+    <form method="post" action="{% url 'tienda_vaciar_carrito' %}" style="margin:0;" onsubmit="return confirm('¿Estás seguro de que deseas vaciar tu carrito?');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger btn-sm">
+            Vaciar Carrito
+        </button>
+    </form>
     {% endif %}
 </div>
 
 {% if items %}
 <div class="cart-wrap">
     <div class="tienda-card" style="padding:1.75rem;">
-        <form id="formCarrito" method="post" action="{% url 'tienda_actualizar_carrito' %}">
+        <form id="formCarrito" x-ref="formCarrito" x-data method="post" action="{% url 'tienda_actualizar_carrito' %}">
             {% csrf_token %}
 
             <div class="table-wrap">
@@ -62,16 +65,20 @@
                             <td style="font-weight:700;">${{ item.producto.precio }}</td>
                             <td>
                                 <div class="qty-controller">
-                                    <button type="button" class="qty-btn" onclick="cambiarCantidad('qty_{{ forloop.counter }}', -1)">−</button>
-                                    <input type="number" name="cantidad_{{ item.item_key }}" id="qty_{{ forloop.counter }}" value="{{ item.cantidad }}" min="1" max="{{ item.producto.stock }}" class="qty-input" onchange="autoActualizar()">
-                                    <button type="button" class="qty-btn" onclick="cambiarCantidad('qty_{{ forloop.counter }}', 1)">+</button>
+                                    <button type="button" class="qty-btn" @click="let i = $el.nextElementSibling; if (parseInt(i.value) > parseInt(i.min)) { i.value--; $refs.formCarrito.submit(); }">−</button>
+                                    <input type="number" name="cantidad_{{ item.item_key }}" id="qty_{{ forloop.counter }}" value="{{ item.cantidad }}" min="1" max="{{ item.producto.stock }}" class="qty-input" @change="$refs.formCarrito.submit()">
+                                    <button type="button" class="qty-btn" @click="let i = $el.previousElementSibling; if (parseInt(i.value) < parseInt(i.max)) { i.value++; $refs.formCarrito.submit(); }">+</button>
                                 </div>
                             </td>
                             <td style="font-weight:900;color:var(--gris-900);">${{ item.subtotal }}</td>
                             <td>
-                                <a href="{% url 'tienda_eliminar_carrito' item.item_key %}" style="color:var(--rojo);font-size:1.1rem;text-decoration:none;font-weight:800;" title="Quitar del carrito">
+                                <button type="submit"
+                                        formaction="{% url 'tienda_eliminar_carrito' item.item_key %}"
+                                        formmethod="post"
+                                        style="color:var(--rojo);font-size:1.1rem;background:none;border:none;cursor:pointer;font-weight:800;"
+                                        title="Quitar del carrito">
                                     ✕
-                                </a>
+                                </button>
                             </td>
                         </tr>
                         {% endfor %}
@@ -85,28 +92,6 @@
                 </a>
             </div>
         </form>
-
-        <script>
-        function cambiarCantidad(id, delta) {
-            var input = document.getElementById(id);
-            if (!input) return;
-            var actual = parseInt(input.value) || 1;
-            var min = parseInt(input.min) || 1;
-            var max = parseInt(input.max) || 9999;
-            var nuevo = actual + delta;
-            if (nuevo >= min && nuevo <= max) {
-                input.value = nuevo;
-                autoActualizar();
-            }
-        }
-
-        function autoActualizar() {
-            var form = document.getElementById('formCarrito');
-            if (form) {
-                form.submit();
-            }
-        }
-        </script>
     </div>
 
     <div class="summary-card">
