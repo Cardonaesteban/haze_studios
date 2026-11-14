@@ -24,7 +24,7 @@
         <form method="post" novalidate>
             {% csrf_token %}
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+            <div class="form-row-2col">
                 <div class="form-group{% if form.nombre.errors %} has-error{% endif %}">
                     <label for="{{ form.nombre.id_for_label }}">Nombre *</label>
                     {{ form.nombre }}
@@ -43,7 +43,7 @@
                 {% for e in form.correo.errors %}<div class="tienda-field-error">{{ e }}</div>{% endfor %}
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+            <div class="form-row-2col">
                 <div class="form-group{% if form.telefono.errors %} has-error{% endif %}">
                     <label for="{{ form.telefono.id_for_label }}">Teléfono</label>
                     {{ form.telefono }}
@@ -56,7 +56,7 @@
                 </div>
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+            <div class="form-row-2col">
                 <div class="form-group{% if form.contraseña.errors %} has-error{% endif %}">
                     <label for="{{ form.contraseña.id_for_label }}">Contraseña *</label>
                     {{ form.contraseña }}

@@ -30,6 +30,7 @@
  <div>
  <div class="form-card" style="margin-bottom:1.25rem;">
  <h2 style="font-size:1.1rem;margin-top:0;margin-bottom:1rem;">Datos de la Publicación en Comunidad</h2>
+ <div class="table-wrap">
  <table class="table">
  <tbody>
  <tr><th style="width:220px;">Nombre de la prenda</th><td><strong>{{ prenda.nombre }}</strong></td></tr>
@@ -46,10 +47,12 @@
  </tbody>
  </table>
  </div>
+ </div>
 
  <div class="form-card">
  <h2 style="font-size:1.1rem;margin-top:0;margin-bottom:1rem;">Información Completa de la Personalización Asociada</h2>
  {% if prenda.personalizacion %}
+ <div class="table-wrap">
  <table class="table">
  <tbody>
  <tr><th style="width:220px;">ID Personalización</th><td>#{{ prenda.personalizacion.pk }}</td></tr>
@@ -65,6 +68,7 @@
  <tr><th>Fecha de creación</th><td>{{ prenda.personalizacion.fecha_creacion|date:"d/m/Y H:i" }}</td></tr>
  </tbody>
  </table>
+ </div>
  {% else %}
  <p style="color:var(--gris-500);margin:0;">Publicación sin registro de personalización adicional vinculado.</p>
  {% endif %}

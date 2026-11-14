@@ -130,7 +130,7 @@
  </div>
 
  {% if publicaciones %}
- <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));gap:1.25rem;">
+ <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(min(100%, 300px), 1fr));gap:1.25rem;">
  {% for pub in publicaciones %}
  <div class="product-card" style="border:1.5px solid var(--gris-200);">
  <div class="product-card-img" style="height:200px;">

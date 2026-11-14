@@ -104,7 +104,7 @@
             <button type="button" @click="modalOpen = false" style="background:none; border:none; font-size:1.5rem; line-height:1; cursor:pointer; color:var(--gris-400);">&times;</button>
         </div>
         <div style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; max-height: 70vh; overflow-y: auto;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-row-2col">
                 <div>
                     <span style="font-size:0.75rem; text-transform:uppercase; font-weight:600; color:var(--gris-500);">Destinatario</span>
                     <div style="font-size:0.9rem; font-weight:600; color:var(--gris-800); margin-top:0.2rem;" x-text="msg.destinatario"></div>
@@ -116,7 +116,7 @@
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 1rem;">
                 <div>
                     <span style="font-size:0.75rem; text-transform:uppercase; font-weight:600; color:var(--gris-500);">Tipo</span>
                     <div style="font-size:0.85rem; font-weight:500; margin-top:0.2rem;" x-text="msg.tipo"></div>
