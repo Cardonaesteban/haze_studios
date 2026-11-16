@@ -200,7 +200,7 @@ def productos_crear(request):
 def productos_editar(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
     if producto.estado == 'inactivo':
-        messages.error(request, f'No se puede editar el producto "{producto.nombre}" porque está inactivo. Actívelo primero.')
+        messages.error(request, f'No se puede editar el producto "{producto.nombre}" porque está inactivo.')
         return redirect('productos_list')
     form = ProductoEditarForm(request.POST or None, request.FILES or None, instance=producto)
     if form.is_valid():
@@ -595,7 +595,7 @@ def pedidos_toggle_estado(request, pk):
         else:
             messages.warning(request, f'Estado del pedido #{pedido.pk} cambiado a {pedido.get_estado_display()}, pero falló el envío de correo.')
     else:
-        messages.error(request, 'Estado no válido.')
+        messages.error(request, 'El estado seleccionado no es válido para este pedido.')
     return redirect('pedidos_list')
 
 @admin_required
@@ -1051,7 +1051,7 @@ def mensajes_crear(request):
             messages.success(request, f'Mensaje #{mensaje.pk} enviado exitosamente a {mensaje.destinatario}.')
         except Exception as e:
             logger.error(f'Error al enviar mensaje a {correo_destino}: {e}')
-            messages.error(request, f'No se pudo enviar el correo a {correo_destino}. Verifica la configuración SMTP y vuelve a intentarlo.')
+            messages.error(request, f'No se pudo enviar el correo a {correo_destino}. Revisa la configuración de correo del servidor e intenta de nuevo.')
         return redirect('mensajes_list')
     return render(request, 'dashboard/mensajes/form.html', {'form': form, 'titulo': 'Registrar mensaje'})
 

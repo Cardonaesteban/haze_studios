@@ -362,6 +362,7 @@ class PersonalizacionForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.cliente = kwargs.pop('cliente', None)
         super().__init__(*args, **kwargs)
         self.fields['producto'].queryset = Producto.objects.all().order_by(
             '-estado', '-stock', 'nombre'
@@ -374,7 +375,7 @@ class PersonalizacionForm(forms.ModelForm):
             raise ValidationError('Debes seleccionar un producto base.')
         if producto.estado != 'activo' or producto.stock <= 0:
             raise ValidationError(
-                'No se permite solicitar ni realizar personalizaciones para productos no disponibles o agotados.'
+                'No puedes personalizar productos que no están disponibles o están agotados.'
             )
         return producto
 
@@ -388,7 +389,40 @@ class PersonalizacionForm(forms.ModelForm):
         detalle = (self.cleaned_data.get('detalle') or '').strip()
         if len(detalle) < 10:
             raise ValidationError('Ingresa un detalle descriptivo de al menos 10 caracteres.')
+        if len(detalle) > 500:
+            raise ValidationError('El detalle de la personalización no puede superar los 500 caracteres.')
         return detalle
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if self.cliente:
+            producto = cleaned_data.get('producto')
+            nombre = (cleaned_data.get('nombre_personalizacion') or '').strip()
+            tipo = cleaned_data.get('tipo')
+            talla = cleaned_data.get('talla')
+            color = cleaned_data.get('color')
+            estampado = cleaned_data.get('estampado')
+            tipografia = cleaned_data.get('tipografia')
+
+            if producto and nombre and tipo and talla and color and estampado and tipografia:
+                qs = Personalizacion.objects.filter(
+                    cliente=self.cliente,
+                    estado='en_proceso',
+                    producto=producto,
+                    nombre_personalizacion__iexact=nombre,
+                    tipo=tipo,
+                    talla=talla,
+                    color=color,
+                    estampado=estampado,
+                    tipografia=tipografia,
+                )
+                if self.instance and self.instance.pk:
+                    qs = qs.exclude(pk=self.instance.pk)
+                if qs.exists():
+                    raise ValidationError(
+                        'Ya tienes una personalización en proceso igual a esta.'
+                    )
+        return cleaned_data
 
 
 class PrendaComunidadPublicarForm(forms.ModelForm):
@@ -443,13 +477,9 @@ class PrendaComunidadPublicarForm(forms.ModelForm):
         descripcion = (self.cleaned_data.get('descripcion') or '').strip()
         if len(descripcion) < 10:
             raise ValidationError('La descripción debe tener al menos 10 caracteres.')
+        if len(descripcion) > 600:
+            raise ValidationError('La descripción no puede superar los 600 caracteres.')
         return descripcion
-
-    def clean_estado(self):
-        estado = self.cleaned_data.get('estado')
-        if self.instance and self.instance.pk and self.instance.motivo_inactivacion and estado == 'activo':
-            raise ValidationError('Esta publicación fue inactivada por administración y no puede reactivarse.')
-        return estado
 
     def clean_personalizacion(self):
         pers = self.cleaned_data.get('personalizacion')
@@ -460,6 +490,10 @@ class PrendaComunidadPublicarForm(forms.ModelForm):
         if hasattr(pers, 'publicacion_comunidad') and pers.publicacion_comunidad is not None:
             raise ValidationError(
                 'Esta personalización ya se encuentra publicada en la comunidad. Puedes editarla desde tu perfil o en la comunidad.'
+            )
+        if pers.producto and (pers.producto.estado != 'activo' or pers.producto.stock <= 0):
+            raise ValidationError(
+                'El producto base de esta personalización ya no está disponible o está agotado.'
             )
         return pers
 
@@ -520,6 +554,8 @@ class PrendaComunidadEditarForm(forms.ModelForm):
         descripcion = (self.cleaned_data.get('descripcion') or '').strip()
         if len(descripcion) < 10:
             raise ValidationError('La descripción debe tener al menos 10 caracteres.')
+        if len(descripcion) > 600:
+            raise ValidationError('La descripción no puede superar los 600 caracteres.')
         return descripcion
 
     def clean_estado(self):

@@ -1,10 +1,12 @@
 from decimal import Decimal
 import base64
+from io import BytesIO
 import json
 import logging
 import re
 import unicodedata
 import uuid
+from PIL import Image
 try:
     import requests
 except ImportError:
@@ -585,7 +587,8 @@ def checkout(request):
                 messages.error(request, str(e))
                 return redirect('tienda_carrito')
             except Exception as e:
-                messages.error(request, f'Ocurrió un error al procesar el pedido: {str(e)}')
+                logger.error(f'Error al procesar pedido: {e}')
+                messages.error(request, 'No pudimos procesar tu pedido en este momento. Intenta de nuevo en unos minutos.')
         else:
             messages.warning(request, 'Revisa los campos marcados y corrige los errores.')
     else:
@@ -841,7 +844,8 @@ def paypal_retorno(request, pedido_id):
 
         if not resultado.get('success'):
             error_msg = resultado.get('error', 'No fue posible completar el cobro en PayPal.')
-            messages.error(request, f'El pago no se completó: {error_msg}. Puedes intentar nuevamente o seleccionar Pago Contra Entrega.')
+            logger.error(f'Error al capturar orden PayPal {order_id} (pedido #{pedido.pk}): {error_msg}')
+            messages.error(request, 'No se pudo confirmar el pago con PayPal. Intenta de nuevo o selecciona Pago Contra Entrega.')
             return redirect('tienda_confirmar_pago', pedido_id=pedido.pk)
 
         if monto_esperado and resultado.get('monto_usd'):
@@ -922,7 +926,7 @@ def pedido_cancelar(request, pedido_id):
     if cancelado:
         messages.success(request, f'Pedido #{pedido.pk} cancelado correctamente.')
     else:
-        messages.error(request, f'No se puede cancelar el pedido #{pedido.pk}. Estado actual: {pedido.estado}.')
+        messages.error(request, f'No se puede cancelar el pedido #{pedido.pk} porque su estado actual es {pedido.get_estado_display()}.')
 
     return redirect('tienda_pedido_detalle', pedido_id=pedido.pk)
     
@@ -1300,6 +1304,37 @@ def mis_favoritos(request):
 # ──────────────────────────────────────────────
 
 @cliente_required
+def _procesar_imagen_preview_b64(img_b64, cliente_pk):
+    """
+    Valida y decodifica la vista previa en base64 (solo PNG, máximo 2 MB).
+    Retorna (ContentFile, filename, error_msg). Si no se envió imagen, retorna (None, None, None).
+    """
+    if not img_b64:
+        return None, None, None
+    if not img_b64.startswith('data:image/png;base64,'):
+        return None, None, 'La imagen generada del diseño no es válida. Intenta guardarla de nuevo.'
+
+    raw_b64 = img_b64.split(',', 1)[1]
+    max_bytes = 2 * 1024 * 1024  # 2 MB
+    if len(raw_b64) > (max_bytes * 4 // 3) + 16:
+        return None, None, 'La imagen generada del diseño supera el límite de 2 MB.'
+
+    try:
+        img_bytes = base64.b64decode(raw_b64, validate=True)
+        if len(img_bytes) > max_bytes:
+            return None, None, 'La imagen generada del diseño supera el límite de 2 MB.'
+        img = Image.open(BytesIO(img_bytes))
+        img.verify()
+        if img.format != 'PNG':
+            return None, None, 'La imagen generada del diseño no es válida. Intenta guardarla de nuevo.'
+    except Exception as e:
+        logger.warning(f"Imagen preview base64 inválida: {e}")
+        return None, None, 'La imagen generada del diseño está dañada. Intenta guardarla de nuevo.'
+
+    filename = f"custom_{cliente_pk}_{uuid.uuid4().hex[:8]}.png"
+    return ContentFile(img_bytes), filename, None
+
+
 def personalizar_producto(request):
     """
     Permite al usuario realizar personalizaciones sobre productos disponibles del catálogo.
@@ -1316,7 +1351,7 @@ def personalizar_producto(request):
         if not prod_obj or prod_obj.estado != 'activo' or prod_obj.stock <= 0:
             messages.error(
                 request,
-                'No se permite solicitar personalizaciones para productos no disponibles o agotados.'
+                'No puedes personalizar productos que no están disponibles o están agotados.'
             )
             return redirect('tienda_productos')
         producto_preseleccionado = prod_obj
@@ -1344,38 +1379,33 @@ def personalizar_producto(request):
         }
 
     if request.method == 'POST':
-        form = PersonalizacionForm(request.POST)
+        form = PersonalizacionForm(request.POST, cliente=cliente)
         if form.is_valid():
-            personalizacion = form.save(commit=False)
-            personalizacion.cliente = cliente
-            personalizacion.estado = 'en_proceso'
-
-            # Guardar la imagen generada desde la vista previa en fondo blanco si fue enviada
             img_b64 = (request.POST.get('imagen_preview_b64') or '').strip()
-            if img_b64.startswith('data:image/png;base64,'):
-                try:
-                    raw_b64 = img_b64.split(',', 1)[1]
-                    img_bytes = base64.b64decode(raw_b64)
-                    filename = f"custom_{cliente.pk}_{uuid.uuid4().hex[:8]}.png"
-                    personalizacion.imagen_preview.save(filename, ContentFile(img_bytes), save=False)
-                except Exception as e:
-                    logger.warning(f"No se pudo guardar imagen_preview_b64: {e}")
+            img_file, filename, img_error = _procesar_imagen_preview_b64(img_b64, cliente.pk)
+            if img_error:
+                messages.error(request, img_error)
+            else:
+                personalizacion = form.save(commit=False)
+                personalizacion.cliente = cliente
+                personalizacion.estado = 'en_proceso'
+                if img_file:
+                    personalizacion.imagen_preview.save(filename, img_file, save=False)
+                personalizacion.save()
 
-            personalizacion.save()
+                accion = request.POST.get('accion', 'guardar')
+                if accion == 'guardar_y_publicar':
+                    messages.success(
+                        request,
+                        f'Personalización "{personalizacion.nombre_personalizacion}" creada y aplicada. Completa la publicación en la comunidad.'
+                    )
+                    return redirect(f"{reverse('tienda_comunidad_publicar')}?personalizacion={personalizacion.pk}")
 
-            accion = request.POST.get('accion', 'guardar')
-            if accion == 'guardar_y_publicar':
                 messages.success(
                     request,
-                    f'Personalización "{personalizacion.nombre_personalizacion}" creada y aplicada. Completa la publicación en la comunidad.'
+                    f'Tu personalización "{personalizacion.nombre_personalizacion}" ha sido aplicada y guardada en proceso.'
                 )
-                return redirect(f"{reverse('tienda_comunidad_publicar')}?personalizacion={personalizacion.pk}")
-
-            messages.success(
-                request,
-                f'Tu personalización "{personalizacion.nombre_personalizacion}" ha sido aplicada y guardada en proceso.'
-            )
-            return redirect('tienda_mis_personalizaciones')
+                return redirect('tienda_mis_personalizaciones')
         else:
             messages.warning(request, 'Por favor revisa los campos del estudio de personalización.')
     else:
@@ -1431,38 +1461,33 @@ def personalizacion_editar(request, pk):
         }
 
     if request.method == 'POST':
-        form = PersonalizacionForm(request.POST, instance=personalizacion)
+        form = PersonalizacionForm(request.POST, instance=personalizacion, cliente=cliente)
         if form.is_valid():
-            pers = form.save(commit=False)
-            pers.cliente = cliente
-            pers.estado = 'en_proceso'
-
-            # Guardar la imagen generada desde la vista previa en fondo blanco si fue enviada
             img_b64 = (request.POST.get('imagen_preview_b64') or '').strip()
-            if img_b64.startswith('data:image/png;base64,'):
-                try:
-                    raw_b64 = img_b64.split(',', 1)[1]
-                    img_bytes = base64.b64decode(raw_b64)
-                    filename = f"custom_{cliente.pk}_{uuid.uuid4().hex[:8]}.png"
-                    pers.imagen_preview.save(filename, ContentFile(img_bytes), save=False)
-                except Exception as e:
-                    logger.warning(f"No se pudo guardar imagen_preview_b64 en edición: {e}")
+            img_file, filename, img_error = _procesar_imagen_preview_b64(img_b64, cliente.pk)
+            if img_error:
+                messages.error(request, img_error)
+            else:
+                pers = form.save(commit=False)
+                pers.cliente = cliente
+                pers.estado = 'en_proceso'
+                if img_file:
+                    pers.imagen_preview.save(filename, img_file, save=False)
+                pers.save()
 
-            pers.save()
+                accion = request.POST.get('accion', 'guardar')
+                if accion == 'guardar_y_publicar':
+                    messages.success(
+                        request,
+                        f'Personalización "{pers.nombre_personalizacion}" actualizada y aplicada. Completa la publicación en la comunidad.'
+                    )
+                    return redirect(f"{reverse('tienda_comunidad_publicar')}?personalizacion={pers.pk}")
 
-            accion = request.POST.get('accion', 'guardar')
-            if accion == 'guardar_y_publicar':
                 messages.success(
                     request,
-                    f'Personalización "{pers.nombre_personalizacion}" actualizada y aplicada. Completa la publicación en la comunidad.'
+                    f'Tu personalización "{pers.nombre_personalizacion}" ha sido actualizada con éxito.'
                 )
-                return redirect(f"{reverse('tienda_comunidad_publicar')}?personalizacion={pers.pk}")
-
-            messages.success(
-                request,
-                f'Tu personalización "{pers.nombre_personalizacion}" ha sido actualizada con éxito.'
-            )
-            return redirect('tienda_mis_personalizaciones')
+                return redirect('tienda_mis_personalizaciones')
         else:
             messages.warning(request, 'Por favor revisa los campos del estudio de personalización.')
     else:
@@ -1673,8 +1698,15 @@ def comunidad_publicar(request):
             prenda.estado = 'activo'
             prenda.save()
 
+            # Sincronizar los datos editados al publicar con la personalización vinculada
+            pers.nombre_personalizacion = prenda.nombre
+            pers.color = prenda.color
+            pers.talla = prenda.talla
+            pers.estampado = prenda.estampado
+            pers.tipografia = prenda.tipografia
+            pers.detalle = prenda.descripcion
             pers.estado = 'publicada'
-            pers.save(update_fields=['estado'])
+            pers.save()
 
             messages.success(
                 request,
@@ -1682,7 +1714,7 @@ def comunidad_publicar(request):
             )
             return redirect('tienda_comunidad_detalle', pk=prenda.pk)
         else:
-            messages.error(request, 'No se pudo publicar la prenda. Revisa las indicaciones del formulario.')
+            messages.error(request, 'No se pudo publicar la prenda. Corrige los errores marcados en el formulario.')
     else:
         initial = {}
         if pers_preseleccionada:
@@ -1834,7 +1866,16 @@ def comunidad_reaccionar_api(request, pk):
     if cliente is None:
         return JsonResponse({'success': False, 'error': 'Debes iniciar sesión'}, status=401)
 
-    prenda = get_object_or_404(PrendaComunidad, pk=pk, estado='activo')
+    prenda = PrendaComunidad.objects.filter(pk=pk, estado='activo').first()
+    if prenda is None:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
+            return JsonResponse(
+                {'success': False, 'error': 'La publicación no está disponible o fue inactivada.'},
+                status=404,
+            )
+        messages.warning(request, 'La publicación no está disponible o fue inactivada.')
+        return redirect('tienda_comunidad_lista')
+
     reaccion, creada = ReaccionComunidad.objects.get_or_create(prenda=prenda, cliente=cliente)
 
     if not creada:
@@ -1868,13 +1909,23 @@ def comunidad_comentar(request, pk):
 
     form = ComentarioComunidadForm(request.POST)
     if form.is_valid():
+        contenido = form.cleaned_data['contenido']
+        ultimo_comentario = prenda.comentarios.order_by('-fecha_publicacion').first()
+        if (
+            ultimo_comentario
+            and ultimo_comentario.autor_id == cliente.pk
+            and ultimo_comentario.contenido.strip().lower() == contenido.lower()
+        ):
+            messages.warning(request, 'Ya publicaste ese mismo comentario en esta prenda.')
+            return redirect(f"{reverse('tienda_comunidad_detalle', args=[prenda.pk])}#comentarios")
+
         comentario = form.save(commit=False)
         comentario.prenda = prenda
         comentario.autor = cliente
         comentario.save()
         messages.success(request, 'Tu comentario ha sido publicado.')
     else:
-        messages.error(request, 'No se pudo publicar el comentario. Verifica que no esté vacío.')
+        messages.error(request, 'No se pudo publicar el comentario. Verifica que no esté vacío ni supere los 400 caracteres.')
 
     return redirect(f"{reverse('tienda_comunidad_detalle', args=[prenda.pk])}#comentarios")
 
@@ -1888,7 +1939,11 @@ def comunidad_comentario_editar(request, comentario_id):
         return redirect('tienda_comunidad_lista')
 
     cliente = get_cliente_actual(request)
-    comentario = get_object_or_404(ComentarioComunidad, pk=comentario_id)
+    comentario = get_object_or_404(ComentarioComunidad.objects.select_related('prenda'), pk=comentario_id)
+
+    if comentario.prenda.estado != 'activo':
+        messages.error(request, 'No puedes editar comentarios en una publicación inactiva.')
+        return redirect('tienda_comunidad_lista')
 
     if comentario.autor_id != cliente.pk:
         messages.error(request, 'Solo puedes editar tus propios comentarios.')
@@ -1899,6 +1954,8 @@ def comunidad_comentario_editar(request, comentario_id):
         messages.error(request, 'El comentario no puede quedar vacío.')
     elif len(nuevo_contenido) > 400:
         messages.error(request, 'El comentario no puede superar los 400 caracteres.')
+    elif nuevo_contenido == comentario.contenido:
+        messages.info(request, 'No realizaste cambios en el comentario.')
     else:
         comentario.contenido = nuevo_contenido
         comentario.editado = True
@@ -1917,8 +1974,12 @@ def comunidad_comentario_eliminar(request, comentario_id):
         return redirect('tienda_comunidad_lista')
 
     cliente = get_cliente_actual(request)
-    comentario = get_object_or_404(ComentarioComunidad, pk=comentario_id)
+    comentario = get_object_or_404(ComentarioComunidad.objects.select_related('prenda'), pk=comentario_id)
     prenda_id = comentario.prenda_id
+
+    if comentario.prenda.estado != 'activo':
+        messages.error(request, 'No puedes eliminar comentarios en una publicación inactiva.')
+        return redirect('tienda_comunidad_lista')
 
     if comentario.autor_id != cliente.pk:
         messages.error(request, 'Solo puedes eliminar tus propios comentarios.')

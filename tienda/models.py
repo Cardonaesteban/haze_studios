@@ -2,6 +2,7 @@ import uuid
 from datetime import timedelta
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxLengthValidator
 from django.utils import timezone
 from django.templatetags.static import static
 from dashboard.models import Cliente, Producto
@@ -129,6 +130,7 @@ class Personalizacion(models.Model):
     )
     detalle = models.TextField(
         max_length=500,
+        validators=[MaxLengthValidator(500)],
         help_text='Detalles y concepto de tu personalización'
     )
     estampado = models.CharField(
@@ -188,7 +190,7 @@ class PrendaComunidad(models.Model):
         related_name='publicaciones_comunidad'
     )
     nombre = models.CharField(max_length=150)
-    descripcion = models.TextField(max_length=600)
+    descripcion = models.TextField(max_length=600, validators=[MaxLengthValidator(600)])
     imagen = models.ImageField(upload_to='comunidad/', null=True, blank=True)
     color = models.CharField(max_length=60, choices=COLORES_COMUNIDAD_CHOICES)
     talla = models.CharField(max_length=40, choices=TALLAS_COMUNIDAD_CHOICES)
@@ -262,7 +264,7 @@ class ComentarioComunidad(models.Model):
     autor = models.ForeignKey(
         Cliente, on_delete=models.CASCADE, related_name='comentarios_comunidad'
     )
-    contenido = models.TextField(max_length=400)
+    contenido = models.TextField(max_length=400, validators=[MaxLengthValidator(400)])
     fecha_publicacion = models.DateTimeField(auto_now_add=True)
     fecha_edicion = models.DateTimeField(auto_now=True)
     editado = models.BooleanField(default=False)
