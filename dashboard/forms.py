@@ -1,4 +1,5 @@
 import re
+from pathlib import Path
 from django import forms
 from django.conf import settings
 from django.utils import timezone
@@ -222,10 +223,17 @@ class ProductoForm(forms.ModelForm):
 
     def save(self, commit=True):
         producto = super().save(commit=False)
-        # Si no se subió una nueva imagen pero se eligió una existente
+        imagen_subida = self.cleaned_data.get('imagen')
         img_existente = (self.cleaned_data.get('imagen_existente') or '').strip()
-        if not self.cleaned_data.get('imagen') and img_existente:
+
+        if imagen_subida:
+            nombre_archivo = Path(imagen_subida.name).name
+            ruta_archivo = settings.MEDIA_ROOT / 'productos' / nombre_archivo
+            if ruta_archivo.exists() and ruta_archivo.is_file():
+                producto.imagen = f'productos/{nombre_archivo}'
+        elif img_existente:
             producto.imagen = f'productos/{img_existente}'
+
         if commit:
             producto.save()
             self.save_m2m()
