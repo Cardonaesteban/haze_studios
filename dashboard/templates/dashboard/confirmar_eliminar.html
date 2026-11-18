@@ -2,7 +2,8 @@
 {% block title %}Eliminar {{ tipo }} | Haze Studios{% endblock %}
 
 {% block content %}
-<div class="confirm-wrap">
+<div style="min-height: calc(100vh - 160px); display: flex; align-items: center; justify-content: center;">
+<div class="confirm-wrap" style="margin: 0 auto; width: 100%;">
     <div class="icon"></div>
     <h2>¿Eliminar {{ tipo }}?</h2>
     <p>Vas a eliminar <strong>{{ objeto }}</strong>. Esta acción no se puede deshacer.</p>
@@ -13,5 +14,6 @@
         </form>
         <a href="{{ request.META.HTTP_REFERER|default:'/' }}" class="btn btn-secondary">Cancelar</a>
     </div>
+</div>
 </div>
 {% endblock %}
