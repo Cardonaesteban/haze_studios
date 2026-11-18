@@ -563,5 +563,110 @@ class ValidacionesUnificadasTests(TestCase):
         })
         self.assertTrue(form_hoy.is_valid())
 
+    def test_personalizacion_y_comunidad_rechazan_solo_puntos_y_no_dan_500(self):
+        """
+        Verifica que crear/editar personalización con texto válido no arroje 500,
+        y que ingresar solo puntos/símbolos ('...........') en personalización o comunidad
+        retorne un mensaje de validación claro.
+        """
+        from tienda.forms import (
+            PersonalizacionForm,
+            PrendaComunidadPublicarForm,
+            PrendaComunidadEditarForm,
+            ComentarioComunidadForm,
+        )
+        from tienda.models import PrendaComunidad
+
+        cliente = Cliente.objects.create(
+            nombre='Lucía',
+            apellido='Rojas',
+            correo='lucia_val@example.com',
+            telefono='3120001122',
+            direccion='Calle 50 #10-20',
+            contraseña='pass',
+            estado='activo',
+        )
+        session = self.client.session
+        session['cliente_id'] = cliente.pk
+        session.save()
+
+        prod = Producto.objects.create(
+            nombre='Hoodie Acid Base',
+            precio=Decimal('160000.00'),
+            stock=5,
+            estado='activo',
+        )
+
+        # 1. Personalización con '...........' en detalle y '...' en nombre debe fallar con mensaje claro
+        resp_puntos = self.client.post(reverse('tienda_personalizar'), data={
+            'producto': prod.pk,
+            'nombre_personalizacion': '...',
+            'tipo': 'Hoodie Oversize',
+            'talla': 'L (Oversize)',
+            'color': 'Negro Obsidiana',
+            'estampado': 'Acid Butterfly',
+            'tipografia': 'Brutalism Bold Sans',
+            'detalle': '...........',
+        })
+        self.assertEqual(resp_puntos.status_code, 200)
+        self.assertEqual(Personalizacion.objects.filter(cliente=cliente).count(), 0)
+        self.assertContains(resp_puntos, 'descripción real con palabras y letras')
+
+        # 2. Personalización válida debe guardarse sin error 500
+        resp_ok = self.client.post(reverse('tienda_personalizar'), data={
+            'producto': prod.pk,
+            'nombre_personalizacion': 'Hoodie Cyber V1',
+            'tipo': 'Hoodie Oversize',
+            'talla': 'L (Oversize)',
+            'color': 'Negro Obsidiana',
+            'estampado': 'Acid Butterfly',
+            'tipografia': 'Brutalism Bold Sans',
+            'detalle': 'Estampado frontal grande en tinta reactiva.',
+        })
+        self.assertRedirects(resp_ok, reverse('tienda_mis_personalizaciones'))
+        pers = Personalizacion.objects.get(cliente=cliente)
+
+        # 3. Comunidad (publicar, editar y comentar) rechaza '...........'
+        form_pub = PrendaComunidadPublicarForm(data={
+            'personalizacion': pers.pk,
+            'nombre': '---',
+            'descripcion': '...........',
+            'color': 'Negro Obsidiana',
+            'talla': 'L (Oversize)',
+            'estampado': 'Acid Butterfly',
+            'tipografia': 'Brutalism Bold Sans',
+        }, cliente=cliente)
+        self.assertFalse(form_pub.is_valid())
+        self.assertIn('nombre', form_pub.errors)
+        self.assertIn('descripcion', form_pub.errors)
+
+        prenda = PrendaComunidad.objects.create(
+            autor=cliente,
+            personalizacion=pers,
+            producto_base=prod,
+            nombre='Hoodie Cyber V1',
+            descripcion='Descripción válida para la comunidad Haze.',
+            color='Negro Obsidiana',
+            talla='L (Oversize)',
+            estampado='Acid Butterfly',
+            tipografia='Brutalism Bold Sans',
+            estado='activo',
+        )
+        form_edit = PrendaComunidadEditarForm(data={
+            'nombre': 'Hoodie Cyber V1',
+            'descripcion': '...........',
+            'color': 'Negro Obsidiana',
+            'talla': 'L (Oversize)',
+            'estampado': 'Acid Butterfly',
+            'tipografia': 'Brutalism Bold Sans',
+            'estado': 'activo',
+        }, instance=prenda)
+        self.assertFalse(form_edit.is_valid())
+        self.assertIn('descripcion', form_edit.errors)
+
+        form_com = ComentarioComunidadForm(data={'contenido': '...........'})
+        self.assertFalse(form_com.is_valid())
+        self.assertIn('contenido', form_com.errors)
+
 
 

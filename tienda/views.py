@@ -38,12 +38,14 @@ from .models import (
     TIPOS_PRENDA_CHOICES, TALLAS_COMUNIDAD_CHOICES, COLORES_COMUNIDAD_CHOICES,
     ESTAMPADOS_OFICIALES_CHOICES, TIPOGRAFIAS_OFICIALES_CHOICES,
 )
+from django.core.exceptions import ValidationError
 from .forms import (
     LoginClienteForm, RegistroClienteForm, PerfilClienteForm,
     CambiarPasswordClienteForm, SolicitarRecuperacionClienteForm,
     ConfirmarPasswordClienteForm, CheckoutForm,
     PersonalizacionForm, PrendaComunidadPublicarForm,
     PrendaComunidadEditarForm, ComentarioComunidadForm,
+    validar_comentario_texto,
 )
 
 logger = logging.getLogger(__name__)
@@ -1303,7 +1305,6 @@ def mis_favoritos(request):
 # PERSONALIZACIÓN DE PRODUCTOS
 # ──────────────────────────────────────────────
 
-@cliente_required
 def _procesar_imagen_preview_b64(img_b64, cliente_pk):
     """
     Valida y decodifica la vista previa en base64 (solo PNG, máximo 2 MB).
@@ -1335,6 +1336,7 @@ def _procesar_imagen_preview_b64(img_b64, cliente_pk):
     return ContentFile(img_bytes), filename, None
 
 
+@cliente_required
 def personalizar_producto(request):
     """
     Permite al usuario realizar personalizaciones sobre productos disponibles del catálogo.
@@ -1925,7 +1927,11 @@ def comunidad_comentar(request, pk):
         comentario.save()
         messages.success(request, 'Tu comentario ha sido publicado.')
     else:
-        messages.error(request, 'No se pudo publicar el comentario. Verifica que no esté vacío ni supere los 400 caracteres.')
+        error_msg = (
+            form.errors.get('contenido', [None])[0]
+            or 'No se pudo publicar el comentario. Verifica que no esté vacío ni supere los 400 caracteres.'
+        )
+        messages.error(request, error_msg)
 
     return redirect(f"{reverse('tienda_comunidad_detalle', args=[prenda.pk])}#comentarios")
 
@@ -1949,18 +1955,18 @@ def comunidad_comentario_editar(request, comentario_id):
         messages.error(request, 'Solo puedes editar tus propios comentarios.')
         return redirect('tienda_comunidad_detalle', pk=comentario.prenda_id)
 
-    nuevo_contenido = (request.POST.get('contenido') or '').strip()
-    if not nuevo_contenido:
-        messages.error(request, 'El comentario no puede quedar vacío.')
-    elif len(nuevo_contenido) > 400:
-        messages.error(request, 'El comentario no puede superar los 400 caracteres.')
-    elif nuevo_contenido == comentario.contenido:
-        messages.info(request, 'No realizaste cambios en el comentario.')
+    try:
+        nuevo_contenido = validar_comentario_texto(request.POST.get('contenido'), max_len=400)
+    except ValidationError as exc:
+        messages.error(request, exc.message)
     else:
-        comentario.contenido = nuevo_contenido
-        comentario.editado = True
-        comentario.save(update_fields=['contenido', 'editado', 'fecha_edicion'])
-        messages.success(request, 'Tu comentario fue actualizado.')
+        if nuevo_contenido == comentario.contenido:
+            messages.info(request, 'No realizaste cambios en el comentario.')
+        else:
+            comentario.contenido = nuevo_contenido
+            comentario.editado = True
+            comentario.save(update_fields=['contenido', 'editado', 'fecha_edicion'])
+            messages.success(request, 'Tu comentario fue actualizado.')
 
     return redirect(f"{reverse('tienda_comunidad_detalle', args=[comentario.prenda_id])}#comentario-{comentario.pk}")
 

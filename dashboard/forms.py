@@ -942,15 +942,20 @@ class PrendaComunidadAdminForm(forms.ModelForm):
         }
 
     def clean_nombre(self):
-        nombre = (self.cleaned_data.get('nombre') or '').strip()
-        if not nombre or len(nombre) < 3:
-            raise ValidationError('El nombre de la prenda debe tener al menos 3 caracteres.')
-        return nombre
+        from tienda.forms import validar_nombre_con_letras
+        return validar_nombre_con_letras(
+            self.cleaned_data.get('nombre'),
+            'El nombre de la prenda',
+            min_len=3,
+        )
 
     def clean_descripcion(self):
-        descripcion = (self.cleaned_data.get('descripcion') or '').strip()
-        if not descripcion or len(descripcion) < 10:
-            raise ValidationError('La descripción debe tener al menos 10 caracteres.')
-        return descripcion
+        from tienda.forms import validar_texto_descriptivo
+        return validar_texto_descriptivo(
+            self.cleaned_data.get('descripcion'),
+            'una descripción',
+            min_len=10,
+            max_len=600,
+        )
 
 

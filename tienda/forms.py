@@ -5,6 +5,45 @@ from dashboard.models import Cliente, Producto
 from .models import Personalizacion, PrendaComunidad, ComentarioComunidad
 
 
+def validar_texto_descriptivo(valor, campo_label, min_len=10, max_len=500):
+    """Valida longitud y que el texto incluya palabras/letras reales (no solo puntos o símbolos)."""
+    texto = (valor or '').strip()
+    if len(texto) < min_len:
+        raise ValidationError(f'Ingresa {campo_label} de al menos {min_len} caracteres.')
+    if max_len and len(texto) > max_len:
+        raise ValidationError(f'{campo_label.capitalize()} no puede superar los {max_len} caracteres.')
+    letras = [c for c in texto if c.isalpha()]
+    if len(letras) < 3 or len({c.lower() for c in letras}) < 2:
+        raise ValidationError(
+            f'{campo_label.capitalize()} debe incluir una descripción real con palabras y letras (no solo puntos, símbolos o números).'
+        )
+    return texto
+
+
+def validar_nombre_con_letras(valor, campo_label, min_len=3):
+    """Valida longitud mínima y que el nombre incluya letras reales."""
+    texto = (valor or '').strip()
+    if len(texto) < min_len:
+        raise ValidationError(f'{campo_label} debe tener al menos {min_len} caracteres.')
+    if sum(1 for c in texto if c.isalpha()) < 2:
+        raise ValidationError(
+            f'{campo_label} debe incluir texto con letras (no solo puntos, símbolos o números).'
+        )
+    return texto
+
+
+def validar_comentario_texto(valor, max_len=400):
+    """Valida que el comentario no esté vacío, no exceda max_len y contenga texto válido."""
+    texto = (valor or '').strip()
+    if not texto:
+        raise ValidationError('El comentario no puede estar vacío.')
+    if len(texto) > max_len:
+        raise ValidationError(f'El comentario no puede superar los {max_len} caracteres.')
+    if not any(c.isalnum() for c in texto):
+        raise ValidationError('El comentario debe contener texto válido (no solo puntos o símbolos).')
+    return texto
+
+
 class LoginClienteForm(forms.Form):
     correo = forms.EmailField(
         label='Correo electrónico',
@@ -380,18 +419,19 @@ class PersonalizacionForm(forms.ModelForm):
         return producto
 
     def clean_nombre_personalizacion(self):
-        nombre = (self.cleaned_data.get('nombre_personalizacion') or '').strip()
-        if len(nombre) < 3:
-            raise ValidationError('El nombre de la personalización debe tener al menos 3 caracteres.')
-        return nombre
+        return validar_nombre_con_letras(
+            self.cleaned_data.get('nombre_personalizacion'),
+            'El nombre de la personalización',
+            min_len=3,
+        )
 
     def clean_detalle(self):
-        detalle = (self.cleaned_data.get('detalle') or '').strip()
-        if len(detalle) < 10:
-            raise ValidationError('Ingresa un detalle descriptivo de al menos 10 caracteres.')
-        if len(detalle) > 500:
-            raise ValidationError('El detalle de la personalización no puede superar los 500 caracteres.')
-        return detalle
+        return validar_texto_descriptivo(
+            self.cleaned_data.get('detalle'),
+            'un detalle descriptivo',
+            min_len=10,
+            max_len=500,
+        )
 
     def clean(self):
         cleaned_data = super().clean()
@@ -468,18 +508,19 @@ class PrendaComunidadPublicarForm(forms.ModelForm):
             )
 
     def clean_nombre(self):
-        nombre = (self.cleaned_data.get('nombre') or '').strip()
-        if len(nombre) < 3:
-            raise ValidationError('El nombre de la prenda debe tener al menos 3 caracteres.')
-        return nombre
+        return validar_nombre_con_letras(
+            self.cleaned_data.get('nombre'),
+            'El nombre de la prenda',
+            min_len=3,
+        )
 
     def clean_descripcion(self):
-        descripcion = (self.cleaned_data.get('descripcion') or '').strip()
-        if len(descripcion) < 10:
-            raise ValidationError('La descripción debe tener al menos 10 caracteres.')
-        if len(descripcion) > 600:
-            raise ValidationError('La descripción no puede superar los 600 caracteres.')
-        return descripcion
+        return validar_texto_descriptivo(
+            self.cleaned_data.get('descripcion'),
+            'una descripción',
+            min_len=10,
+            max_len=600,
+        )
 
     def clean_personalizacion(self):
         pers = self.cleaned_data.get('personalizacion')
@@ -545,18 +586,19 @@ class PrendaComunidadEditarForm(forms.ModelForm):
         }
 
     def clean_nombre(self):
-        nombre = (self.cleaned_data.get('nombre') or '').strip()
-        if len(nombre) < 3:
-            raise ValidationError('El nombre de la prenda debe tener al menos 3 caracteres.')
-        return nombre
+        return validar_nombre_con_letras(
+            self.cleaned_data.get('nombre'),
+            'El nombre de la prenda',
+            min_len=3,
+        )
 
     def clean_descripcion(self):
-        descripcion = (self.cleaned_data.get('descripcion') or '').strip()
-        if len(descripcion) < 10:
-            raise ValidationError('La descripción debe tener al menos 10 caracteres.')
-        if len(descripcion) > 600:
-            raise ValidationError('La descripción no puede superar los 600 caracteres.')
-        return descripcion
+        return validar_texto_descriptivo(
+            self.cleaned_data.get('descripcion'),
+            'una descripción',
+            min_len=10,
+            max_len=600,
+        )
 
     def clean_estado(self):
         estado = self.cleaned_data.get('estado')
@@ -607,10 +649,5 @@ class ComentarioComunidadForm(forms.ModelForm):
         }
 
     def clean_contenido(self):
-        contenido = (self.cleaned_data.get('contenido') or '').strip()
-        if not contenido:
-            raise ValidationError('El comentario no puede estar vacío.')
-        if len(contenido) > 400:
-            raise ValidationError('El comentario no puede superar los 400 caracteres.')
-        return contenido
+        return validar_comentario_texto(self.cleaned_data.get('contenido'), max_len=400)
 
