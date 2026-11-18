@@ -240,16 +240,16 @@
  <!-- MODAL DE CONFIRMACIÓN PARA ELIMINAR PRENDA (ESTILO OSCURO HAZE STUDIOS) -->
  {% if es_autor %}
  <div x-show="modalEliminarPrenda" x-cloak
- style="position:fixed;inset:0;z-index:9999;background:rgba(11,15,25,0.78);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1rem;">
+ style="position:fixed;top:0;right:0;bottom:0;left:0;width:100vw;height:100vh;z-index:9999;background:rgba(11,15,25,0.78);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1rem;">
  <div @click.away="modalEliminarPrenda = false"
- style="background:linear-gradient(160deg, #111827 0%, #0B0F19 100%);border:1px solid rgba(255,255,255,0.12);border-radius:16px;max-width:440px;width:100%;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.5);color:#F8FAFC;">
+ style="margin:auto;background:linear-gradient(160deg, #111827 0%, #0B0F19 100%);border:1px solid rgba(255,255,255,0.12);border-radius:16px;max-width:440px;width:100%;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.5);color:#F8FAFC;text-align:center;">
  <div style="height:4px;background:linear-gradient(90deg, #3B82F6, #8B5CF6, #EF4444);"></div>
  <div style="padding:1.75rem;">
  <h3 style="font-size:1.15rem;font-weight:900;margin:0 0 0.5rem;color:#F8FAFC;">Confirmar eliminación de prenda publicada</h3>
  <p style="font-size:0.88rem;color:#94A3B8;line-height:1.5;margin-bottom:1.5rem;">
  ¿Estás seguro de que deseas eliminar tu publicación <strong style="color:#F8FAFC;">"{{ prenda.nombre }}"</strong>? Esta acción no se podrá deshacer.
  </p>
- <div style="display:flex;justify-content:flex-end;gap:0.75rem;">
+ <div style="display:flex;justify-content:center;gap:0.75rem;">
  <button type="button" @click="modalEliminarPrenda = false" class="btn btn-secondary btn-sm">Cancelar</button>
  <form method="post" action="{% url 'tienda_comunidad_eliminar' prenda.pk %}" style="margin:0;">
  {% csrf_token %}
@@ -263,16 +263,16 @@
 
  <!-- MODAL DE CONFIRMACIÓN PARA ELIMINAR COMENTARIO PROPIO -->
  <div x-show="modalEliminarComentario" x-cloak
- style="position:fixed;inset:0;z-index:9999;background:rgba(11,15,25,0.78);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1rem;">
+ style="position:fixed;top:0;right:0;bottom:0;left:0;width:100vw;height:100vh;z-index:9999;background:rgba(11,15,25,0.78);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1rem;">
  <div @click.away="modalEliminarComentario = false"
- style="background:linear-gradient(160deg, #111827 0%, #0B0F19 100%);border:1px solid rgba(255,255,255,0.12);border-radius:16px;max-width:420px;width:100%;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.5);color:#F8FAFC;">
+ style="margin:auto;background:linear-gradient(160deg, #111827 0%, #0B0F19 100%);border:1px solid rgba(255,255,255,0.12);border-radius:16px;max-width:420px;width:100%;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.5);color:#F8FAFC;text-align:center;">
  <div style="height:4px;background:linear-gradient(90deg, #3B82F6, #8B5CF6, #EF4444);"></div>
  <div style="padding:1.65rem;">
  <h3 style="font-size:1.1rem;font-weight:900;margin:0 0 0.5rem;color:#F8FAFC;">¿Eliminar tu comentario?</h3>
  <p style="font-size:0.86rem;color:#94A3B8;line-height:1.5;margin-bottom:1.35rem;">
  Esta acción eliminará tu comentario de forma permanente.
  </p>
- <div style="display:flex;justify-content:flex-end;gap:0.75rem;">
+ <div style="display:flex;justify-content:center;gap:0.75rem;">
  <button type="button" @click="modalEliminarComentario = false" class="btn btn-secondary btn-sm">Cancelar</button>
  <form method="post" :action="`/tienda/comunidad/comentario/${comentarioEliminarId}/eliminar/`" style="margin:0;">
  {% csrf_token %}

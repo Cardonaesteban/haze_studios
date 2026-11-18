@@ -610,7 +610,7 @@ class ValidacionesUnificadasTests(TestCase):
         })
         self.assertEqual(resp_puntos.status_code, 200)
         self.assertEqual(Personalizacion.objects.filter(cliente=cliente).count(), 0)
-        self.assertContains(resp_puntos, 'descripción real con palabras y letras')
+        self.assertContains(resp_puntos, 'Escribe una descripción válida con palabras.')
 
         # 2. Personalización válida debe guardarse sin error 500
         resp_ok = self.client.post(reverse('tienda_personalizar'), data={

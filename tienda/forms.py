@@ -6,7 +6,7 @@ from .models import Personalizacion, PrendaComunidad, ComentarioComunidad
 
 
 def validar_texto_descriptivo(valor, campo_label, min_len=10, max_len=500):
-    """Valida longitud y que el texto incluya palabras/letras reales (no solo puntos o símbolos)."""
+    """Valida longitud y que el texto incluya palabras reales (no solo puntos o símbolos)."""
     texto = (valor or '').strip()
     if len(texto) < min_len:
         raise ValidationError(f'Ingresa {campo_label} de al menos {min_len} caracteres.')
@@ -14,9 +14,7 @@ def validar_texto_descriptivo(valor, campo_label, min_len=10, max_len=500):
         raise ValidationError(f'{campo_label.capitalize()} no puede superar los {max_len} caracteres.')
     letras = [c for c in texto if c.isalpha()]
     if len(letras) < 3 or len({c.lower() for c in letras}) < 2:
-        raise ValidationError(
-            f'{campo_label.capitalize()} debe incluir una descripción real con palabras y letras (no solo puntos, símbolos o números).'
-        )
+        raise ValidationError('Escribe una descripción válida con palabras.')
     return texto
 
 
@@ -26,9 +24,7 @@ def validar_nombre_con_letras(valor, campo_label, min_len=3):
     if len(texto) < min_len:
         raise ValidationError(f'{campo_label} debe tener al menos {min_len} caracteres.')
     if sum(1 for c in texto if c.isalpha()) < 2:
-        raise ValidationError(
-            f'{campo_label} debe incluir texto con letras (no solo puntos, símbolos o números).'
-        )
+        raise ValidationError('Ingresa un nombre válido con letras.')
     return texto
 
 
@@ -40,7 +36,7 @@ def validar_comentario_texto(valor, max_len=400):
     if len(texto) > max_len:
         raise ValidationError(f'El comentario no puede superar los {max_len} caracteres.')
     if not any(c.isalnum() for c in texto):
-        raise ValidationError('El comentario debe contener texto válido (no solo puntos o símbolos).')
+        raise ValidationError('Escribe un comentario válido.')
     return texto
 
 
@@ -86,6 +82,8 @@ class RegistroClienteForm(forms.ModelForm):
             raise ValidationError('El nombre debe tener al menos 2 caracteres.')
         if any(c.isdigit() for c in nombre):
             raise ValidationError('El nombre no puede contener números.')
+        if sum(1 for c in nombre if c.isalpha()) < 2:
+            raise ValidationError('Ingresa un nombre válido con letras.')
         return nombre
 
     def clean_apellido(self):
@@ -96,6 +94,8 @@ class RegistroClienteForm(forms.ModelForm):
             raise ValidationError('El apellido debe tener al menos 2 caracteres.')
         if any(c.isdigit() for c in apellido):
             raise ValidationError('El apellido no puede contener números.')
+        if sum(1 for c in apellido if c.isalpha()) < 2:
+            raise ValidationError('Ingresa un apellido válido con letras.')
         return apellido
 
     def clean_correo(self):
@@ -128,6 +128,8 @@ class RegistroClienteForm(forms.ModelForm):
             raise ValidationError('La dirección es obligatoria.')
         if len(direccion) < 10:
             raise ValidationError('La dirección debe tener al menos 10 caracteres.')
+        if not any(c.isalpha() for c in direccion):
+            raise ValidationError('Ingresa una dirección válida.')
         return direccion
 
     def clean_contraseña(self):
@@ -166,6 +168,8 @@ class PerfilClienteForm(forms.ModelForm):
             raise ValidationError('El nombre debe tener al menos 2 caracteres.')
         if any(c.isdigit() for c in nombre):
             raise ValidationError('El nombre no puede contener números.')
+        if sum(1 for c in nombre if c.isalpha()) < 2:
+            raise ValidationError('Ingresa un nombre válido con letras.')
         return nombre
 
     def clean_apellido(self):
@@ -176,6 +180,8 @@ class PerfilClienteForm(forms.ModelForm):
             raise ValidationError('El apellido debe tener al menos 2 caracteres.')
         if any(c.isdigit() for c in apellido):
             raise ValidationError('El apellido no puede contener números.')
+        if sum(1 for c in apellido if c.isalpha()) < 2:
+            raise ValidationError('Ingresa un apellido válido con letras.')
         return apellido
 
     def clean_correo(self):
@@ -203,6 +209,8 @@ class PerfilClienteForm(forms.ModelForm):
             raise ValidationError('La dirección es obligatoria.')
         if len(direccion) < 10:
             raise ValidationError('La dirección debe tener al menos 10 caracteres.')
+        if not any(c.isalpha() for c in direccion):
+            raise ValidationError('Ingresa una dirección válida.')
         return direccion
 
 
@@ -340,7 +348,15 @@ class CheckoutForm(forms.Form):
             raise ValidationError('La dirección es obligatoria.')
         if len(direccion) < 10:
             raise ValidationError('La dirección debe tener al menos 10 caracteres.')
+        if not any(c.isalpha() for c in direccion):
+            raise ValidationError('Ingresa una dirección válida.')
         return direccion
+
+    def clean_notas(self):
+        notas = (self.cleaned_data.get('notas') or '').strip()
+        if notas and not any(c.isalnum() for c in notas):
+            raise ValidationError('Escribe notas válidas.')
+        return notas
 
     def clean(self):
         cleaned_data = super().clean()

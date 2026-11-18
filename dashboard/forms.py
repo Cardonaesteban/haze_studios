@@ -49,6 +49,8 @@ class ClienteForm(forms.ModelForm):
             raise ValidationError('El nombre debe tener al menos 2 caracteres.')
         if any(c.isdigit() for c in nombre):
             raise ValidationError('El nombre no puede contener números.')
+        if sum(1 for c in nombre if c.isalpha()) < 2:
+            raise ValidationError('Ingresa un nombre válido con letras.')
         return nombre
 
     def clean_apellido(self):
@@ -59,6 +61,8 @@ class ClienteForm(forms.ModelForm):
             raise ValidationError('El apellido debe tener al menos 2 caracteres.')
         if any(c.isdigit() for c in apellido):
             raise ValidationError('El apellido no puede contener números.')
+        if sum(1 for c in apellido if c.isalpha()) < 2:
+            raise ValidationError('Ingresa un apellido válido con letras.')
         return apellido
 
     def clean_telefono(self):
@@ -83,6 +87,8 @@ class ClienteForm(forms.ModelForm):
             raise ValidationError('La dirección es obligatoria.')
         if len(direccion) < 10:
             raise ValidationError('La dirección debe tener al menos 10 caracteres.')
+        if not any(c.isalpha() for c in direccion):
+            raise ValidationError('Ingresa una dirección válida.')
         return direccion
 
     def clean_correo(self):
@@ -910,6 +916,8 @@ class MensajeForm(forms.ModelForm):
             raise ValidationError('El contenido del mensaje es obligatorio.')
         if len(contenido) > 500:
             raise ValidationError('El contenido del mensaje no podrá superar los 500 caracteres.')
+        if not any(c.isalnum() for c in contenido):
+            raise ValidationError('Escribe un mensaje válido.')
         return contenido
 
 
